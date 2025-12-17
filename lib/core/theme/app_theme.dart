@@ -135,7 +135,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.surfaceLight,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.cardLight,
         surfaceTintColor: Colors.transparent,
@@ -319,7 +319,7 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
         ),
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         indicator: const UnderlineTabIndicator(
           borderSide: BorderSide(
             color: AppColors.primary,
@@ -338,7 +338,7 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: 0,
         backgroundColor: AppColors.surfaceLight,
         surfaceTintColor: Colors.transparent,
@@ -725,7 +725,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         color: AppColors.cardDark,
         surfaceTintColor: Colors.transparent,
@@ -909,7 +909,7 @@ abstract final class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
         ),
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         indicator: const UnderlineTabIndicator(
           borderSide: BorderSide(
             color: AppColors.primaryLight,
@@ -928,7 +928,7 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: 0,
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,

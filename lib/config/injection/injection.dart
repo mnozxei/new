@@ -20,7 +20,7 @@ import '../../features/chat/data/datasources/chat_remote_data_source.dart';
 import '../../features/chat/data/repositories/chat_repository_impl.dart';
 import '../../features/chat/domain/repositories/chat_repository.dart';
 import '../../features/chat/presentation/bloc/chat_bloc.dart';
-import '../../features/companies/data/datasources/company_remote_data_source.dart';
+import '../../features/companies/data/datasources/company_remote_datasource.dart';
 import '../../features/companies/data/repositories/company_repository_impl.dart';
 import '../../features/companies/domain/repositories/company_repository.dart';
 import '../../features/companies/presentation/bloc/company_bloc.dart';
@@ -28,7 +28,7 @@ import '../../features/courses/data/datasources/course_remote_data_source.dart';
 import '../../features/courses/data/repositories/course_repository_impl.dart';
 import '../../features/courses/domain/repositories/course_repository.dart';
 import '../../features/courses/presentation/bloc/course_bloc.dart';
-import '../../features/jobs/data/datasources/job_remote_data_source.dart';
+import '../../features/jobs/data/datasources/job_remote_datasource.dart';
 import '../../features/jobs/data/repositories/job_repository_impl.dart';
 import '../../features/jobs/domain/repositories/job_repository.dart';
 import '../../features/jobs/presentation/bloc/job_bloc.dart';
@@ -88,11 +88,11 @@ void _registerDataSources() {
   );
 
   getIt.registerLazySingleton<CompanyRemoteDataSource>(
-    () => CompanyRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+    () => CompanyRemoteDataSourceImpl(supabase: getIt<SupabaseClient>()),
   );
 
   getIt.registerLazySingleton<JobRemoteDataSource>(
-    () => JobRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+    () => JobRemoteDataSourceImpl(supabase: getIt<SupabaseClient>()),
   );
 
   getIt.registerLazySingleton<CourseRemoteDataSource>(
@@ -229,6 +229,10 @@ void _registerBlocs() {
   getIt.registerFactory<AdBloc>(
     () => AdBloc(repository: getIt<AdRepository>()),
   );
+}
+
+abstract class AuthService {
+  Future<bool> isAuthenticated();
 }
 
 class AuthServiceImpl implements AuthService {

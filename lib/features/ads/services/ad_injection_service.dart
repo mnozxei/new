@@ -59,11 +59,12 @@ class AdInjectionService {
       await _refreshAdsForPlacement(placement);
     }
 
-    final configResult = await _adRepository.getFrequencyConfig();
-    final config = configResult.fold(
-      (_) => const AdFrequencyConfig(),
-      (config) => config,
-    );
+    AdFrequencyConfig config;
+    try {
+      config = await _adRepository.getFrequencyConfig();
+    } catch (_) {
+      config = const AdFrequencyConfig();
+    }
 
     final interval = config.getIntervalForPlacement(placement);
     final adPositions = <int, AdEntity>{};
@@ -87,18 +88,16 @@ class AdInjectionService {
   }
 
   Future<void> _refreshAdsForPlacement(AdPlacement placement) async {
-    final result = await _adRepository.getAdsForPlacement(
-      placement: placement,
-      limit: 10,
-    );
-
-    result.fold(
-      (_) => null,
-      (ads) {
-        _adCache[placement] = ads.where((ad) => !_shownAdIds.contains(ad.id)).toList();
-        _adIndexes[placement] = 0;
-      },
-    );
+    try {
+      final ads = await _adRepository.getAdsForPlacement(
+        placement: placement,
+        limit: 10,
+      );
+      _adCache[placement] = ads.where((ad) => !_shownAdIds.contains(ad.id)).toList();
+      _adIndexes[placement] = 0;
+    } catch (_) {
+      // Silently fail - ads are non-critical
+    }
   }
 
   Future<AdEntity?> _getNextAdForPlacement(AdPlacement placement) async {

@@ -12,7 +12,9 @@ class GlassTextField extends StatefulWidget {
     this.controller,
     this.focusNode,
     this.label,
+    this.labelText,
     this.hint,
+    this.hintText,
     this.helperText,
     this.errorText,
     this.prefixIcon,
@@ -50,7 +52,9 @@ class GlassTextField extends StatefulWidget {
   final TextEditingController? controller;
   final FocusNode? focusNode;
   final String? label;
+  final String? labelText;
   final String? hint;
+  final String? hintText;
   final String? helperText;
   final String? errorText;
   final Widget? prefixIcon;
@@ -175,18 +179,21 @@ class _GlassTextFieldState extends State<GlassTextField> {
       return widget.suffixIcon;
     }
 
+    final effectiveLabel = widget.label ?? widget.labelText;
+    final effectiveHint = widget.hint ?? widget.hintText;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.label != null)
+        if (effectiveLabel != null)
           Padding(
             padding: const EdgeInsets.only(
               bottom: AppConstants.spacingSmall,
               right: AppConstants.spacingExtraSmall,
             ),
             child: Text(
-              widget.label!,
+              effectiveLabel,
               style: theme.textTheme.labelLarge?.copyWith(
                 color: hasError
                     ? (isDark ? AppColors.errorLight : AppColors.error)
@@ -241,7 +248,7 @@ class _GlassTextFieldState extends State<GlassTextField> {
                           : AppColors.textPrimaryLight,
                     ),
                 decoration: InputDecoration(
-                  hintText: widget.hint,
+                  hintText: effectiveHint,
                   helperText: widget.helperText,
                   errorText: null,
                   prefixIcon: widget.prefixIcon,

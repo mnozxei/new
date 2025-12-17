@@ -214,4 +214,30 @@ abstract final class AppColors {
       spreadRadius: -5,
     ),
   ];
+
+  static const List<BoxShadow> shadowMedium = [
+    BoxShadow(
+      color: Color(0x14786E8B),
+      blurRadius: 12,
+      offset: Offset(0, 4),
+    ),
+    BoxShadow(
+      color: Color(0x0A786E8B),
+      blurRadius: 24,
+      offset: Offset(0, 8),
+    ),
+  ];
+
+  static const List<BoxShadow> shadowLarge = [
+    BoxShadow(
+      color: Color(0x1A786E8B),
+      blurRadius: 20,
+      offset: Offset(0, 8),
+    ),
+    BoxShadow(
+      color: Color(0x0D786E8B),
+      blurRadius: 40,
+      offset: Offset(0, 16),
+    ),
+  ];
 }

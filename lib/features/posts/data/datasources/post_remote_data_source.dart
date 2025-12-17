@@ -382,6 +382,30 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     final likedByCurrentUser = likes.any((l) => l['user_id'] == _currentUserId);
     final commentsData = json['comments'] as List? ?? [];
     final commentsCount = commentsData.isNotEmpty ? (commentsData[0]['count'] ?? 0) as int : 0;
+    final now = DateTime.now();
+
+    PostAuthorInfo? author;
+    if (json['author'] != null) {
+      final a = json['author'] as Map<String, dynamic>;
+      author = PostAuthorInfo(
+        id: a['id'] as String? ?? '',
+        fullName: a['full_name'] as String? ?? '',
+        avatarUrl: a['avatar_url'] as String?,
+        headline: a['headline'] as String?,
+        isVerified: a['is_verified'] as bool? ?? false,
+      );
+    }
+
+    PostCompanyInfo? company;
+    if (json['company'] != null) {
+      final c = json['company'] as Map<String, dynamic>;
+      company = PostCompanyInfo(
+        id: c['id'] as String? ?? '',
+        name: c['name'] as String? ?? '',
+        logoUrl: c['logo_url'] as String?,
+        isVerified: c['status'] == 'verified',
+      );
+    }
 
     return PostEntity(
       id: json['id'] as String,
@@ -389,24 +413,34 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       companyId: json['company_id'] as String?,
       content: json['content'] as String,
       mediaUrls: List<String>.from(json['media_urls'] ?? []),
-      mediaTypes: json['media_types'] != null ? List<String>.from(json['media_types']) : null,
+      mediaTypes: List<String>.from(json['media_types'] ?? []),
       visibility: json['visibility'] as String? ?? 'public',
+      isPinned: json['is_pinned'] as bool? ?? false,
       likeCount: likes.length,
       commentCount: commentsCount,
       shareCount: json['share_count'] as int? ?? 0,
       isLiked: likedByCurrentUser,
-      authorName: json['author']?['full_name'] as String?,
-      authorAvatar: json['author']?['avatar_url'] as String?,
-      companyName: json['company']?['name'] as String?,
-      companyLogo: json['company']?['logo_url'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      author: author,
+      company: company,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
     );
   }
 
   CommentEntity _mapCommentFromJson(Map<String, dynamic> json) {
     final likes = json['likes'] as List? ?? [];
     final likedByCurrentUser = likes.any((l) => l['user_id'] == _currentUserId);
+    final now = DateTime.now();
+
+    CommentUserInfo? user;
+    if (json['author'] != null) {
+      final a = json['author'] as Map<String, dynamic>;
+      user = CommentUserInfo(
+        id: a['id'] as String? ?? '',
+        fullName: a['full_name'] as String? ?? '',
+        avatarUrl: a['avatar_url'] as String?,
+      );
+    }
 
     return CommentEntity(
       id: json['id'] as String,
@@ -416,10 +450,9 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       content: json['content'] as String,
       likeCount: likes.length,
       isLiked: likedByCurrentUser,
-      authorName: json['author']?['full_name'] as String?,
-      authorAvatar: json['author']?['avatar_url'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
+      user: user,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
     );
   }
 }

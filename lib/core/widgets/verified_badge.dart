@@ -3,15 +3,23 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
+enum VerifiedBadgeType {
+  user,
+  company,
+  instructor,
+}
+
 class VerifiedBadge extends StatelessWidget {
   const VerifiedBadge({
     super.key,
     this.size = VerifiedBadgeSize.medium,
+    this.type = VerifiedBadgeType.user,
     this.showTooltip = true,
     this.tooltipMessage,
   });
 
   final VerifiedBadgeSize size;
+  final VerifiedBadgeType type;
   final bool showTooltip;
   final String? tooltipMessage;
 
@@ -45,8 +53,18 @@ class VerifiedBadge extends StatelessWidget {
       return badge;
     }
 
+    String defaultMessage;
+    switch (type) {
+      case VerifiedBadgeType.company:
+        defaultMessage = 'Verified Company';
+      case VerifiedBadgeType.instructor:
+        defaultMessage = 'Verified Instructor';
+      case VerifiedBadgeType.user:
+        defaultMessage = 'Verified';
+    }
+
     return Tooltip(
-      message: tooltipMessage ?? 'Verified',
+      message: tooltipMessage ?? defaultMessage,
       child: badge,
     );
   }
