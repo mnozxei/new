@@ -1,29 +1,31 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../entities/ad_entity.dart';
 
 abstract class AdRepository {
-  Future<Either<Failure, List<AdEntity>>> getAdsForPlacement({
+  /// Get ads for a placement
+  Future<List<AdEntity>> getAdsForPlacement({
     required AdPlacement placement,
     int limit = 5,
   });
 
-  Future<Either<Failure, AdEntity>> getAdById(String adId);
+  /// Get ad by ID
+  Future<AdEntity?> getAdById(String adId);
 
-  Future<Either<Failure, void>> recordImpression({
+  /// Record ad impression
+  Future<void> recordImpression({
     required String adId,
     required AdPlacement placement,
     Map<String, dynamic>? metadata,
   });
 
-  Future<Either<Failure, void>> recordClick({
+  /// Record ad click
+  Future<void> recordClick({
     required String adId,
     required AdPlacement placement,
     Map<String, dynamic>? metadata,
   });
 
-  Future<Either<Failure, AdEntity>> createAd({
+  /// Create an ad
+  Future<AdEntity> createAd({
     required AdType type,
     required AdPlacement placement,
     required String title,
@@ -43,7 +45,8 @@ abstract class AdRepository {
     DateTime? endDate,
   });
 
-  Future<Either<Failure, AdEntity>> updateAd({
+  /// Update an ad
+  Future<AdEntity> updateAd({
     required String adId,
     String? title,
     String? description,
@@ -56,25 +59,28 @@ abstract class AdRepository {
     DateTime? endDate,
   });
 
-  Future<Either<Failure, void>> deleteAd(String adId);
+  /// Delete an ad
+  Future<void> deleteAd(String adId);
 
-  Future<Either<Failure, List<AdEntity>>> getMyAds({
-    int page = 1,
+  /// Get my ads
+  Future<List<AdEntity>> getMyAds({
     int limit = 20,
+    int offset = 0,
     AdStatus? status,
   });
 
-  Future<Either<Failure, AdCampaignStats>> getAdStats({
+  /// Get ad statistics
+  Future<AdCampaignStats> getAdStats({
     required String adId,
     DateTime? startDate,
     DateTime? endDate,
   });
 
-  Future<Either<Failure, AdFrequencyConfig>> getFrequencyConfig();
+  /// Get ad frequency config
+  Future<AdFrequencyConfig> getFrequencyConfig();
 
-  Future<Either<Failure, int>> getTodayImpressionCount();
-
-  Future<Either<Failure, bool>> canShowAd({
+  /// Check if can show ad at position
+  Future<bool> canShowAd({
     required AdPlacement placement,
     required int currentIndex,
   });

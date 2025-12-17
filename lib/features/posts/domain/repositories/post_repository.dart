@@ -1,76 +1,92 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../entities/post_entity.dart';
 
 abstract class PostRepository {
-  Future<Either<Failure, List<PostEntity>>> getFeed({
-    int page = 1,
+  /// Get feed posts
+  Future<List<PostEntity>> getFeed({
     int limit = 20,
+    int offset = 0,
   });
 
-  Future<Either<Failure, List<PostEntity>>> getUserPosts({
+  /// Get posts by user
+  Future<List<PostEntity>> getUserPosts({
     required String userId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   });
 
-  Future<Either<Failure, List<PostEntity>>> getCompanyPosts({
+  /// Get posts by company
+  Future<List<PostEntity>> getCompanyPosts({
     required String companyId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   });
 
-  Future<Either<Failure, PostEntity>> getPostById(String postId);
+  /// Get post by ID
+  Future<PostEntity?> getPostById(String postId);
 
-  Future<Either<Failure, PostEntity>> createPost({
+  /// Create a post
+  Future<PostEntity> createPost({
     required String content,
     List<String>? mediaUrls,
+    List<String>? mediaTypes,
     String? companyId,
+    String visibility = 'public',
   });
 
-  Future<Either<Failure, PostEntity>> updatePost({
+  /// Update a post
+  Future<PostEntity> updatePost({
     required String postId,
     required String content,
     List<String>? mediaUrls,
+    List<String>? mediaTypes,
   });
 
-  Future<Either<Failure, void>> deletePost(String postId);
+  /// Delete a post
+  Future<void> deletePost(String postId);
 
-  Future<Either<Failure, PostEntity>> toggleLike(String postId);
+  /// Toggle like on a post
+  Future<PostEntity> toggleLike(String postId);
 
-  Future<Either<Failure, List<CommentEntity>>> getComments({
+  /// Get comments for a post
+  Future<List<CommentEntity>> getComments({
     required String postId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   });
 
-  Future<Either<Failure, CommentEntity>> addComment({
+  /// Add a comment
+  Future<CommentEntity> addComment({
     required String postId,
     required String content,
     String? parentId,
   });
 
-  Future<Either<Failure, CommentEntity>> updateComment({
+  /// Update a comment
+  Future<CommentEntity> updateComment({
     required String commentId,
     required String content,
   });
 
-  Future<Either<Failure, void>> deleteComment(String commentId);
+  /// Delete a comment
+  Future<void> deleteComment(String commentId);
 
-  Future<Either<Failure, CommentEntity>> toggleCommentLike(String commentId);
+  /// Toggle like on a comment
+  Future<CommentEntity> toggleCommentLike(String commentId);
 
-  Future<Either<Failure, void>> sharePost(String postId);
+  /// Share a post
+  Future<void> sharePost(String postId);
 
-  Future<Either<Failure, List<PostEntity>>> searchPosts({
+  /// Search posts
+  Future<List<PostEntity>> searchPosts({
     required String query,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   });
 
-  Future<Either<Failure, List<PostEntity>>> getPostsByHashtag({
+  /// Get posts by hashtag
+  Future<List<PostEntity>> getPostsByHashtag({
     required String hashtag,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   });
 }

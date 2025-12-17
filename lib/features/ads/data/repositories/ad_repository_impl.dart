@@ -1,6 +1,3 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../../domain/entities/ad_entity.dart';
 import '../../domain/repositories/ad_repository.dart';
 import '../datasources/ad_remote_data_source.dart';
@@ -16,71 +13,51 @@ class AdRepositoryImpl implements AdRepository {
   DateTime? _lastAdShownTime;
 
   @override
-  Future<Either<Failure, List<AdEntity>>> getAdsForPlacement({
+  Future<List<AdEntity>> getAdsForPlacement({
     required AdPlacement placement,
     int limit = 5,
   }) async {
-    try {
-      final ads = await _remoteDataSource.getAdsForPlacement(
-        placement: placement,
-        limit: limit,
-      );
-      return Right(ads);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getAdsForPlacement(
+      placement: placement,
+      limit: limit,
+    );
   }
 
   @override
-  Future<Either<Failure, AdEntity>> getAdById(String adId) async {
-    try {
-      final ad = await _remoteDataSource.getAdById(adId);
-      return Right(ad);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<AdEntity?> getAdById(String adId) async {
+    return _remoteDataSource.getAdById(adId);
   }
 
   @override
-  Future<Either<Failure, void>> recordImpression({
+  Future<void> recordImpression({
     required String adId,
     required AdPlacement placement,
     Map<String, dynamic>? metadata,
   }) async {
-    try {
-      await _remoteDataSource.recordImpression(
-        adId: adId,
-        placement: placement,
-        metadata: metadata,
-      );
-      _sessionImpressionCount++;
-      _lastAdShownTime = DateTime.now();
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    await _remoteDataSource.recordImpression(
+      adId: adId,
+      placement: placement,
+      metadata: metadata,
+    );
+    _sessionImpressionCount++;
+    _lastAdShownTime = DateTime.now();
   }
 
   @override
-  Future<Either<Failure, void>> recordClick({
+  Future<void> recordClick({
     required String adId,
     required AdPlacement placement,
     Map<String, dynamic>? metadata,
   }) async {
-    try {
-      await _remoteDataSource.recordClick(
-        adId: adId,
-        placement: placement,
-        metadata: metadata,
-      );
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    await _remoteDataSource.recordClick(
+      adId: adId,
+      placement: placement,
+      metadata: metadata,
+    );
   }
 
   @override
-  Future<Either<Failure, AdEntity>> createAd({
+  Future<AdEntity> createAd({
     required AdType type,
     required AdPlacement placement,
     required String title,
@@ -99,34 +76,29 @@ class AdRepositoryImpl implements AdRepository {
     required DateTime startDate,
     DateTime? endDate,
   }) async {
-    try {
-      final ad = await _remoteDataSource.createAd(
-        type: type,
-        placement: placement,
-        title: title,
-        description: description,
-        imageUrl: imageUrl,
-        videoUrl: videoUrl,
-        ctaText: ctaText,
-        ctaUrl: ctaUrl,
-        companyId: companyId,
-        jobId: jobId,
-        courseId: courseId,
-        budget: budget,
-        costPerClick: costPerClick,
-        costPerImpression: costPerImpression,
-        targetAudience: targetAudience,
-        startDate: startDate,
-        endDate: endDate,
-      );
-      return Right(ad);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.createAd(
+      type: type,
+      placement: placement,
+      title: title,
+      description: description,
+      imageUrl: imageUrl,
+      videoUrl: videoUrl,
+      ctaText: ctaText,
+      ctaUrl: ctaUrl,
+      companyId: companyId,
+      jobId: jobId,
+      courseId: courseId,
+      budget: budget,
+      costPerClick: costPerClick,
+      costPerImpression: costPerImpression,
+      targetAudience: targetAudience,
+      startDate: startDate,
+      endDate: endDate,
+    );
   }
 
   @override
-  Future<Either<Failure, AdEntity>> updateAd({
+  Future<AdEntity> updateAd({
     required String adId,
     String? title,
     String? description,
@@ -138,114 +110,80 @@ class AdRepositoryImpl implements AdRepository {
     Map<String, dynamic>? targetAudience,
     DateTime? endDate,
   }) async {
-    try {
-      final ad = await _remoteDataSource.updateAd(
-        adId: adId,
-        title: title,
-        description: description,
-        imageUrl: imageUrl,
-        ctaText: ctaText,
-        ctaUrl: ctaUrl,
-        status: status,
-        budget: budget,
-        targetAudience: targetAudience,
-        endDate: endDate,
-      );
-      return Right(ad);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.updateAd(
+      adId: adId,
+      title: title,
+      description: description,
+      imageUrl: imageUrl,
+      ctaText: ctaText,
+      ctaUrl: ctaUrl,
+      status: status,
+      budget: budget,
+      targetAudience: targetAudience,
+      endDate: endDate,
+    );
   }
 
   @override
-  Future<Either<Failure, void>> deleteAd(String adId) async {
-    try {
-      await _remoteDataSource.deleteAd(adId);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> deleteAd(String adId) async {
+    await _remoteDataSource.deleteAd(adId);
   }
 
   @override
-  Future<Either<Failure, List<AdEntity>>> getMyAds({
-    int page = 1,
+  Future<List<AdEntity>> getMyAds({
     int limit = 20,
+    int offset = 0,
     AdStatus? status,
   }) async {
-    try {
-      final ads = await _remoteDataSource.getMyAds(
-        page: page,
-        limit: limit,
-        status: status,
-      );
-      return Right(ads);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getMyAds(
+      limit: limit,
+      offset: offset,
+      status: status,
+    );
   }
 
   @override
-  Future<Either<Failure, AdCampaignStats>> getAdStats({
+  Future<AdCampaignStats> getAdStats({
     required String adId,
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    try {
-      final stats = await _remoteDataSource.getAdStats(
-        adId: adId,
-        startDate: startDate,
-        endDate: endDate,
-      );
-      return Right(stats);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getAdStats(
+      adId: adId,
+      startDate: startDate,
+      endDate: endDate,
+    );
   }
 
   @override
-  Future<Either<Failure, AdFrequencyConfig>> getFrequencyConfig() async {
-    return Right(_frequencyConfig);
+  Future<AdFrequencyConfig> getFrequencyConfig() async {
+    return _frequencyConfig;
   }
 
   @override
-  Future<Either<Failure, int>> getTodayImpressionCount() async {
-    try {
-      final count = await _remoteDataSource.getTodayImpressionCount();
-      return Right(count);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
-  }
-
-  @override
-  Future<Either<Failure, bool>> canShowAd({
+  Future<bool> canShowAd({
     required AdPlacement placement,
     required int currentIndex,
   }) async {
-    try {
-      if (_sessionImpressionCount >= _frequencyConfig.maxAdsPerSession) {
-        return const Right(false);
-      }
-
-      if (_lastAdShownTime != null) {
-        final timeSinceLastAd = DateTime.now().difference(_lastAdShownTime!);
-        if (timeSinceLastAd < _frequencyConfig.minTimeBetweenAds) {
-          return const Right(false);
-        }
-      }
-
-      final todayCount = await _remoteDataSource.getTodayImpressionCount();
-      if (todayCount >= _frequencyConfig.dailyImpressionCap) {
-        return const Right(false);
-      }
-
-      final interval = _frequencyConfig.getIntervalForPlacement(placement);
-      final shouldShowAd = currentIndex > 0 && (currentIndex + 1) % interval == 0;
-
-      return Right(shouldShowAd);
-    } catch (e) {
-      return const Right(false);
+    if (_sessionImpressionCount >= _frequencyConfig.maxAdsPerSession) {
+      return false;
     }
+
+    if (_lastAdShownTime != null) {
+      final timeSinceLastAd = DateTime.now().difference(_lastAdShownTime!);
+      if (timeSinceLastAd < _frequencyConfig.minTimeBetweenAds) {
+        return false;
+      }
+    }
+
+    final todayCount = await _remoteDataSource.getTodayImpressionCount();
+    if (todayCount >= _frequencyConfig.dailyImpressionCap) {
+      return false;
+    }
+
+    final interval = _frequencyConfig.getIntervalForPlacement(placement);
+    final shouldShowAd = currentIndex > 0 && (currentIndex + 1) % interval == 0;
+
+    return shouldShowAd;
   }
 }

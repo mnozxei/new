@@ -1,34 +1,43 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../entities/notification_entity.dart';
 
 abstract class NotificationRepository {
-  Future<Either<Failure, List<NotificationEntity>>> getNotifications({
-    int page = 1,
+  /// Get notifications
+  Future<List<NotificationEntity>> getNotifications({
     int limit = 20,
-    NotificationType? type,
+    int offset = 0,
+    String? type,
   });
 
-  Future<Either<Failure, int>> getUnreadCount();
+  /// Get unread count
+  Future<int> getUnreadCount();
 
-  Future<Either<Failure, void>> markAsRead(String notificationId);
+  /// Mark notification as read
+  Future<void> markAsRead(String notificationId);
 
-  Future<Either<Failure, void>> markAllAsRead();
+  /// Mark all notifications as read
+  Future<void> markAllAsRead();
 
-  Future<Either<Failure, void>> deleteNotification(String notificationId);
+  /// Delete a notification
+  Future<void> deleteNotification(String notificationId);
 
-  Future<Either<Failure, void>> clearAllNotifications();
+  /// Clear all notifications
+  Future<void> clearAllNotifications();
 
-  Future<Either<Failure, NotificationSettings>> getSettings();
+  /// Get notification settings
+  Future<NotificationSettings> getSettings();
 
-  Future<Either<Failure, NotificationSettings>> updateSettings(NotificationSettings settings);
+  /// Update notification settings
+  Future<NotificationSettings> updateSettings(NotificationSettings settings);
 
-  Future<Either<Failure, void>> registerDeviceToken(String token);
+  /// Register device token for push notifications
+  Future<void> registerDeviceToken(String token);
 
-  Future<Either<Failure, void>> unregisterDeviceToken(String token);
+  /// Unregister device token
+  Future<void> unregisterDeviceToken(String token);
 
+  /// Watch notifications for real-time updates
   Stream<List<NotificationEntity>> watchNotifications();
 
+  /// Watch unread count for real-time updates
   Stream<int> watchUnreadCount();
 }

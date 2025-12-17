@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -10,9 +8,7 @@ part 'course_event.dart';
 part 'course_state.dart';
 
 class CourseBloc extends Bloc<CourseEvent, CourseState> {
-  CourseBloc({required CourseRepository courseRepository})
-      : _courseRepository = courseRepository,
-        super(const CourseInitial()) {
+  CourseBloc({required this.repository}) : super(const CourseInitial()) {
     on<LoadCourses>(_onLoadCourses);
     on<LoadMoreCourses>(_onLoadMoreCourses);
     on<LoadFeaturedCourses>(_onLoadFeaturedCourses);
@@ -32,352 +28,295 @@ class CourseBloc extends Bloc<CourseEvent, CourseState> {
     on<LoadMyEnrollments>(_onLoadMyEnrollments);
     on<LoadEnrollment>(_onLoadEnrollment);
     on<UpdateLessonProgress>(_onUpdateLessonProgress);
-    on<LoadCourseStudents>(_onLoadCourseStudents);
     on<LoadInstructorCourses>(_onLoadInstructorCourses);
     on<RateCourse>(_onRateCourse);
   }
 
-  final CourseRepository _courseRepository;
-  int _currentPage = 1;
+  final CourseRepository repository;
+  int _currentOffset = 0;
   static const int _pageSize = 20;
 
   Future<void> _onLoadCourses(LoadCourses event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
-    _currentPage = 1;
+    _currentOffset = 0;
 
-    final result = await _courseRepository.getCourses(
-      page: _currentPage,
-      limit: _pageSize,
-      category: event.category,
-      level: event.level,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (courses) => emit(CoursesLoaded(
+    try {
+      final courses = await repository.getCourses(
+        category: event.category,
+        level: event.level,
+        isFree: event.isFree,
+        searchQuery: event.searchQuery,
+        limit: _pageSize,
+        offset: _currentOffset,
+      );
+      emit(CoursesLoaded(
         courses: courses,
         hasMore: courses.length >= _pageSize,
-      )),
-    );
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadMoreCourses(LoadMoreCourses event, Emitter<CourseState> emit) async {
     final currentState = state;
     if (currentState is! CoursesLoaded || !currentState.hasMore) return;
 
-    _currentPage++;
-    final result = await _courseRepository.getCourses(
-      page: _currentPage,
-      limit: _pageSize,
-      category: event.category,
-      level: event.level,
-    );
-
-    result.fold(
-      (failure) {
-        _currentPage--;
-        emit(CourseError(message: failure.message));
-      },
-      (courses) => emit(CoursesLoaded(
+    _currentOffset += _pageSize;
+    try {
+      final courses = await repository.getCourses(
+        category: event.category,
+        level: event.level,
+        isFree: event.isFree,
+        searchQuery: event.searchQuery,
+        limit: _pageSize,
+        offset: _currentOffset,
+      );
+      emit(CoursesLoaded(
         courses: [...currentState.courses, ...courses],
         hasMore: courses.length >= _pageSize,
-      )),
-    );
+      ));
+    } catch (e) {
+      _currentOffset -= _pageSize;
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadFeaturedCourses(LoadFeaturedCourses event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
 
-    final result = await _courseRepository.getFeaturedCourses(limit: event.limit);
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (courses) => emit(FeaturedCoursesLoaded(courses: courses)),
-    );
+    try {
+      final courses = await repository.getFeaturedCourses(limit: event.limit);
+      emit(FeaturedCoursesLoaded(courses: courses));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onSearchCourses(SearchCourses event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
 
-    final result = await _courseRepository.searchCourses(
-      query: event.query,
-      page: 1,
-      limit: _pageSize,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (courses) => emit(CourseSearchResults(
+    try {
+      final courses = await repository.getCourses(
+        searchQuery: event.query,
+        limit: _pageSize,
+        offset: 0,
+      );
+      emit(CourseSearchResults(
         query: event.query,
         courses: courses,
         hasMore: courses.length >= _pageSize,
-      )),
-    );
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadCourseDetails(LoadCourseDetails event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
 
-    final courseResult = await _courseRepository.getCourseById(event.courseId);
+    try {
+      final course = await repository.getCourseWithContent(event.courseId);
+      if (course == null) {
+        emit(const CourseError(message: 'Course not found'));
+        return;
+      }
 
-    await courseResult.fold(
-      (failure) async => emit(CourseError(message: failure.message)),
-      (course) async {
-        EnrollmentEntity? enrollment;
-        final enrollmentResult = await _courseRepository.getEnrollment(event.courseId);
-        enrollmentResult.fold(
-          (_) => null,
-          (e) => enrollment = e,
-        );
+      EnrollmentEntity? enrollment;
+      try {
+        enrollment = await repository.getEnrollment(event.courseId);
+      } catch (_) {
+        // No enrollment found
+      }
 
-        emit(CourseDetailsLoaded(
-          course: course,
-          enrollment: enrollment,
-          isEnrolled: enrollment != null,
-        ));
-      },
-    );
+      emit(CourseDetailsLoaded(
+        course: course,
+        enrollment: enrollment,
+        isEnrolled: enrollment != null,
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onCreateCourse(CreateCourse event, Emitter<CourseState> emit) async {
     emit(const CourseCreating());
 
-    final result = await _courseRepository.createCourse(
-      title: event.title,
-      description: event.description,
-      price: event.price,
-      category: event.category,
-      level: event.level,
-      thumbnailUrl: event.thumbnailUrl,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (course) => emit(CourseCreated(course: course)),
-    );
+    try {
+      final course = await repository.createCourse(event.params);
+      emit(CourseCreated(course: course));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onUpdateCourse(UpdateCourse event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
 
-    final result = await _courseRepository.updateCourse(
-      courseId: event.courseId,
-      title: event.title,
-      description: event.description,
-      price: event.price,
-      category: event.category,
-      level: event.level,
-      thumbnailUrl: event.thumbnailUrl,
-      isPublished: event.isPublished,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (course) => emit(CourseUpdated(course: course)),
-    );
+    try {
+      final course = await repository.updateCourse(event.courseId, event.params);
+      emit(CourseUpdated(course: course));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onDeleteCourse(DeleteCourse event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.deleteCourse(event.courseId);
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (_) => emit(CourseDeleted(courseId: event.courseId)),
-    );
+    try {
+      await repository.deleteCourse(event.courseId);
+      emit(CourseDeleted(courseId: event.courseId));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onPublishCourse(PublishCourse event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.updateCourse(
-      courseId: event.courseId,
-      isPublished: true,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (course) => emit(CoursePublished(course: course)),
-    );
+    try {
+      final course = await repository.togglePublish(event.courseId);
+      emit(CoursePublished(course: course));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onCreateSection(CreateSection event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.createSection(
-      courseId: event.courseId,
-      title: event.title,
-      orderIndex: event.orderIndex,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (section) => emit(SectionCreated(section: section)),
-    );
+    try {
+      final section = await repository.createSection(event.params);
+      emit(SectionCreated(section: section));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onUpdateSection(UpdateSection event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.updateSection(
-      sectionId: event.sectionId,
-      title: event.title,
-      orderIndex: event.orderIndex,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (section) => emit(SectionUpdated(section: section)),
-    );
+    try {
+      final section = await repository.updateSection(event.sectionId, event.params);
+      emit(SectionUpdated(section: section));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onDeleteSection(DeleteSection event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.deleteSection(event.sectionId);
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (_) => emit(SectionDeleted(sectionId: event.sectionId)),
-    );
+    try {
+      await repository.deleteSection(event.sectionId);
+      emit(SectionDeleted(sectionId: event.sectionId));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onCreateLesson(CreateLesson event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.createLesson(
-      sectionId: event.sectionId,
-      title: event.title,
-      type: event.type,
-      content: event.content,
-      videoUrl: event.videoUrl,
-      durationMinutes: event.durationMinutes,
-      orderIndex: event.orderIndex,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (lesson) => emit(LessonCreated(lesson: lesson)),
-    );
+    try {
+      final lesson = await repository.createLesson(event.params);
+      emit(LessonCreated(lesson: lesson));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onUpdateLesson(UpdateLesson event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.updateLesson(
-      lessonId: event.lessonId,
-      title: event.title,
-      type: event.type,
-      content: event.content,
-      videoUrl: event.videoUrl,
-      durationMinutes: event.durationMinutes,
-      orderIndex: event.orderIndex,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (lesson) => emit(LessonUpdated(lesson: lesson)),
-    );
+    try {
+      final lesson = await repository.updateLesson(event.lessonId, event.params);
+      emit(LessonUpdated(lesson: lesson));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onDeleteLesson(DeleteLesson event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.deleteLesson(event.lessonId);
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (_) => emit(LessonDeleted(lessonId: event.lessonId)),
-    );
+    try {
+      await repository.deleteLesson(event.lessonId);
+      emit(LessonDeleted(lessonId: event.lessonId));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onEnrollInCourse(EnrollInCourse event, Emitter<CourseState> emit) async {
     emit(const EnrollmentProcessing());
 
-    final result = await _courseRepository.enrollInCourse(event.courseId);
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (enrollment) => emit(EnrollmentSuccessful(enrollment: enrollment)),
-    );
+    try {
+      final enrollment = await repository.enrollInCourse(event.courseId, paymentId: event.paymentId);
+      emit(EnrollmentSuccessful(enrollment: enrollment));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadMyEnrollments(LoadMyEnrollments event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
 
-    final result = await _courseRepository.getMyEnrollments(
-      page: 1,
-      limit: _pageSize,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (enrollments) => emit(MyEnrollmentsLoaded(
+    try {
+      final enrollments = await repository.getMyEnrollments(
+        status: event.status,
+        limit: _pageSize,
+        offset: 0,
+      );
+      emit(MyEnrollmentsLoaded(
         enrollments: enrollments,
         hasMore: enrollments.length >= _pageSize,
-      )),
-    );
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadEnrollment(LoadEnrollment event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.getEnrollment(event.courseId);
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (enrollment) => emit(EnrollmentLoaded(enrollment: enrollment)),
-    );
+    try {
+      final enrollment = await repository.getEnrollment(event.courseId);
+      if (enrollment != null) {
+        emit(EnrollmentLoaded(enrollment: enrollment));
+      }
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onUpdateLessonProgress(UpdateLessonProgress event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.updateProgress(
-      enrollmentId: event.enrollmentId,
-      lessonId: event.lessonId,
-      completed: event.completed,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (_) => emit(LessonProgressUpdated(
+    try {
+      await repository.updateLessonProgress(
+        event.lessonId,
+        watchTimeSeconds: event.watchTimeSeconds,
+        lastPositionSeconds: event.lastPositionSeconds,
+        isCompleted: event.isCompleted,
+      );
+      emit(LessonProgressUpdated(
         lessonId: event.lessonId,
-        completed: event.completed,
-      )),
-    );
-  }
-
-  Future<void> _onLoadCourseStudents(LoadCourseStudents event, Emitter<CourseState> emit) async {
-    emit(const CourseLoading());
-
-    final result = await _courseRepository.getCourseStudents(
-      courseId: event.courseId,
-      page: 1,
-      limit: _pageSize,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (students) => emit(CourseStudentsLoaded(
-        courseId: event.courseId,
-        students: students,
-        hasMore: students.length >= _pageSize,
-      )),
-    );
+        completed: event.isCompleted ?? false,
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadInstructorCourses(LoadInstructorCourses event, Emitter<CourseState> emit) async {
     emit(const CourseLoading());
 
-    final result = await _courseRepository.getInstructorCourses(
-      page: 1,
-      limit: _pageSize,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (courses) => emit(InstructorCoursesLoaded(
+    try {
+      final courses = await repository.getMyCourses();
+      emit(InstructorCoursesLoaded(
         courses: courses,
-        hasMore: courses.length >= _pageSize,
-      )),
-    );
+        hasMore: false,
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 
   Future<void> _onRateCourse(RateCourse event, Emitter<CourseState> emit) async {
-    final result = await _courseRepository.rateCourse(
-      courseId: event.courseId,
-      rating: event.rating,
-      review: event.review,
-    );
-
-    result.fold(
-      (failure) => emit(CourseError(message: failure.message)),
-      (_) => emit(CourseRated(
+    try {
+      await repository.addReview(AddReviewParams(
         courseId: event.courseId,
         rating: event.rating,
-      )),
-    );
+        comment: event.review,
+      ));
+      emit(CourseRated(
+        courseId: event.courseId,
+        rating: event.rating,
+      ));
+    } catch (e) {
+      emit(CourseError(message: e.toString()));
+    }
   }
 }

@@ -10,7 +10,7 @@ abstract class NotificationEvent extends Equatable {
 class LoadNotifications extends NotificationEvent {
   const LoadNotifications({this.type});
 
-  final NotificationType? type;
+  final String? type;
 
   @override
   List<Object?> get props => [type];
@@ -19,7 +19,7 @@ class LoadNotifications extends NotificationEvent {
 class LoadMoreNotifications extends NotificationEvent {
   const LoadMoreNotifications({this.type});
 
-  final NotificationType? type;
+  final String? type;
 
   @override
   List<Object?> get props => [type];

@@ -1,85 +1,99 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../entities/chat_entity.dart';
 
 abstract class ChatRepository {
-  Future<Either<Failure, List<ConversationEntity>>> getConversations({
-    int page = 1,
+  /// Get user's conversations
+  Future<List<ConversationEntity>> getConversations({
     int limit = 20,
+    int offset = 0,
   });
 
-  Future<Either<Failure, ConversationEntity>> getConversationById(String conversationId);
+  /// Get conversation by ID
+  Future<ConversationEntity?> getConversationById(String conversationId);
 
-  Future<Either<Failure, ConversationEntity>> getOrCreateConversation({
+  /// Get or create a direct conversation with a user
+  Future<ConversationEntity> getOrCreateConversation({
     required String participantId,
   });
 
-  Future<Either<Failure, ConversationEntity>> createGroupConversation({
-    required String title,
+  /// Create a group conversation
+  Future<ConversationEntity> createGroupConversation({
+    required String name,
     required List<String> participantIds,
     String? imageUrl,
   });
 
-  Future<Either<Failure, List<MessageEntity>>> getMessages({
+  /// Get messages in a conversation
+  Future<List<MessageEntity>> getMessages({
     required String conversationId,
-    int page = 1,
     int limit = 50,
     DateTime? before,
   });
 
-  Future<Either<Failure, MessageEntity>> sendMessage({
+  /// Send a message
+  Future<MessageEntity> sendMessage({
     required String conversationId,
     required String content,
-    MessageType type = MessageType.text,
+    String messageType = 'text',
     Map<String, dynamic>? metadata,
   });
 
-  Future<Either<Failure, void>> markAsRead(String conversationId);
+  /// Mark conversation as read
+  Future<void> markAsRead(String conversationId);
 
-  Future<Either<Failure, void>> markMessageAsRead(String messageId);
+  /// Delete a message
+  Future<void> deleteMessage(String messageId);
 
-  Future<Either<Failure, void>> deleteMessage(String messageId);
+  /// Delete a conversation
+  Future<void> deleteConversation(String conversationId);
 
-  Future<Either<Failure, void>> deleteConversation(String conversationId);
-
-  Future<Either<Failure, ConversationEntity>> updateGroupConversation({
+  /// Update group conversation
+  Future<ConversationEntity> updateGroupConversation({
     required String conversationId,
-    String? title,
+    String? name,
     String? imageUrl,
   });
 
-  Future<Either<Failure, void>> addParticipants({
+  /// Add participants to group
+  Future<void> addParticipants({
     required String conversationId,
     required List<String> participantIds,
   });
 
-  Future<Either<Failure, void>> removeParticipant({
+  /// Remove participant from group
+  Future<void> removeParticipant({
     required String conversationId,
     required String participantId,
   });
 
-  Future<Either<Failure, void>> leaveConversation(String conversationId);
+  /// Leave a conversation
+  Future<void> leaveConversation(String conversationId);
 
-  Future<Either<Failure, void>> muteConversation({
+  /// Mute a conversation
+  Future<void> muteConversation({
     required String conversationId,
-    required Duration duration,
+    DateTime? mutedUntil,
   });
 
-  Future<Either<Failure, void>> unmuteConversation(String conversationId);
+  /// Unmute a conversation
+  Future<void> unmuteConversation(String conversationId);
 
+  /// Watch conversations for real-time updates
   Stream<List<ConversationEntity>> watchConversations();
 
+  /// Watch messages for real-time updates
   Stream<List<MessageEntity>> watchMessages(String conversationId);
 
-  Stream<int> watchUnreadCount();
+  /// Send typing indicator
+  Future<void> sendTypingIndicator(String conversationId);
 
-  Future<Either<Failure, void>> sendTypingIndicator(String conversationId);
-
-  Future<Either<Failure, List<MessageEntity>>> searchMessages({
+  /// Search messages
+  Future<List<MessageEntity>> searchMessages({
     required String query,
     String? conversationId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   });
+
+  /// Get unread count
+  Future<int> getUnreadCount();
 }

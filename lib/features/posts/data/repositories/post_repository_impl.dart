@@ -1,6 +1,3 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../../domain/entities/post_entity.dart';
 import '../../domain/repositories/post_repository.dart';
 import '../datasources/post_remote_data_source.dart';
@@ -12,235 +9,161 @@ class PostRepositoryImpl implements PostRepository {
   final PostRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Either<Failure, List<PostEntity>>> getFeed({
-    int page = 1,
+  Future<List<PostEntity>> getFeed({
     int limit = 20,
+    int offset = 0,
   }) async {
-    try {
-      final posts = await _remoteDataSource.getFeed(page: page, limit: limit);
-      return Right(posts);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getFeed(limit: limit, offset: offset);
   }
 
   @override
-  Future<Either<Failure, List<PostEntity>>> getUserPosts({
+  Future<List<PostEntity>> getUserPosts({
     required String userId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    try {
-      final posts = await _remoteDataSource.getUserPosts(
-        userId: userId,
-        page: page,
-        limit: limit,
-      );
-      return Right(posts);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getUserPosts(
+      userId: userId,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override
-  Future<Either<Failure, List<PostEntity>>> getCompanyPosts({
+  Future<List<PostEntity>> getCompanyPosts({
     required String companyId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    try {
-      final posts = await _remoteDataSource.getCompanyPosts(
-        companyId: companyId,
-        page: page,
-        limit: limit,
-      );
-      return Right(posts);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getCompanyPosts(
+      companyId: companyId,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override
-  Future<Either<Failure, PostEntity>> getPostById(String postId) async {
-    try {
-      final post = await _remoteDataSource.getPostById(postId);
-      return Right(post);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<PostEntity?> getPostById(String postId) async {
+    return _remoteDataSource.getPostById(postId);
   }
 
   @override
-  Future<Either<Failure, PostEntity>> createPost({
+  Future<PostEntity> createPost({
     required String content,
     List<String>? mediaUrls,
+    List<String>? mediaTypes,
     String? companyId,
+    String visibility = 'public',
   }) async {
-    try {
-      final post = await _remoteDataSource.createPost(
-        content: content,
-        mediaUrls: mediaUrls,
-        companyId: companyId,
-      );
-      return Right(post);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.createPost(
+      content: content,
+      mediaUrls: mediaUrls,
+      mediaTypes: mediaTypes,
+      companyId: companyId,
+      visibility: visibility,
+    );
   }
 
   @override
-  Future<Either<Failure, PostEntity>> updatePost({
+  Future<PostEntity> updatePost({
     required String postId,
     required String content,
     List<String>? mediaUrls,
+    List<String>? mediaTypes,
   }) async {
-    try {
-      final post = await _remoteDataSource.updatePost(
-        postId: postId,
-        content: content,
-        mediaUrls: mediaUrls,
-      );
-      return Right(post);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.updatePost(
+      postId: postId,
+      content: content,
+      mediaUrls: mediaUrls,
+      mediaTypes: mediaTypes,
+    );
   }
 
   @override
-  Future<Either<Failure, void>> deletePost(String postId) async {
-    try {
-      await _remoteDataSource.deletePost(postId);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> deletePost(String postId) async {
+    await _remoteDataSource.deletePost(postId);
   }
 
   @override
-  Future<Either<Failure, PostEntity>> toggleLike(String postId) async {
-    try {
-      final post = await _remoteDataSource.toggleLike(postId);
-      return Right(post);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<PostEntity> toggleLike(String postId) async {
+    return _remoteDataSource.toggleLike(postId);
   }
 
   @override
-  Future<Either<Failure, List<CommentEntity>>> getComments({
+  Future<List<CommentEntity>> getComments({
     required String postId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    try {
-      final comments = await _remoteDataSource.getComments(
-        postId: postId,
-        page: page,
-        limit: limit,
-      );
-      return Right(comments);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getComments(
+      postId: postId,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override
-  Future<Either<Failure, CommentEntity>> addComment({
+  Future<CommentEntity> addComment({
     required String postId,
     required String content,
     String? parentId,
   }) async {
-    try {
-      final comment = await _remoteDataSource.addComment(
-        postId: postId,
-        content: content,
-        parentId: parentId,
-      );
-      return Right(comment);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.addComment(
+      postId: postId,
+      content: content,
+      parentId: parentId,
+    );
   }
 
   @override
-  Future<Either<Failure, CommentEntity>> updateComment({
+  Future<CommentEntity> updateComment({
     required String commentId,
     required String content,
   }) async {
-    try {
-      final comment = await _remoteDataSource.updateComment(
-        commentId: commentId,
-        content: content,
-      );
-      return Right(comment);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.updateComment(
+      commentId: commentId,
+      content: content,
+    );
   }
 
   @override
-  Future<Either<Failure, void>> deleteComment(String commentId) async {
-    try {
-      await _remoteDataSource.deleteComment(commentId);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> deleteComment(String commentId) async {
+    await _remoteDataSource.deleteComment(commentId);
   }
 
   @override
-  Future<Either<Failure, CommentEntity>> toggleCommentLike(String commentId) async {
-    try {
-      final comment = await _remoteDataSource.toggleCommentLike(commentId);
-      return Right(comment);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<CommentEntity> toggleCommentLike(String commentId) async {
+    return _remoteDataSource.toggleCommentLike(commentId);
   }
 
   @override
-  Future<Either<Failure, void>> sharePost(String postId) async {
-    try {
-      await _remoteDataSource.sharePost(postId);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> sharePost(String postId) async {
+    await _remoteDataSource.sharePost(postId);
   }
 
   @override
-  Future<Either<Failure, List<PostEntity>>> searchPosts({
+  Future<List<PostEntity>> searchPosts({
     required String query,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    try {
-      final posts = await _remoteDataSource.searchPosts(
-        query: query,
-        page: page,
-        limit: limit,
-      );
-      return Right(posts);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.searchPosts(
+      query: query,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   @override
-  Future<Either<Failure, List<PostEntity>>> getPostsByHashtag({
+  Future<List<PostEntity>> getPostsByHashtag({
     required String hashtag,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    try {
-      final posts = await _remoteDataSource.getPostsByHashtag(
-        hashtag: hashtag,
-        page: page,
-        limit: limit,
-      );
-      return Right(posts);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getPostsByHashtag(
+      hashtag: hashtag,
+      limit: limit,
+      offset: offset,
+    );
   }
 }

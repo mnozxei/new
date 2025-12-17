@@ -93,14 +93,14 @@ class TogglePostLike extends PostEvent {
 class LoadComments extends PostEvent {
   const LoadComments({
     required this.postId,
-    this.page = 1,
+    this.offset = 0,
   });
 
   final String postId;
-  final int page;
+  final int offset;
 
   @override
-  List<Object?> get props => [postId, page];
+  List<Object?> get props => [postId, offset];
 }
 
 class AddComment extends PostEvent {

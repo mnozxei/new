@@ -10,9 +10,7 @@ part 'notification_event.dart';
 part 'notification_state.dart';
 
 class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
-  NotificationBloc({required NotificationRepository notificationRepository})
-      : _notificationRepository = notificationRepository,
-        super(const NotificationInitial()) {
+  NotificationBloc({required this.repository}) : super(const NotificationInitial()) {
     on<LoadNotifications>(_onLoadNotifications);
     on<LoadMoreNotifications>(_onLoadMoreNotifications);
     on<LoadUnreadCount>(_onLoadUnreadCount);
@@ -30,8 +28,8 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
     on<UnreadCountUpdated>(_onUnreadCountUpdated);
   }
 
-  final NotificationRepository _notificationRepository;
-  int _currentPage = 1;
+  final NotificationRepository repository;
+  int _currentOffset = 0;
   static const int _pageSize = 20;
   StreamSubscription<List<NotificationEntity>>? _notificationsSubscription;
   StreamSubscription<int>? _unreadCountSubscription;
@@ -45,168 +43,160 @@ class NotificationBloc extends Bloc<NotificationEvent, NotificationState> {
 
   Future<void> _onLoadNotifications(LoadNotifications event, Emitter<NotificationState> emit) async {
     emit(const NotificationLoading());
-    _currentPage = 1;
+    _currentOffset = 0;
 
-    final result = await _notificationRepository.getNotifications(
-      page: _currentPage,
-      limit: _pageSize,
-      type: event.type,
-    );
-
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (notifications) => emit(NotificationsLoaded(
+    try {
+      final notifications = await repository.getNotifications(
+        limit: _pageSize,
+        offset: _currentOffset,
+        type: event.type,
+      );
+      emit(NotificationsLoaded(
         notifications: notifications,
         hasMore: notifications.length >= _pageSize,
-      )),
-    );
+      ));
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadMoreNotifications(LoadMoreNotifications event, Emitter<NotificationState> emit) async {
     final currentState = state;
     if (currentState is! NotificationsLoaded || !currentState.hasMore) return;
 
-    _currentPage++;
-    final result = await _notificationRepository.getNotifications(
-      page: _currentPage,
-      limit: _pageSize,
-      type: event.type,
-    );
-
-    result.fold(
-      (failure) {
-        _currentPage--;
-        emit(NotificationError(message: failure.message));
-      },
-      (notifications) => emit(NotificationsLoaded(
+    _currentOffset += _pageSize;
+    try {
+      final notifications = await repository.getNotifications(
+        limit: _pageSize,
+        offset: _currentOffset,
+        type: event.type,
+      );
+      emit(NotificationsLoaded(
         notifications: [...currentState.notifications, ...notifications],
         hasMore: notifications.length >= _pageSize,
-      )),
-    );
+      ));
+    } catch (e) {
+      _currentOffset -= _pageSize;
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadUnreadCount(LoadUnreadCount event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.getUnreadCount();
-
-    result.fold(
-      (failure) => null,
-      (count) => emit(UnreadCountLoaded(count: count)),
-    );
+    try {
+      final count = await repository.getUnreadCount();
+      emit(UnreadCountLoaded(count: count));
+    } catch (_) {
+      // Silently fail
+    }
   }
 
   Future<void> _onMarkNotificationAsRead(MarkNotificationAsRead event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.markAsRead(event.notificationId);
+    try {
+      await repository.markAsRead(event.notificationId);
+      final currentState = state;
+      if (currentState is NotificationsLoaded) {
+        final updatedNotifications = currentState.notifications.map((n) {
+          if (n.id == event.notificationId) {
+            return n.copyWith(isRead: true, readAt: DateTime.now());
+          }
+          return n;
+        }).toList();
 
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (_) {
-        final currentState = state;
-        if (currentState is NotificationsLoaded) {
-          final updatedNotifications = currentState.notifications.map((n) {
-            if (n.id == event.notificationId) {
-              return n.copyWith(isRead: true, readAt: DateTime.now());
-            }
-            return n;
-          }).toList();
-
-          emit(NotificationsLoaded(
-            notifications: updatedNotifications,
-            hasMore: currentState.hasMore,
-          ));
-        }
-      },
-    );
+        emit(NotificationsLoaded(
+          notifications: updatedNotifications,
+          hasMore: currentState.hasMore,
+        ));
+      }
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onMarkAllNotificationsAsRead(MarkAllNotificationsAsRead event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.markAllAsRead();
+    try {
+      await repository.markAllAsRead();
+      final currentState = state;
+      if (currentState is NotificationsLoaded) {
+        final updatedNotifications = currentState.notifications.map((n) {
+          return n.copyWith(isRead: true, readAt: DateTime.now());
+        }).toList();
 
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (_) {
-        final currentState = state;
-        if (currentState is NotificationsLoaded) {
-          final updatedNotifications = currentState.notifications.map((n) {
-            return n.copyWith(isRead: true, readAt: DateTime.now());
-          }).toList();
-
-          emit(NotificationsLoaded(
-            notifications: updatedNotifications,
-            hasMore: currentState.hasMore,
-          ));
-        }
-        emit(const AllNotificationsMarkedAsRead());
-      },
-    );
+        emit(NotificationsLoaded(
+          notifications: updatedNotifications,
+          hasMore: currentState.hasMore,
+        ));
+      }
+      emit(const AllNotificationsMarkedAsRead());
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onDeleteNotification(DeleteNotification event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.deleteNotification(event.notificationId);
+    try {
+      await repository.deleteNotification(event.notificationId);
+      final currentState = state;
+      if (currentState is NotificationsLoaded) {
+        final updatedNotifications = currentState.notifications
+            .where((n) => n.id != event.notificationId)
+            .toList();
 
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (_) {
-        final currentState = state;
-        if (currentState is NotificationsLoaded) {
-          final updatedNotifications = currentState.notifications
-              .where((n) => n.id != event.notificationId)
-              .toList();
-
-          emit(NotificationsLoaded(
-            notifications: updatedNotifications,
-            hasMore: currentState.hasMore,
-          ));
-        }
-        emit(NotificationDeleted(notificationId: event.notificationId));
-      },
-    );
+        emit(NotificationsLoaded(
+          notifications: updatedNotifications,
+          hasMore: currentState.hasMore,
+        ));
+      }
+      emit(NotificationDeleted(notificationId: event.notificationId));
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onClearAllNotifications(ClearAllNotifications event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.clearAllNotifications();
-
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (_) => emit(const NotificationsCleared()),
-    );
+    try {
+      await repository.clearAllNotifications();
+      emit(const NotificationsCleared());
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onLoadNotificationSettings(LoadNotificationSettings event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.getSettings();
-
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (settings) => emit(NotificationSettingsLoaded(settings: settings)),
-    );
+    try {
+      final settings = await repository.getSettings();
+      emit(NotificationSettingsLoaded(settings: settings));
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onUpdateNotificationSettings(UpdateNotificationSettings event, Emitter<NotificationState> emit) async {
-    final result = await _notificationRepository.updateSettings(event.settings);
-
-    result.fold(
-      (failure) => emit(NotificationError(message: failure.message)),
-      (settings) => emit(NotificationSettingsUpdated(settings: settings)),
-    );
+    try {
+      final settings = await repository.updateSettings(event.settings);
+      emit(NotificationSettingsUpdated(settings: settings));
+    } catch (e) {
+      emit(NotificationError(message: e.toString()));
+    }
   }
 
   Future<void> _onRegisterDeviceToken(RegisterDeviceToken event, Emitter<NotificationState> emit) async {
-    await _notificationRepository.registerDeviceToken(event.token);
+    await repository.registerDeviceToken(event.token);
   }
 
   Future<void> _onUnregisterDeviceToken(UnregisterDeviceToken event, Emitter<NotificationState> emit) async {
-    await _notificationRepository.unregisterDeviceToken(event.token);
+    await repository.unregisterDeviceToken(event.token);
   }
 
   void _onWatchNotifications(WatchNotifications event, Emitter<NotificationState> emit) {
     _notificationsSubscription?.cancel();
-    _notificationsSubscription = _notificationRepository.watchNotifications().listen(
+    _notificationsSubscription = repository.watchNotifications().listen(
       (notifications) => add(NotificationsUpdated(notifications: notifications)),
     );
   }
 
   void _onWatchUnreadCount(WatchUnreadCount event, Emitter<NotificationState> emit) {
     _unreadCountSubscription?.cancel();
-    _unreadCountSubscription = _notificationRepository.watchUnreadCount().listen(
+    _unreadCountSubscription = repository.watchUnreadCount().listen(
       (count) => add(UnreadCountUpdated(count: count)),
     );
   }

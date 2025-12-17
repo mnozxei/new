@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/notification_entity.dart';
 
 abstract class NotificationRemoteDataSource {
-  Future<List<NotificationEntity>> getNotifications({int page = 1, int limit = 20, NotificationType? type});
+  Future<List<NotificationEntity>> getNotifications({int limit = 20, int offset = 0, String? type});
   Future<int> getUnreadCount();
   Future<void> markAsRead(String notificationId);
   Future<void> markAllAsRead();
@@ -28,19 +28,17 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
 
   @override
   Future<List<NotificationEntity>> getNotifications({
-    int page = 1,
     int limit = 20,
-    NotificationType? type,
+    int offset = 0,
+    String? type,
   }) async {
-    final offset = (page - 1) * limit;
-
     var query = _supabase
         .from('notifications')
         .select()
         .eq('user_id', _currentUserId);
 
     if (type != null) {
-      query = query.eq('type', type.value);
+      query = query.eq('type', type);
     }
 
     final response = await query

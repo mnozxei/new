@@ -1,30 +1,59 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/entities/course_entity.dart';
+import '../../domain/repositories/course_repository.dart';
 
 abstract class CourseRemoteDataSource {
-  Future<List<CourseEntity>> getCourses({int page = 1, int limit = 20, String? category, CourseLevel? level});
+  Future<List<CourseEntity>> getCourses({
+    String? category,
+    CourseLevel? level,
+    bool? isFree,
+    String? searchQuery,
+    int limit = 20,
+    int offset = 0,
+  });
   Future<List<CourseEntity>> getFeaturedCourses({int limit = 10});
-  Future<List<CourseEntity>> searchCourses({required String query, int page = 1, int limit = 20});
-  Future<CourseEntity> getCourseById(String courseId);
-  Future<CourseEntity> createCourse({required String title, required String description, required double price, String? category, CourseLevel? level, String? thumbnailUrl});
-  Future<CourseEntity> updateCourse({required String courseId, String? title, String? description, double? price, String? category, CourseLevel? level, String? thumbnailUrl, bool? isPublished});
-  Future<void> deleteCourse(String courseId);
-  Future<List<CourseSectionEntity>> getCourseSections(String courseId);
-  Future<CourseSectionEntity> createSection({required String courseId, required String title, int? orderIndex});
-  Future<CourseSectionEntity> updateSection({required String sectionId, String? title, int? orderIndex});
+  Future<CourseEntity?> getCourseById(String id);
+  Future<CourseEntity?> getCourseWithContent(String id);
+  Future<List<CourseEntity>> getInstructorCourses(String instructorId);
+  Future<List<CourseEntity>> getMyCourses();
+  Future<CourseEntity> createCourse(CreateCourseParams params);
+  Future<CourseEntity> updateCourse(String id, UpdateCourseParams params);
+  Future<void> deleteCourse(String id);
+  Future<CourseEntity> togglePublish(String id);
+  Future<String> uploadThumbnail(String courseId, File file);
+  Future<CourseSectionEntity> createSection(CreateSectionParams params);
+  Future<CourseSectionEntity> updateSection(String sectionId, UpdateSectionParams params);
   Future<void> deleteSection(String sectionId);
-  Future<List<LessonEntity>> getLessons(String sectionId);
-  Future<LessonEntity> createLesson({required String sectionId, required String title, required LessonType type, String? content, String? videoUrl, int? durationMinutes, int? orderIndex});
-  Future<LessonEntity> updateLesson({required String lessonId, String? title, LessonType? type, String? content, String? videoUrl, int? durationMinutes, int? orderIndex});
+  Future<void> reorderSections(String courseId, List<String> sectionIds);
+  Future<LessonEntity> createLesson(CreateLessonParams params);
+  Future<LessonEntity> updateLesson(String lessonId, UpdateLessonParams params);
   Future<void> deleteLesson(String lessonId);
-  Future<EnrollmentEntity> enrollInCourse(String courseId);
-  Future<List<EnrollmentEntity>> getMyEnrollments({int page = 1, int limit = 20});
-  Future<EnrollmentEntity> getEnrollment(String courseId);
-  Future<void> updateProgress({required String enrollmentId, required String lessonId, bool completed = true});
-  Future<List<EnrollmentEntity>> getCourseStudents({required String courseId, int page = 1, int limit = 20});
-  Future<List<CourseEntity>> getInstructorCourses({int page = 1, int limit = 20});
-  Future<void> rateCourse({required String courseId, required int rating, String? review});
+  Future<void> reorderLessons(String sectionId, List<String> lessonIds);
+  Future<bool> isEnrolled(String courseId);
+  Future<EnrollmentEntity?> getEnrollment(String courseId);
+  Future<List<EnrollmentEntity>> getMyEnrollments({
+    EnrollmentStatus? status,
+    int limit = 20,
+    int offset = 0,
+  });
+  Future<EnrollmentEntity> enrollInCourse(String courseId, {String? paymentId});
+  Future<LessonProgressEntity> updateLessonProgress(
+    String lessonId, {
+    int? watchTimeSeconds,
+    int? lastPositionSeconds,
+    bool? isCompleted,
+  });
+  Future<LessonProgressEntity?> getLessonProgress(String lessonId);
+  Future<void> markLessonComplete(String lessonId);
+  Future<List<CourseReviewEntity>> getCourseReviews(String courseId, {int limit = 20, int offset = 0});
+  Future<CourseReviewEntity> addReview(AddReviewParams params);
+  Future<CourseReviewEntity> updateReview(String reviewId, int rating, {String? comment});
+  Future<void> deleteReview(String reviewId);
+  Future<InstructorStats> getInstructorStats();
+  Future<CourseStats> getCourseStats(String courseId);
 }
 
 class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
@@ -36,29 +65,32 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
 
   @override
   Future<List<CourseEntity>> getCourses({
-    int page = 1,
-    int limit = 20,
     String? category,
     CourseLevel? level,
+    bool? isFree,
+    String? searchQuery,
+    int limit = 20,
+    int offset = 0,
   }) async {
-    final offset = (page - 1) * limit;
-
     var query = _supabase
         .from('courses')
         .select('''
           *,
-          instructor:profiles!instructor_id(*),
-          sections:course_sections(count),
-          enrollments:enrollments(count)
+          instructor:profiles!instructor_id(*)
         ''')
         .eq('is_published', true);
 
     if (category != null) {
       query = query.eq('category', category);
     }
-
     if (level != null) {
       query = query.eq('level', level.value);
+    }
+    if (isFree != null) {
+      query = query.eq('is_free', isFree);
+    }
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      query = query.or('title.ilike.%$searchQuery%,description.ilike.%$searchQuery%');
     }
 
     final response = await query
@@ -74,9 +106,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .from('courses')
         .select('''
           *,
-          instructor:profiles!instructor_id(*),
-          sections:course_sections(count),
-          enrollments:enrollments(count)
+          instructor:profiles!instructor_id(*)
         ''')
         .eq('is_published', true)
         .eq('is_featured', true)
@@ -87,31 +117,22 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<List<CourseEntity>> searchCourses({
-    required String query,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    final offset = (page - 1) * limit;
-
+  Future<CourseEntity?> getCourseById(String id) async {
     final response = await _supabase
         .from('courses')
         .select('''
           *,
-          instructor:profiles!instructor_id(*),
-          sections:course_sections(count),
-          enrollments:enrollments(count)
+          instructor:profiles!instructor_id(*)
         ''')
-        .eq('is_published', true)
-        .or('title.ilike.%$query%,description.ilike.%$query%')
-        .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
+        .eq('id', id)
+        .maybeSingle();
 
-    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+    if (response == null) return null;
+    return _mapCourseFromJson(response);
   }
 
   @override
-  Future<CourseEntity> getCourseById(String courseId) async {
+  Future<CourseEntity?> getCourseWithContent(String id) async {
     final response = await _supabase
         .from('courses')
         .select('''
@@ -120,41 +141,105 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
           sections:course_sections(
             *,
             lessons:lessons(*)
-          ),
-          enrollments:enrollments(count)
+          )
         ''')
-        .eq('id', courseId)
+        .eq('id', id)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapCourseFromJson(response);
+  }
+
+  @override
+  Future<List<CourseEntity>> getInstructorCourses(String instructorId) async {
+    final response = await _supabase
+        .from('courses')
+        .select('''
+          *,
+          instructor:profiles!instructor_id(*)
+        ''')
+        .eq('instructor_id', instructorId)
+        .eq('is_published', true)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+  }
+
+  @override
+  Future<List<CourseEntity>> getMyCourses() async {
+    final response = await _supabase
+        .from('courses')
+        .select('''
+          *,
+          instructor:profiles!instructor_id(*)
+        ''')
+        .eq('instructor_id', _currentUserId)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+  }
+
+  @override
+  Future<CourseEntity> createCourse(CreateCourseParams params) async {
+    final now = DateTime.now();
+    final data = params.toJson();
+    data['instructor_id'] = _currentUserId;
+    data['is_published'] = false;
+    data['created_at'] = now.toIso8601String();
+    data['updated_at'] = now.toIso8601String();
+
+    final response = await _supabase
+        .from('courses')
+        .insert(data)
+        .select('''
+          *,
+          instructor:profiles!instructor_id(*)
+        ''')
         .single();
 
     return _mapCourseFromJson(response);
   }
 
   @override
-  Future<CourseEntity> createCourse({
-    required String title,
-    required String description,
-    required double price,
-    String? category,
-    CourseLevel? level,
-    String? thumbnailUrl,
-  }) async {
+  Future<CourseEntity> updateCourse(String id, UpdateCourseParams params) async {
+    final data = params.toJson();
+    data['updated_at'] = DateTime.now().toIso8601String();
+
     final response = await _supabase
         .from('courses')
-        .insert({
-          'instructor_id': _currentUserId,
-          'title': title,
-          'description': description,
-          'price': price,
-          'category': category,
-          'level': level?.value ?? CourseLevel.beginner.value,
-          'thumbnail_url': thumbnailUrl,
-          'is_published': false,
+        .update(data)
+        .eq('id', id)
+        .select('''
+          *,
+          instructor:profiles!instructor_id(*)
+        ''')
+        .single();
+
+    return _mapCourseFromJson(response);
+  }
+
+  @override
+  Future<void> deleteCourse(String id) async {
+    await _supabase.from('courses').delete().eq('id', id);
+  }
+
+  @override
+  Future<CourseEntity> togglePublish(String id) async {
+    final current = await getCourseById(id);
+    if (current == null) {
+      throw Exception('Course not found');
+    }
+
+    final response = await _supabase
+        .from('courses')
+        .update({
+          'is_published': !current.isPublished,
+          'updated_at': DateTime.now().toIso8601String(),
         })
+        .eq('id', id)
         .select('''
           *,
-          instructor:profiles!instructor_id(*),
-          sections:course_sections(count),
-          enrollments:enrollments(count)
+          instructor:profiles!instructor_id(*)
         ''')
         .single();
 
@@ -162,74 +247,35 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<CourseEntity> updateCourse({
-    required String courseId,
-    String? title,
-    String? description,
-    double? price,
-    String? category,
-    CourseLevel? level,
-    String? thumbnailUrl,
-    bool? isPublished,
-  }) async {
-    final updateData = <String, dynamic>{
+  Future<String> uploadThumbnail(String courseId, File file) async {
+    final fileName = '${courseId}_thumbnail_${DateTime.now().millisecondsSinceEpoch}.${file.path.split('.').last}';
+    final path = 'courses/$courseId/$fileName';
+
+    await _supabase.storage.from('courses').upload(path, file);
+    final url = _supabase.storage.from('courses').getPublicUrl(path);
+
+    await _supabase.from('courses').update({
+      'thumbnail_url': url,
       'updated_at': DateTime.now().toIso8601String(),
-    };
+    }).eq('id', courseId);
 
-    if (title != null) updateData['title'] = title;
-    if (description != null) updateData['description'] = description;
-    if (price != null) updateData['price'] = price;
-    if (category != null) updateData['category'] = category;
-    if (level != null) updateData['level'] = level.value;
-    if (thumbnailUrl != null) updateData['thumbnail_url'] = thumbnailUrl;
-    if (isPublished != null) updateData['is_published'] = isPublished;
-
-    final response = await _supabase
-        .from('courses')
-        .update(updateData)
-        .eq('id', courseId)
-        .select('''
-          *,
-          instructor:profiles!instructor_id(*),
-          sections:course_sections(count),
-          enrollments:enrollments(count)
-        ''')
-        .single();
-
-    return _mapCourseFromJson(response);
+    return url;
   }
 
   @override
-  Future<void> deleteCourse(String courseId) async {
-    await _supabase.from('courses').delete().eq('id', courseId);
-  }
+  Future<CourseSectionEntity> createSection(CreateSectionParams params) async {
+    final orderIndex = await _getNextSectionOrder(params.courseId);
+    final now = DateTime.now();
 
-  @override
-  Future<List<CourseSectionEntity>> getCourseSections(String courseId) async {
-    final response = await _supabase
-        .from('course_sections')
-        .select('''
-          *,
-          lessons:lessons(*)
-        ''')
-        .eq('course_id', courseId)
-        .order('order_index');
-
-    return (response as List).map((json) => _mapSectionFromJson(json)).toList();
-  }
-
-  @override
-  Future<CourseSectionEntity> createSection({
-    required String courseId,
-    required String title,
-    int? orderIndex,
-  }) async {
     final response = await _supabase
         .from('course_sections')
         .insert({
-          'course_id': courseId,
-          'title': title,
-          'order_index': orderIndex ?? 0,
+          'course_id': params.courseId,
+          'title': params.title,
+          'description': params.description,
+          'order_index': orderIndex,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
         })
         .select()
         .single();
@@ -238,14 +284,12 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<CourseSectionEntity> updateSection({
-    required String sectionId,
-    String? title,
-    int? orderIndex,
-  }) async {
-    final updateData = <String, dynamic>{};
-    if (title != null) updateData['title'] = title;
-    if (orderIndex != null) updateData['order_index'] = orderIndex;
+  Future<CourseSectionEntity> updateSection(String sectionId, UpdateSectionParams params) async {
+    final updateData = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (params.title != null) updateData['title'] = params.title;
+    if (params.description != null) updateData['description'] = params.description;
 
     final response = await _supabase
         .from('course_sections')
@@ -263,36 +307,35 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<List<LessonEntity>> getLessons(String sectionId) async {
-    final response = await _supabase
-        .from('lessons')
-        .select()
-        .eq('section_id', sectionId)
-        .order('order_index');
-
-    return (response as List).map((json) => _mapLessonFromJson(json)).toList();
+  Future<void> reorderSections(String courseId, List<String> sectionIds) async {
+    for (int i = 0; i < sectionIds.length; i++) {
+      await _supabase
+          .from('course_sections')
+          .update({'order_index': i})
+          .eq('id', sectionIds[i]);
+    }
   }
 
   @override
-  Future<LessonEntity> createLesson({
-    required String sectionId,
-    required String title,
-    required LessonType type,
-    String? content,
-    String? videoUrl,
-    int? durationMinutes,
-    int? orderIndex,
-  }) async {
+  Future<LessonEntity> createLesson(CreateLessonParams params) async {
+    final orderIndex = await _getNextLessonOrder(params.sectionId);
+    final now = DateTime.now();
+
     final response = await _supabase
         .from('lessons')
         .insert({
-          'section_id': sectionId,
-          'title': title,
-          'type': type.value,
-          'content': content,
-          'video_url': videoUrl,
-          'duration_minutes': durationMinutes ?? 0,
-          'order_index': orderIndex ?? 0,
+          'section_id': params.sectionId,
+          'course_id': params.courseId,
+          'title': params.title,
+          'description': params.description,
+          'content_type': params.contentType,
+          'video_url': params.videoUrl,
+          'duration_seconds': params.durationSeconds,
+          'content': params.content,
+          'is_free_preview': params.isFreePreview,
+          'order_index': orderIndex,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
         })
         .select()
         .single();
@@ -301,22 +344,17 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<LessonEntity> updateLesson({
-    required String lessonId,
-    String? title,
-    LessonType? type,
-    String? content,
-    String? videoUrl,
-    int? durationMinutes,
-    int? orderIndex,
-  }) async {
-    final updateData = <String, dynamic>{};
-    if (title != null) updateData['title'] = title;
-    if (type != null) updateData['type'] = type.value;
-    if (content != null) updateData['content'] = content;
-    if (videoUrl != null) updateData['video_url'] = videoUrl;
-    if (durationMinutes != null) updateData['duration_minutes'] = durationMinutes;
-    if (orderIndex != null) updateData['order_index'] = orderIndex;
+  Future<LessonEntity> updateLesson(String lessonId, UpdateLessonParams params) async {
+    final updateData = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (params.title != null) updateData['title'] = params.title;
+    if (params.description != null) updateData['description'] = params.description;
+    if (params.contentType != null) updateData['content_type'] = params.contentType;
+    if (params.videoUrl != null) updateData['video_url'] = params.videoUrl;
+    if (params.durationSeconds != null) updateData['duration_seconds'] = params.durationSeconds;
+    if (params.content != null) updateData['content'] = params.content;
+    if (params.isFreePreview != null) updateData['is_free_preview'] = params.isFreePreview;
 
     final response = await _supabase
         .from('lessons')
@@ -334,14 +372,90 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<EnrollmentEntity> enrollInCourse(String courseId) async {
+  Future<void> reorderLessons(String sectionId, List<String> lessonIds) async {
+    for (int i = 0; i < lessonIds.length; i++) {
+      await _supabase
+          .from('lessons')
+          .update({'order_index': i})
+          .eq('id', lessonIds[i]);
+    }
+  }
+
+  @override
+  Future<bool> isEnrolled(String courseId) async {
+    final response = await _supabase
+        .from('enrollments')
+        .select('id')
+        .eq('course_id', courseId)
+        .eq('user_id', _currentUserId)
+        .maybeSingle();
+
+    return response != null;
+  }
+
+  @override
+  Future<EnrollmentEntity?> getEnrollment(String courseId) async {
+    final response = await _supabase
+        .from('enrollments')
+        .select('''
+          *,
+          course:courses(
+            *,
+            instructor:profiles!instructor_id(*)
+          )
+        ''')
+        .eq('course_id', courseId)
+        .eq('user_id', _currentUserId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapEnrollmentFromJson(response);
+  }
+
+  @override
+  Future<List<EnrollmentEntity>> getMyEnrollments({
+    EnrollmentStatus? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    var query = _supabase
+        .from('enrollments')
+        .select('''
+          *,
+          course:courses(
+            *,
+            instructor:profiles!instructor_id(*)
+          )
+        ''')
+        .eq('user_id', _currentUserId);
+
+    if (status != null) {
+      query = query.eq('status', status.value);
+    }
+
+    final response = await query
+        .order('enrolled_at', ascending: false)
+        .range(offset, offset + limit - 1);
+
+    return (response as List).map((json) => _mapEnrollmentFromJson(json)).toList();
+  }
+
+  @override
+  Future<EnrollmentEntity> enrollInCourse(String courseId, {String? paymentId}) async {
+    final course = await getCourseById(courseId);
+    final now = DateTime.now();
+
     final response = await _supabase
         .from('enrollments')
         .insert({
           'course_id': courseId,
           'user_id': _currentUserId,
           'status': EnrollmentStatus.active.value,
-          'progress_percentage': 0,
+          'progress_percent': 0,
+          'completed_lessons': [],
+          'enrolled_at': now.toIso8601String(),
+          'payment_id': paymentId,
+          'amount_paid': course?.price ?? 0,
         })
         .select('''
           *,
@@ -356,189 +470,344 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   }
 
   @override
-  Future<List<EnrollmentEntity>> getMyEnrollments({
-    int page = 1,
-    int limit = 20,
+  Future<LessonProgressEntity> updateLessonProgress(
+    String lessonId, {
+    int? watchTimeSeconds,
+    int? lastPositionSeconds,
+    bool? isCompleted,
   }) async {
-    final offset = (page - 1) * limit;
+    final lesson = await _supabase
+        .from('lessons')
+        .select('course_id')
+        .eq('id', lessonId)
+        .single();
 
-    final response = await _supabase
+    final enrollment = await _supabase
         .from('enrollments')
-        .select('''
-          *,
-          course:courses(
-            *,
-            instructor:profiles!instructor_id(*)
-          )
-        ''')
-        .eq('user_id', _currentUserId)
-        .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
-
-    return (response as List).map((json) => _mapEnrollmentFromJson(json)).toList();
-  }
-
-  @override
-  Future<EnrollmentEntity> getEnrollment(String courseId) async {
-    final response = await _supabase
-        .from('enrollments')
-        .select('''
-          *,
-          course:courses(
-            *,
-            instructor:profiles!instructor_id(*)
-          )
-        ''')
-        .eq('course_id', courseId)
+        .select('id')
+        .eq('course_id', lesson['course_id'])
         .eq('user_id', _currentUserId)
         .single();
 
-    return _mapEnrollmentFromJson(response);
+    final now = DateTime.now();
+    final existingProgress = await getLessonProgress(lessonId);
+
+    if (existingProgress != null) {
+      final updateData = <String, dynamic>{
+        'updated_at': now.toIso8601String(),
+      };
+      if (watchTimeSeconds != null) updateData['watch_time_seconds'] = watchTimeSeconds;
+      if (lastPositionSeconds != null) updateData['last_position_seconds'] = lastPositionSeconds;
+      if (isCompleted != null) {
+        updateData['is_completed'] = isCompleted;
+        if (isCompleted) updateData['completed_at'] = now.toIso8601String();
+      }
+
+      final response = await _supabase
+          .from('lesson_progress')
+          .update(updateData)
+          .eq('id', existingProgress.id)
+          .select()
+          .single();
+
+      return _mapLessonProgressFromJson(response);
+    } else {
+      final response = await _supabase
+          .from('lesson_progress')
+          .insert({
+            'enrollment_id': enrollment['id'],
+            'lesson_id': lessonId,
+            'user_id': _currentUserId,
+            'watch_time_seconds': watchTimeSeconds ?? 0,
+            'last_position_seconds': lastPositionSeconds ?? 0,
+            'is_completed': isCompleted ?? false,
+            'completed_at': isCompleted == true ? now.toIso8601String() : null,
+            'created_at': now.toIso8601String(),
+            'updated_at': now.toIso8601String(),
+          })
+          .select()
+          .single();
+
+      return _mapLessonProgressFromJson(response);
+    }
   }
 
   @override
-  Future<void> updateProgress({
-    required String enrollmentId,
-    required String lessonId,
-    bool completed = true,
-  }) async {
-    await _supabase.from('lesson_progress').upsert({
-      'enrollment_id': enrollmentId,
-      'lesson_id': lessonId,
-      'completed': completed,
-      'completed_at': completed ? DateTime.now().toIso8601String() : null,
-    });
-
-    await _supabase.rpc('update_enrollment_progress', params: {
-      'p_enrollment_id': enrollmentId,
-    });
-  }
-
-  @override
-  Future<List<EnrollmentEntity>> getCourseStudents({
-    required String courseId,
-    int page = 1,
-    int limit = 20,
-  }) async {
-    final offset = (page - 1) * limit;
-
+  Future<LessonProgressEntity?> getLessonProgress(String lessonId) async {
     final response = await _supabase
-        .from('enrollments')
+        .from('lesson_progress')
+        .select()
+        .eq('lesson_id', lessonId)
+        .eq('user_id', _currentUserId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapLessonProgressFromJson(response);
+  }
+
+  @override
+  Future<void> markLessonComplete(String lessonId) async {
+    await updateLessonProgress(lessonId, isCompleted: true);
+  }
+
+  @override
+  Future<List<CourseReviewEntity>> getCourseReviews(String courseId, {int limit = 20, int offset = 0}) async {
+    final response = await _supabase
+        .from('course_reviews')
         .select('''
           *,
           user:profiles!user_id(*)
         ''')
         .eq('course_id', courseId)
+        .eq('is_visible', true)
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapEnrollmentFromJson(json)).toList();
+    return (response as List).map((json) => _mapReviewFromJson(json)).toList();
   }
 
   @override
-  Future<List<CourseEntity>> getInstructorCourses({
-    int page = 1,
-    int limit = 20,
-  }) async {
-    final offset = (page - 1) * limit;
-
+  Future<CourseReviewEntity> addReview(AddReviewParams params) async {
+    final now = DateTime.now();
     final response = await _supabase
-        .from('courses')
+        .from('course_reviews')
+        .insert({
+          'course_id': params.courseId,
+          'user_id': _currentUserId,
+          'rating': params.rating,
+          'comment': params.comment,
+          'is_visible': true,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+        })
         .select('''
           *,
-          instructor:profiles!instructor_id(*),
-          sections:course_sections(count),
-          enrollments:enrollments(count)
+          user:profiles!user_id(*)
         ''')
-        .eq('instructor_id', _currentUserId)
-        .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
+        .single();
 
-    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+    return _mapReviewFromJson(response);
   }
 
   @override
-  Future<void> rateCourse({
-    required String courseId,
-    required int rating,
-    String? review,
-  }) async {
-    await _supabase.from('course_ratings').upsert({
-      'course_id': courseId,
-      'user_id': _currentUserId,
+  Future<CourseReviewEntity> updateReview(String reviewId, int rating, {String? comment}) async {
+    final updateData = <String, dynamic>{
       'rating': rating,
-      'review': review,
-    });
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (comment != null) updateData['comment'] = comment;
+
+    final response = await _supabase
+        .from('course_reviews')
+        .update(updateData)
+        .eq('id', reviewId)
+        .select('''
+          *,
+          user:profiles!user_id(*)
+        ''')
+        .single();
+
+    return _mapReviewFromJson(response);
+  }
+
+  @override
+  Future<void> deleteReview(String reviewId) async {
+    await _supabase.from('course_reviews').delete().eq('id', reviewId);
+  }
+
+  @override
+  Future<InstructorStats> getInstructorStats() async {
+    final coursesResponse = await _supabase
+        .from('courses')
+        .select('id, price')
+        .eq('instructor_id', _currentUserId);
+
+    final courses = coursesResponse as List;
+    final courseIds = courses.map((c) => c['id'] as String).toList();
+
+    if (courseIds.isEmpty) {
+      return const InstructorStats();
+    }
+
+    final enrollmentsResponse = await _supabase
+        .from('enrollments')
+        .select('amount_paid')
+        .inFilter('course_id', courseIds);
+
+    final enrollments = enrollmentsResponse as List;
+    final totalStudents = enrollments.length;
+    final totalRevenue = enrollments.fold<double>(0, (sum, e) => sum + ((e['amount_paid'] as num?)?.toDouble() ?? 0));
+
+    final reviewsResponse = await _supabase
+        .from('course_reviews')
+        .select('rating')
+        .inFilter('course_id', courseIds);
+
+    final reviews = reviewsResponse as List;
+    final totalReviews = reviews.length;
+    final averageRating = totalReviews > 0
+        ? reviews.fold<double>(0, (sum, r) => sum + (r['rating'] as int)) / totalReviews
+        : 0.0;
+
+    return InstructorStats(
+      totalCourses: courses.length,
+      totalStudents: totalStudents,
+      totalRevenue: totalRevenue,
+      averageRating: averageRating,
+      totalReviews: totalReviews,
+    );
+  }
+
+  @override
+  Future<CourseStats> getCourseStats(String courseId) async {
+    final enrollmentsResponse = await _supabase
+        .from('enrollments')
+        .select()
+        .eq('course_id', courseId);
+
+    final enrollments = enrollmentsResponse as List;
+    final totalEnrollments = enrollments.length;
+    final completions = enrollments.where((e) => e['status'] == 'completed').length;
+    final totalRevenue = enrollments.fold<double>(0, (sum, e) => sum + ((e['amount_paid'] as num?)?.toDouble() ?? 0));
+    final averageProgress = totalEnrollments > 0
+        ? enrollments.fold<double>(0, (sum, e) => sum + ((e['progress_percent'] as int?) ?? 0)) / totalEnrollments
+        : 0.0;
+
+    final reviewsResponse = await _supabase
+        .from('course_reviews')
+        .select('rating')
+        .eq('course_id', courseId);
+
+    final reviews = reviewsResponse as List;
+    final totalReviews = reviews.length;
+    final averageRating = totalReviews > 0
+        ? reviews.fold<double>(0, (sum, r) => sum + (r['rating'] as int)) / totalReviews
+        : 0.0;
+
+    return CourseStats(
+      enrollments: totalEnrollments,
+      completions: completions,
+      revenue: totalRevenue,
+      averageProgress: averageProgress,
+      averageRating: averageRating,
+      totalReviews: totalReviews,
+    );
+  }
+
+  Future<int> _getNextSectionOrder(String courseId) async {
+    final response = await _supabase
+        .from('course_sections')
+        .select('order_index')
+        .eq('course_id', courseId)
+        .order('order_index', ascending: false)
+        .limit(1);
+
+    if ((response as List).isEmpty) return 0;
+    return (response.first['order_index'] as int) + 1;
+  }
+
+  Future<int> _getNextLessonOrder(String sectionId) async {
+    final response = await _supabase
+        .from('lessons')
+        .select('order_index')
+        .eq('section_id', sectionId)
+        .order('order_index', ascending: false)
+        .limit(1);
+
+    if ((response as List).isEmpty) return 0;
+    return (response.first['order_index'] as int) + 1;
   }
 
   CourseEntity _mapCourseFromJson(Map<String, dynamic> json) {
-    final sectionsData = json['sections'];
-    int sectionsCount = 0;
-    List<CourseSectionEntity> sections = [];
+    final now = DateTime.now();
 
-    if (sectionsData is List) {
-      if (sectionsData.isNotEmpty && sectionsData.first is Map) {
-        sections = sectionsData.map((s) => _mapSectionFromJson(s as Map<String, dynamic>)).toList();
-        sectionsCount = sections.length;
-      } else if (sectionsData.isNotEmpty && sectionsData.first['count'] != null) {
-        sectionsCount = sectionsData.first['count'] as int;
-      }
+    InstructorInfo? instructor;
+    if (json['instructor'] != null) {
+      final i = json['instructor'] as Map<String, dynamic>;
+      instructor = InstructorInfo(
+        id: i['id'] as String? ?? '',
+        fullName: i['full_name'] as String? ?? '',
+        avatarUrl: i['avatar_url'] as String?,
+        headline: i['headline'] as String?,
+      );
     }
 
-    final enrollmentsData = json['enrollments'] as List? ?? [];
-    final enrollmentsCount = enrollmentsData.isNotEmpty
-        ? (enrollmentsData.first['count'] ?? 0) as int
-        : 0;
+    List<CourseSectionEntity>? sections;
+    if (json['sections'] != null) {
+      final sectionsData = json['sections'] as List;
+      sections = sectionsData.map((s) => _mapSectionFromJson(s as Map<String, dynamic>)).toList();
+    }
 
     return CourseEntity(
       id: json['id'] as String,
       instructorId: json['instructor_id'] as String,
       title: json['title'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String?,
+      shortDescription: json['short_description'] as String?,
       thumbnailUrl: json['thumbnail_url'] as String?,
-      price: (json['price'] as num).toDouble(),
-      discountPrice: json['discount_price'] != null ? (json['discount_price'] as num).toDouble() : null,
-      category: json['category'] as String?,
+      previewVideoUrl: json['preview_video_url'] as String?,
       level: CourseLevel.fromString(json['level'] as String? ?? 'beginner'),
-      durationMinutes: json['duration_minutes'] as int? ?? 0,
-      lessonsCount: json['lessons_count'] as int? ?? 0,
-      studentsCount: enrollmentsCount,
-      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      ratingsCount: json['ratings_count'] as int? ?? 0,
+      category: json['category'] as String?,
+      subcategory: json['subcategory'] as String?,
+      language: json['language'] as String? ?? 'ar',
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      currency: json['currency'] as String? ?? 'SAR',
+      isFree: json['is_free'] as bool? ?? false,
       isPublished: json['is_published'] as bool? ?? false,
       isFeatured: json['is_featured'] as bool? ?? false,
-      instructorName: json['instructor']?['full_name'] as String?,
-      instructorAvatar: json['instructor']?['avatar_url'] as String?,
+      durationMinutes: json['duration_minutes'] as int? ?? 0,
+      lessonCount: json['lesson_count'] as int? ?? 0,
+      enrollmentCount: json['enrollment_count'] as int? ?? 0,
+      ratingAverage: (json['rating_average'] as num?)?.toDouble() ?? 0,
+      ratingCount: json['rating_count'] as int? ?? 0,
+      requirements: List<String>.from(json['requirements'] ?? []),
+      objectives: List<String>.from(json['objectives'] ?? []),
+      tags: List<String>.from(json['tags'] ?? []),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
+      instructor: instructor,
       sections: sections,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : null,
     );
   }
 
   CourseSectionEntity _mapSectionFromJson(Map<String, dynamic> json) {
-    final lessonsData = json['lessons'] as List? ?? [];
-    final lessons = lessonsData.map((l) => _mapLessonFromJson(l as Map<String, dynamic>)).toList();
+    final now = DateTime.now();
+
+    List<LessonEntity> lessons = [];
+    if (json['lessons'] != null) {
+      final lessonsData = json['lessons'] as List;
+      lessons = lessonsData.map((l) => _mapLessonFromJson(l as Map<String, dynamic>)).toList();
+    }
 
     return CourseSectionEntity(
       id: json['id'] as String,
       courseId: json['course_id'] as String,
       title: json['title'] as String,
+      description: json['description'] as String?,
       orderIndex: json['order_index'] as int? ?? 0,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
       lessons: lessons,
     );
   }
 
   LessonEntity _mapLessonFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
     return LessonEntity(
       id: json['id'] as String,
       sectionId: json['section_id'] as String,
+      courseId: json['course_id'] as String,
       title: json['title'] as String,
-      type: LessonType.fromString(json['type'] as String? ?? 'video'),
-      content: json['content'] as String?,
+      description: json['description'] as String?,
+      contentType: json['content_type'] as String? ?? 'video',
       videoUrl: json['video_url'] as String?,
-      durationMinutes: json['duration_minutes'] as int? ?? 0,
+      durationSeconds: json['duration_seconds'] as int? ?? 0,
+      content: json['content'] as String?,
+      isFreePreview: json['is_free_preview'] as bool? ?? false,
       orderIndex: json['order_index'] as int? ?? 0,
-      isFree: json['is_free'] as bool? ?? false,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
     );
   }
 
@@ -553,12 +822,58 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
       courseId: json['course_id'] as String,
       userId: json['user_id'] as String,
       status: EnrollmentStatus.fromString(json['status'] as String? ?? 'active'),
-      progressPercentage: json['progress_percentage'] as int? ?? 0,
+      progressPercent: json['progress_percent'] as int? ?? 0,
+      completedLessons: List<String>.from(json['completed_lessons'] ?? []),
       currentLessonId: json['current_lesson_id'] as String?,
-      completedLessonsIds: List<String>.from(json['completed_lessons_ids'] ?? []),
-      course: course,
-      enrolledAt: DateTime.parse(json['created_at'] as String),
+      enrolledAt: DateTime.parse(json['enrolled_at'] as String),
       completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
+      certificateUrl: json['certificate_url'] as String?,
+      paymentId: json['payment_id'] as String?,
+      amountPaid: (json['amount_paid'] as num?)?.toDouble() ?? 0,
+      course: course,
+    );
+  }
+
+  LessonProgressEntity _mapLessonProgressFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    return LessonProgressEntity(
+      id: json['id'] as String,
+      enrollmentId: json['enrollment_id'] as String,
+      lessonId: json['lesson_id'] as String,
+      userId: json['user_id'] as String,
+      isCompleted: json['is_completed'] as bool? ?? false,
+      watchTimeSeconds: json['watch_time_seconds'] as int? ?? 0,
+      lastPositionSeconds: json['last_position_seconds'] as int? ?? 0,
+      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
+    );
+  }
+
+  CourseReviewEntity _mapReviewFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    ReviewUserInfo? user;
+    if (json['user'] != null) {
+      final u = json['user'] as Map<String, dynamic>;
+      user = ReviewUserInfo(
+        id: u['id'] as String? ?? '',
+        fullName: u['full_name'] as String? ?? '',
+        avatarUrl: u['avatar_url'] as String?,
+      );
+    }
+
+    return CourseReviewEntity(
+      id: json['id'] as String,
+      courseId: json['course_id'] as String,
+      userId: json['user_id'] as String,
+      rating: json['rating'] as int,
+      comment: json['comment'] as String?,
+      isVisible: json['is_visible'] as bool? ?? true,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
+      user: user,
     );
   }
 }

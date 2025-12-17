@@ -3,22 +3,33 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/post_entity.dart';
 
 abstract class PostRemoteDataSource {
-  Future<List<PostEntity>> getFeed({int page = 1, int limit = 20});
-  Future<List<PostEntity>> getUserPosts({required String userId, int page = 1, int limit = 20});
-  Future<List<PostEntity>> getCompanyPosts({required String companyId, int page = 1, int limit = 20});
-  Future<PostEntity> getPostById(String postId);
-  Future<PostEntity> createPost({required String content, List<String>? mediaUrls, String? companyId});
-  Future<PostEntity> updatePost({required String postId, required String content, List<String>? mediaUrls});
+  Future<List<PostEntity>> getFeed({int limit = 20, int offset = 0});
+  Future<List<PostEntity>> getUserPosts({required String userId, int limit = 20, int offset = 0});
+  Future<List<PostEntity>> getCompanyPosts({required String companyId, int limit = 20, int offset = 0});
+  Future<PostEntity?> getPostById(String postId);
+  Future<PostEntity> createPost({
+    required String content,
+    List<String>? mediaUrls,
+    List<String>? mediaTypes,
+    String? companyId,
+    String visibility = 'public',
+  });
+  Future<PostEntity> updatePost({
+    required String postId,
+    required String content,
+    List<String>? mediaUrls,
+    List<String>? mediaTypes,
+  });
   Future<void> deletePost(String postId);
   Future<PostEntity> toggleLike(String postId);
-  Future<List<CommentEntity>> getComments({required String postId, int page = 1, int limit = 20});
+  Future<List<CommentEntity>> getComments({required String postId, int limit = 20, int offset = 0});
   Future<CommentEntity> addComment({required String postId, required String content, String? parentId});
   Future<CommentEntity> updateComment({required String commentId, required String content});
   Future<void> deleteComment(String commentId);
   Future<CommentEntity> toggleCommentLike(String commentId);
   Future<void> sharePost(String postId);
-  Future<List<PostEntity>> searchPosts({required String query, int page = 1, int limit = 20});
-  Future<List<PostEntity>> getPostsByHashtag({required String hashtag, int page = 1, int limit = 20});
+  Future<List<PostEntity>> searchPosts({required String query, int limit = 20, int offset = 0});
+  Future<List<PostEntity>> getPostsByHashtag({required String hashtag, int limit = 20, int offset = 0});
 }
 
 class PostRemoteDataSourceImpl implements PostRemoteDataSource {
@@ -29,9 +40,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   String get _currentUserId => _supabase.auth.currentUser!.id;
 
   @override
-  Future<List<PostEntity>> getFeed({int page = 1, int limit = 20}) async {
-    final offset = (page - 1) * limit;
-
+  Future<List<PostEntity>> getFeed({int limit = 20, int offset = 0}) async {
     final response = await _supabase
         .from('posts')
         .select('''
@@ -48,9 +57,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   }
 
   @override
-  Future<List<PostEntity>> getUserPosts({required String userId, int page = 1, int limit = 20}) async {
-    final offset = (page - 1) * limit;
-
+  Future<List<PostEntity>> getUserPosts({required String userId, int limit = 20, int offset = 0}) async {
     final response = await _supabase
         .from('posts')
         .select('''
@@ -69,9 +76,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   }
 
   @override
-  Future<List<PostEntity>> getCompanyPosts({required String companyId, int page = 1, int limit = 20}) async {
-    final offset = (page - 1) * limit;
-
+  Future<List<PostEntity>> getCompanyPosts({required String companyId, int limit = 20, int offset = 0}) async {
     final response = await _supabase
         .from('posts')
         .select('''
@@ -89,7 +94,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   }
 
   @override
-  Future<PostEntity> getPostById(String postId) async {
+  Future<PostEntity?> getPostById(String postId) async {
     final response = await _supabase
         .from('posts')
         .select('''
@@ -100,8 +105,9 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
           comments:post_comments(count)
         ''')
         .eq('id', postId)
-        .single();
+        .maybeSingle();
 
+    if (response == null) return null;
     return _mapPostFromJson(response);
   }
 
@@ -109,7 +115,9 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   Future<PostEntity> createPost({
     required String content,
     List<String>? mediaUrls,
+    List<String>? mediaTypes,
     String? companyId,
+    String visibility = 'public',
   }) async {
     final hashtags = _extractHashtags(content);
 
@@ -120,7 +128,9 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
           'company_id': companyId,
           'content': content,
           'media_urls': mediaUrls ?? [],
+          if (mediaTypes != null) 'media_types': mediaTypes,
           'hashtags': hashtags,
+          'visibility': visibility,
         })
         .select('''
           *,
@@ -139,6 +149,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     required String postId,
     required String content,
     List<String>? mediaUrls,
+    List<String>? mediaTypes,
   }) async {
     final hashtags = _extractHashtags(content);
 
@@ -150,6 +161,9 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
 
     if (mediaUrls != null) {
       updateData['media_urls'] = mediaUrls;
+    }
+    if (mediaTypes != null) {
+      updateData['media_types'] = mediaTypes;
     }
 
     final response = await _supabase
@@ -195,17 +209,19 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       });
     }
 
-    return getPostById(postId);
+    final post = await getPostById(postId);
+    if (post == null) {
+      throw Exception('Post not found');
+    }
+    return post;
   }
 
   @override
   Future<List<CommentEntity>> getComments({
     required String postId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    final offset = (page - 1) * limit;
-
     final response = await _supabase
         .from('post_comments')
         .select('''
@@ -309,19 +325,15 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
 
   @override
   Future<void> sharePost(String postId) async {
-    await _supabase.from('posts').update({
-      'shares_count': _supabase.rpc('increment_shares', params: {'post_id': postId}),
-    }).eq('id', postId);
+    await _supabase.rpc('increment_post_shares', params: {'p_post_id': postId});
   }
 
   @override
   Future<List<PostEntity>> searchPosts({
     required String query,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    final offset = (page - 1) * limit;
-
     final response = await _supabase
         .from('posts')
         .select('''
@@ -341,11 +353,9 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
   @override
   Future<List<PostEntity>> getPostsByHashtag({
     required String hashtag,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    final offset = (page - 1) * limit;
-
     final response = await _supabase
         .from('posts')
         .select('''
@@ -379,11 +389,12 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       companyId: json['company_id'] as String?,
       content: json['content'] as String,
       mediaUrls: List<String>.from(json['media_urls'] ?? []),
-      hashtags: List<String>.from(json['hashtags'] ?? []),
-      likesCount: likes.length,
-      commentsCount: commentsCount,
-      sharesCount: json['shares_count'] as int? ?? 0,
-      isLikedByCurrentUser: likedByCurrentUser,
+      mediaTypes: json['media_types'] != null ? List<String>.from(json['media_types']) : null,
+      visibility: json['visibility'] as String? ?? 'public',
+      likeCount: likes.length,
+      commentCount: commentsCount,
+      shareCount: json['share_count'] as int? ?? 0,
+      isLiked: likedByCurrentUser,
       authorName: json['author']?['full_name'] as String?,
       authorAvatar: json['author']?['avatar_url'] as String?,
       companyName: json['company']?['name'] as String?,
@@ -403,8 +414,8 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       userId: json['user_id'] as String,
       parentId: json['parent_id'] as String?,
       content: json['content'] as String,
-      likesCount: likes.length,
-      isLikedByCurrentUser: likedByCurrentUser,
+      likeCount: likes.length,
+      isLiked: likedByCurrentUser,
       authorName: json['author']?['full_name'] as String?,
       authorAvatar: json['author']?['avatar_url'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),

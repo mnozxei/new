@@ -8,23 +8,27 @@ abstract class CourseEvent extends Equatable {
 }
 
 class LoadCourses extends CourseEvent {
-  const LoadCourses({this.category, this.level});
+  const LoadCourses({this.category, this.level, this.isFree, this.searchQuery});
 
   final String? category;
   final CourseLevel? level;
+  final bool? isFree;
+  final String? searchQuery;
 
   @override
-  List<Object?> get props => [category, level];
+  List<Object?> get props => [category, level, isFree, searchQuery];
 }
 
 class LoadMoreCourses extends CourseEvent {
-  const LoadMoreCourses({this.category, this.level});
+  const LoadMoreCourses({this.category, this.level, this.isFree, this.searchQuery});
 
   final String? category;
   final CourseLevel? level;
+  final bool? isFree;
+  final String? searchQuery;
 
   @override
-  List<Object?> get props => [category, level];
+  List<Object?> get props => [category, level, isFree, searchQuery];
 }
 
 class LoadFeaturedCourses extends CourseEvent {
@@ -55,49 +59,22 @@ class LoadCourseDetails extends CourseEvent {
 }
 
 class CreateCourse extends CourseEvent {
-  const CreateCourse({
-    required this.title,
-    required this.description,
-    required this.price,
-    this.category,
-    this.level,
-    this.thumbnailUrl,
-  });
+  const CreateCourse({required this.params});
 
-  final String title;
-  final String description;
-  final double price;
-  final String? category;
-  final CourseLevel? level;
-  final String? thumbnailUrl;
+  final CreateCourseParams params;
 
   @override
-  List<Object?> get props => [title, description, price, category, level, thumbnailUrl];
+  List<Object?> get props => [params];
 }
 
 class UpdateCourse extends CourseEvent {
-  const UpdateCourse({
-    required this.courseId,
-    this.title,
-    this.description,
-    this.price,
-    this.category,
-    this.level,
-    this.thumbnailUrl,
-    this.isPublished,
-  });
+  const UpdateCourse({required this.courseId, required this.params});
 
   final String courseId;
-  final String? title;
-  final String? description;
-  final double? price;
-  final String? category;
-  final CourseLevel? level;
-  final String? thumbnailUrl;
-  final bool? isPublished;
+  final UpdateCourseParams params;
 
   @override
-  List<Object?> get props => [courseId, title, description, price, category, level, thumbnailUrl, isPublished];
+  List<Object?> get props => [courseId, params];
 }
 
 class DeleteCourse extends CourseEvent {
@@ -119,33 +96,22 @@ class PublishCourse extends CourseEvent {
 }
 
 class CreateSection extends CourseEvent {
-  const CreateSection({
-    required this.courseId,
-    required this.title,
-    this.orderIndex,
-  });
+  const CreateSection({required this.params});
 
-  final String courseId;
-  final String title;
-  final int? orderIndex;
+  final CreateSectionParams params;
 
   @override
-  List<Object?> get props => [courseId, title, orderIndex];
+  List<Object?> get props => [params];
 }
 
 class UpdateSection extends CourseEvent {
-  const UpdateSection({
-    required this.sectionId,
-    this.title,
-    this.orderIndex,
-  });
+  const UpdateSection({required this.sectionId, required this.params});
 
   final String sectionId;
-  final String? title;
-  final int? orderIndex;
+  final UpdateSectionParams params;
 
   @override
-  List<Object?> get props => [sectionId, title, orderIndex];
+  List<Object?> get props => [sectionId, params];
 }
 
 class DeleteSection extends CourseEvent {
@@ -158,49 +124,22 @@ class DeleteSection extends CourseEvent {
 }
 
 class CreateLesson extends CourseEvent {
-  const CreateLesson({
-    required this.sectionId,
-    required this.title,
-    required this.type,
-    this.content,
-    this.videoUrl,
-    this.durationMinutes,
-    this.orderIndex,
-  });
+  const CreateLesson({required this.params});
 
-  final String sectionId;
-  final String title;
-  final LessonType type;
-  final String? content;
-  final String? videoUrl;
-  final int? durationMinutes;
-  final int? orderIndex;
+  final CreateLessonParams params;
 
   @override
-  List<Object?> get props => [sectionId, title, type, content, videoUrl, durationMinutes, orderIndex];
+  List<Object?> get props => [params];
 }
 
 class UpdateLesson extends CourseEvent {
-  const UpdateLesson({
-    required this.lessonId,
-    this.title,
-    this.type,
-    this.content,
-    this.videoUrl,
-    this.durationMinutes,
-    this.orderIndex,
-  });
+  const UpdateLesson({required this.lessonId, required this.params});
 
   final String lessonId;
-  final String? title;
-  final LessonType? type;
-  final String? content;
-  final String? videoUrl;
-  final int? durationMinutes;
-  final int? orderIndex;
+  final UpdateLessonParams params;
 
   @override
-  List<Object?> get props => [lessonId, title, type, content, videoUrl, durationMinutes, orderIndex];
+  List<Object?> get props => [lessonId, params];
 }
 
 class DeleteLesson extends CourseEvent {
@@ -213,16 +152,22 @@ class DeleteLesson extends CourseEvent {
 }
 
 class EnrollInCourse extends CourseEvent {
-  const EnrollInCourse({required this.courseId});
+  const EnrollInCourse({required this.courseId, this.paymentId});
 
   final String courseId;
+  final String? paymentId;
 
   @override
-  List<Object?> get props => [courseId];
+  List<Object?> get props => [courseId, paymentId];
 }
 
 class LoadMyEnrollments extends CourseEvent {
-  const LoadMyEnrollments();
+  const LoadMyEnrollments({this.status});
+
+  final EnrollmentStatus? status;
+
+  @override
+  List<Object?> get props => [status];
 }
 
 class LoadEnrollment extends CourseEvent {
@@ -236,26 +181,19 @@ class LoadEnrollment extends CourseEvent {
 
 class UpdateLessonProgress extends CourseEvent {
   const UpdateLessonProgress({
-    required this.enrollmentId,
     required this.lessonId,
-    this.completed = true,
+    this.watchTimeSeconds,
+    this.lastPositionSeconds,
+    this.isCompleted,
   });
 
-  final String enrollmentId;
   final String lessonId;
-  final bool completed;
+  final int? watchTimeSeconds;
+  final int? lastPositionSeconds;
+  final bool? isCompleted;
 
   @override
-  List<Object?> get props => [enrollmentId, lessonId, completed];
-}
-
-class LoadCourseStudents extends CourseEvent {
-  const LoadCourseStudents({required this.courseId});
-
-  final String courseId;
-
-  @override
-  List<Object?> get props => [courseId];
+  List<Object?> get props => [lessonId, watchTimeSeconds, lastPositionSeconds, isCompleted];
 }
 
 class LoadInstructorCourses extends CourseEvent {

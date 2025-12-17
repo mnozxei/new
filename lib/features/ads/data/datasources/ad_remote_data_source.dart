@@ -4,13 +4,13 @@ import '../../domain/entities/ad_entity.dart';
 
 abstract class AdRemoteDataSource {
   Future<List<AdEntity>> getAdsForPlacement({required AdPlacement placement, int limit = 5});
-  Future<AdEntity> getAdById(String adId);
+  Future<AdEntity?> getAdById(String adId);
   Future<void> recordImpression({required String adId, required AdPlacement placement, Map<String, dynamic>? metadata});
   Future<void> recordClick({required String adId, required AdPlacement placement, Map<String, dynamic>? metadata});
   Future<AdEntity> createAd({required AdType type, required AdPlacement placement, required String title, String? description, String? imageUrl, String? videoUrl, String? ctaText, String? ctaUrl, String? companyId, String? jobId, String? courseId, required double budget, required double costPerClick, required double costPerImpression, Map<String, dynamic>? targetAudience, required DateTime startDate, DateTime? endDate});
   Future<AdEntity> updateAd({required String adId, String? title, String? description, String? imageUrl, String? ctaText, String? ctaUrl, AdStatus? status, double? budget, Map<String, dynamic>? targetAudience, DateTime? endDate});
   Future<void> deleteAd(String adId);
-  Future<List<AdEntity>> getMyAds({int page = 1, int limit = 20, AdStatus? status});
+  Future<List<AdEntity>> getMyAds({int limit = 20, int offset = 0, AdStatus? status});
   Future<AdCampaignStats> getAdStats({required String adId, DateTime? startDate, DateTime? endDate});
   Future<int> getTodayImpressionCount();
 }
@@ -49,7 +49,7 @@ class AdRemoteDataSourceImpl implements AdRemoteDataSource {
   }
 
   @override
-  Future<AdEntity> getAdById(String adId) async {
+  Future<AdEntity?> getAdById(String adId) async {
     final response = await _supabase
         .from('ads')
         .select('''
@@ -58,8 +58,9 @@ class AdRemoteDataSourceImpl implements AdRemoteDataSource {
           company:companies!company_id(*)
         ''')
         .eq('id', adId)
-        .single();
+        .maybeSingle();
 
+    if (response == null) return null;
     return _mapAdFromJson(response);
   }
 
@@ -196,12 +197,10 @@ class AdRemoteDataSourceImpl implements AdRemoteDataSource {
 
   @override
   Future<List<AdEntity>> getMyAds({
-    int page = 1,
     int limit = 20,
+    int offset = 0,
     AdStatus? status,
   }) async {
-    final offset = (page - 1) * limit;
-
     var query = _supabase
         .from('ads')
         .select('''

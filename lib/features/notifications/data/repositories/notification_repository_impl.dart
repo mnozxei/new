@@ -1,6 +1,3 @@
-import 'package:dartz/dartz.dart';
-
-import '../../../../core/errors/failures.dart';
 import '../../domain/entities/notification_entity.dart';
 import '../../domain/repositories/notification_repository.dart';
 import '../datasources/notification_remote_data_source.dart';
@@ -12,113 +9,61 @@ class NotificationRepositoryImpl implements NotificationRepository {
   final NotificationRemoteDataSource _remoteDataSource;
 
   @override
-  Future<Either<Failure, List<NotificationEntity>>> getNotifications({
-    int page = 1,
+  Future<List<NotificationEntity>> getNotifications({
     int limit = 20,
-    NotificationType? type,
+    int offset = 0,
+    String? type,
   }) async {
-    try {
-      final notifications = await _remoteDataSource.getNotifications(
-        page: page,
-        limit: limit,
-        type: type,
-      );
-      return Right(notifications);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+    return _remoteDataSource.getNotifications(
+      limit: limit,
+      offset: offset,
+      type: type,
+    );
   }
 
   @override
-  Future<Either<Failure, int>> getUnreadCount() async {
-    try {
-      final count = await _remoteDataSource.getUnreadCount();
-      return Right(count);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<int> getUnreadCount() async {
+    return _remoteDataSource.getUnreadCount();
   }
 
   @override
-  Future<Either<Failure, void>> markAsRead(String notificationId) async {
-    try {
-      await _remoteDataSource.markAsRead(notificationId);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> markAsRead(String notificationId) async {
+    await _remoteDataSource.markAsRead(notificationId);
   }
 
   @override
-  Future<Either<Failure, void>> markAllAsRead() async {
-    try {
-      await _remoteDataSource.markAllAsRead();
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> markAllAsRead() async {
+    await _remoteDataSource.markAllAsRead();
   }
 
   @override
-  Future<Either<Failure, void>> deleteNotification(String notificationId) async {
-    try {
-      await _remoteDataSource.deleteNotification(notificationId);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> deleteNotification(String notificationId) async {
+    await _remoteDataSource.deleteNotification(notificationId);
   }
 
   @override
-  Future<Either<Failure, void>> clearAllNotifications() async {
-    try {
-      await _remoteDataSource.clearAllNotifications();
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> clearAllNotifications() async {
+    await _remoteDataSource.clearAllNotifications();
   }
 
   @override
-  Future<Either<Failure, NotificationSettings>> getSettings() async {
-    try {
-      final settings = await _remoteDataSource.getSettings();
-      return Right(settings);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<NotificationSettings> getSettings() async {
+    return _remoteDataSource.getSettings();
   }
 
   @override
-  Future<Either<Failure, NotificationSettings>> updateSettings(
-    NotificationSettings settings,
-  ) async {
-    try {
-      final updatedSettings = await _remoteDataSource.updateSettings(settings);
-      return Right(updatedSettings);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<NotificationSettings> updateSettings(NotificationSettings settings) async {
+    return _remoteDataSource.updateSettings(settings);
   }
 
   @override
-  Future<Either<Failure, void>> registerDeviceToken(String token) async {
-    try {
-      await _remoteDataSource.registerDeviceToken(token);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> registerDeviceToken(String token) async {
+    await _remoteDataSource.registerDeviceToken(token);
   }
 
   @override
-  Future<Either<Failure, void>> unregisterDeviceToken(String token) async {
-    try {
-      await _remoteDataSource.unregisterDeviceToken(token);
-      return const Right(null);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Future<void> unregisterDeviceToken(String token) async {
+    await _remoteDataSource.unregisterDeviceToken(token);
   }
 
   @override

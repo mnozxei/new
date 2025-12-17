@@ -203,31 +203,31 @@ void _registerBlocs() {
   );
 
   getIt.registerFactory<CompanyBloc>(
-    () => CompanyBloc(companyRepository: getIt<CompanyRepository>()),
+    () => CompanyBloc(repository: getIt<CompanyRepository>()),
   );
 
   getIt.registerFactory<JobBloc>(
-    () => JobBloc(jobRepository: getIt<JobRepository>()),
+    () => JobBloc(repository: getIt<JobRepository>()),
   );
 
   getIt.registerFactory<CourseBloc>(
-    () => CourseBloc(courseRepository: getIt<CourseRepository>()),
+    () => CourseBloc(repository: getIt<CourseRepository>()),
   );
 
   getIt.registerFactory<PostBloc>(
-    () => PostBloc(postRepository: getIt<PostRepository>()),
+    () => PostBloc(repository: getIt<PostRepository>()),
   );
 
   getIt.registerFactory<ChatBloc>(
-    () => ChatBloc(chatRepository: getIt<ChatRepository>()),
+    () => ChatBloc(repository: getIt<ChatRepository>()),
   );
 
   getIt.registerFactory<NotificationBloc>(
-    () => NotificationBloc(notificationRepository: getIt<NotificationRepository>()),
+    () => NotificationBloc(repository: getIt<NotificationRepository>()),
   );
 
   getIt.registerFactory<AdBloc>(
-    () => AdBloc(adRepository: getIt<AdRepository>()),
+    () => AdBloc(repository: getIt<AdRepository>()),
   );
 }
 

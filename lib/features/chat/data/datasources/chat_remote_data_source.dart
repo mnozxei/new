@@ -5,27 +5,26 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/entities/chat_entity.dart';
 
 abstract class ChatRemoteDataSource {
-  Future<List<ConversationEntity>> getConversations({int page = 1, int limit = 20});
-  Future<ConversationEntity> getConversationById(String conversationId);
+  Future<List<ConversationEntity>> getConversations({int limit = 20, int offset = 0});
+  Future<ConversationEntity?> getConversationById(String conversationId);
   Future<ConversationEntity> getOrCreateConversation({required String participantId});
-  Future<ConversationEntity> createGroupConversation({required String title, required List<String> participantIds, String? imageUrl});
-  Future<List<MessageEntity>> getMessages({required String conversationId, int page = 1, int limit = 50, DateTime? before});
-  Future<MessageEntity> sendMessage({required String conversationId, required String content, MessageType type = MessageType.text, Map<String, dynamic>? metadata});
+  Future<ConversationEntity> createGroupConversation({required String name, required List<String> participantIds, String? imageUrl});
+  Future<List<MessageEntity>> getMessages({required String conversationId, int limit = 50, DateTime? before});
+  Future<MessageEntity> sendMessage({required String conversationId, required String content, String messageType = 'text', Map<String, dynamic>? metadata});
   Future<void> markAsRead(String conversationId);
-  Future<void> markMessageAsRead(String messageId);
   Future<void> deleteMessage(String messageId);
   Future<void> deleteConversation(String conversationId);
-  Future<ConversationEntity> updateGroupConversation({required String conversationId, String? title, String? imageUrl});
+  Future<ConversationEntity> updateGroupConversation({required String conversationId, String? name, String? imageUrl});
   Future<void> addParticipants({required String conversationId, required List<String> participantIds});
   Future<void> removeParticipant({required String conversationId, required String participantId});
   Future<void> leaveConversation(String conversationId);
-  Future<void> muteConversation({required String conversationId, required Duration duration});
+  Future<void> muteConversation({required String conversationId, DateTime? mutedUntil});
   Future<void> unmuteConversation(String conversationId);
   Stream<List<ConversationEntity>> watchConversations();
   Stream<List<MessageEntity>> watchMessages(String conversationId);
-  Stream<int> watchUnreadCount();
   Future<void> sendTypingIndicator(String conversationId);
-  Future<List<MessageEntity>> searchMessages({required String query, String? conversationId, int page = 1, int limit = 20});
+  Future<List<MessageEntity>> searchMessages({required String query, String? conversationId, int limit = 20, int offset = 0});
+  Future<int> getUnreadCount();
 }
 
 class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
@@ -36,9 +35,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   String get _currentUserId => _supabase.auth.currentUser!.id;
 
   @override
-  Future<List<ConversationEntity>> getConversations({int page = 1, int limit = 20}) async {
-    final offset = (page - 1) * limit;
-
+  Future<List<ConversationEntity>> getConversations({int limit = 20, int offset = 0}) async {
     final response = await _supabase
         .from('conversation_participants')
         .select('''
@@ -60,7 +57,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Future<ConversationEntity> getConversationById(String conversationId) async {
+  Future<ConversationEntity?> getConversationById(String conversationId) async {
     final response = await _supabase
         .from('conversations')
         .select('''
@@ -71,8 +68,9 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
           last_message:messages(*)
         ''')
         .eq('id', conversationId)
-        .single();
+        .maybeSingle();
 
+    if (response == null) return null;
     return _mapConversationFromJson(response);
   }
 
@@ -87,12 +85,18 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     );
 
     if (existingConversation != null) {
-      return getConversationById(existingConversation as String);
+      final conversation = await getConversationById(existingConversation as String);
+      if (conversation != null) return conversation;
     }
 
+    final now = DateTime.now();
     final conversationResponse = await _supabase
         .from('conversations')
-        .insert({'is_group': false})
+        .insert({
+          'type': 'direct',
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+        })
         .select()
         .single();
 
@@ -103,22 +107,26 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       {'conversation_id': conversationId, 'user_id': participantId},
     ]);
 
-    return getConversationById(conversationId);
+    final conversation = await getConversationById(conversationId);
+    return conversation!;
   }
 
   @override
   Future<ConversationEntity> createGroupConversation({
-    required String title,
+    required String name,
     required List<String> participantIds,
     String? imageUrl,
   }) async {
+    final now = DateTime.now();
     final conversationResponse = await _supabase
         .from('conversations')
         .insert({
-          'is_group': true,
-          'title': title,
-          'image_url': imageUrl,
+          'type': 'group',
+          'name': name,
+          'avatar_url': imageUrl,
           'created_by': _currentUserId,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
         })
         .select()
         .single();
@@ -131,13 +139,13 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
     await _supabase.from('conversation_participants').insert(participants);
 
-    return getConversationById(conversationId);
+    final conversation = await getConversationById(conversationId);
+    return conversation!;
   }
 
   @override
   Future<List<MessageEntity>> getMessages({
     required String conversationId,
-    int page = 1,
     int limit = 50,
     DateTime? before,
   }) async {
@@ -168,17 +176,19 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<MessageEntity> sendMessage({
     required String conversationId,
     required String content,
-    MessageType type = MessageType.text,
+    String messageType = 'text',
     Map<String, dynamic>? metadata,
   }) async {
+    final now = DateTime.now();
     final response = await _supabase
         .from('messages')
         .insert({
           'conversation_id': conversationId,
           'sender_id': _currentUserId,
           'content': content,
-          'type': type.value,
-          'metadata': metadata ?? {},
+          'message_type': messageType,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
         })
         .select('''
           *,
@@ -187,8 +197,9 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         .single();
 
     await _supabase.from('conversations').update({
-      'last_message_id': response['id'],
-      'updated_at': DateTime.now().toIso8601String(),
+      'last_message_at': now.toIso8601String(),
+      'last_message_preview': content.length > 100 ? '${content.substring(0, 100)}...' : content,
+      'updated_at': now.toIso8601String(),
     }).eq('id', conversationId);
 
     return _mapMessageFromJson(response);
@@ -196,31 +207,26 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
 
   @override
   Future<void> markAsRead(String conversationId) async {
+    final now = DateTime.now().toIso8601String();
     await _supabase
         .from('messages')
-        .update({'read_at': DateTime.now().toIso8601String()})
+        .update({'is_read': true})
         .eq('conversation_id', conversationId)
         .neq('sender_id', _currentUserId)
-        .isFilter('read_at', null);
+        .eq('is_read', false);
 
     await _supabase.from('conversation_participants').update({
-      'last_read_at': DateTime.now().toIso8601String(),
+      'last_read_at': now,
     }).eq('conversation_id', conversationId).eq('user_id', _currentUserId);
   }
 
   @override
-  Future<void> markMessageAsRead(String messageId) async {
-    await _supabase
-        .from('messages')
-        .update({'read_at': DateTime.now().toIso8601String()})
-        .eq('id', messageId);
-  }
-
-  @override
   Future<void> deleteMessage(String messageId) async {
+    final now = DateTime.now().toIso8601String();
     await _supabase.from('messages').update({
-      'deleted_at': DateTime.now().toIso8601String(),
-      'content': '',
+      'is_deleted': true,
+      'content': null,
+      'updated_at': now,
     }).eq('id', messageId);
   }
 
@@ -236,19 +242,22 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<ConversationEntity> updateGroupConversation({
     required String conversationId,
-    String? title,
+    String? name,
     String? imageUrl,
   }) async {
-    final updateData = <String, dynamic>{};
-    if (title != null) updateData['title'] = title;
-    if (imageUrl != null) updateData['image_url'] = imageUrl;
+    final updateData = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (name != null) updateData['name'] = name;
+    if (imageUrl != null) updateData['avatar_url'] = imageUrl;
 
     await _supabase
         .from('conversations')
         .update(updateData)
         .eq('id', conversationId);
 
-    return getConversationById(conversationId);
+    final conversation = await getConversationById(conversationId);
+    return conversation!;
   }
 
   @override
@@ -286,11 +295,11 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   @override
   Future<void> muteConversation({
     required String conversationId,
-    required Duration duration,
+    DateTime? mutedUntil,
   }) async {
-    final mutedUntil = DateTime.now().add(duration);
+    final muted = mutedUntil ?? DateTime.now().add(const Duration(days: 365));
     await _supabase.from('conversation_participants').update({
-      'muted_until': mutedUntil.toIso8601String(),
+      'muted_until': muted.toIso8601String(),
     }).eq('conversation_id', conversationId).eq('user_id', _currentUserId);
   }
 
@@ -320,15 +329,6 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   }
 
   @override
-  Stream<int> watchUnreadCount() {
-    return _supabase
-        .from('messages')
-        .stream(primaryKey: ['id'])
-        .neq('sender_id', _currentUserId)
-        .map((messages) => messages.where((m) => m['read_at'] == null).length);
-  }
-
-  @override
   Future<void> sendTypingIndicator(String conversationId) async {
     await _supabase.channel('typing:$conversationId').sendBroadcastMessage(
       event: 'typing',
@@ -340,11 +340,9 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
   Future<List<MessageEntity>> searchMessages({
     required String query,
     String? conversationId,
-    int page = 1,
     int limit = 20,
+    int offset = 0,
   }) async {
-    final offset = (page - 1) * limit;
-
     var queryBuilder = _supabase
         .from('messages')
         .select('''
@@ -364,65 +362,100 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
     return (response as List).map((json) => _mapMessageFromJson(json)).toList();
   }
 
+  @override
+  Future<int> getUnreadCount() async {
+    final response = await _supabase
+        .from('messages')
+        .select()
+        .neq('sender_id', _currentUserId)
+        .eq('is_read', false)
+        .count(CountOption.exact);
+
+    return response.count;
+  }
+
   ConversationEntity _mapConversationFromJson(Map<String, dynamic> json) {
     final participantsList = json['participants'] as List? ?? [];
     final participants = participantsList.map((p) {
       final user = p['user'] as Map<String, dynamic>?;
       return ParticipantInfo(
-        userId: user?['id'] as String? ?? '',
-        name: user?['full_name'] as String? ?? '',
+        id: user?['id'] as String? ?? '',
+        fullName: user?['full_name'] as String? ?? '',
         avatarUrl: user?['avatar_url'] as String?,
         isOnline: false,
       );
     }).toList();
 
-    final otherParticipants = participants.where((p) => p.userId != _currentUserId).toList();
+    final otherParticipants = participants.where((p) => p.id != _currentUserId).toList();
 
-    MessageEntity? lastMessage;
+    String? lastMessagePreview;
+    DateTime? lastMessageAt;
     if (json['last_message'] != null) {
       final messages = json['last_message'] as List;
       if (messages.isNotEmpty) {
-        lastMessage = _mapMessageFromJson(messages.first as Map<String, dynamic>);
+        final lastMsg = messages.first as Map<String, dynamic>;
+        lastMessagePreview = lastMsg['content'] as String?;
+        if (lastMsg['created_at'] != null) {
+          lastMessageAt = DateTime.parse(lastMsg['created_at'] as String);
+        }
       }
     }
 
-    final isGroup = json['is_group'] as bool? ?? false;
-    final title = isGroup
-        ? json['title'] as String?
+    final type = json['type'] as String? ?? 'direct';
+    final isGroup = type == 'group';
+    final name = isGroup
+        ? json['name'] as String?
         : otherParticipants.isNotEmpty
-            ? otherParticipants.first.name
+            ? otherParticipants.first.fullName
             : null;
+
+    final now = DateTime.now();
 
     return ConversationEntity(
       id: json['id'] as String,
-      title: title,
-      imageUrl: json['image_url'] as String?,
-      isGroup: isGroup,
-      participants: participants,
-      lastMessage: lastMessage,
+      type: type,
+      name: name,
+      avatarUrl: json['avatar_url'] as String?,
+      createdBy: json['created_by'] as String?,
+      lastMessageAt: lastMessageAt,
+      lastMessagePreview: lastMessagePreview ?? json['last_message_preview'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
+      participants: otherParticipants,
       unreadCount: 0,
       isMuted: false,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
     );
   }
 
   MessageEntity _mapMessageFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+    MessageSenderInfo? sender;
+    if (json['sender'] != null) {
+      final senderData = json['sender'] as Map<String, dynamic>;
+      sender = MessageSenderInfo(
+        id: senderData['id'] as String? ?? '',
+        fullName: senderData['full_name'] as String? ?? '',
+        avatarUrl: senderData['avatar_url'] as String?,
+      );
+    }
+
     return MessageEntity(
       id: json['id'] as String,
       conversationId: json['conversation_id'] as String,
-      senderId: json['sender_id'] as String,
-      content: json['content'] as String,
-      type: MessageType.fromString(json['type'] as String? ?? 'text'),
-      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
-      senderName: json['sender']?['full_name'] as String?,
-      senderAvatar: json['sender']?['avatar_url'] as String?,
-      isRead: json['read_at'] != null,
-      readAt: json['read_at'] != null ? DateTime.parse(json['read_at'] as String) : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at'] as String) : null,
+      senderId: json['sender_id'] as String?,
+      content: json['content'] as String?,
+      messageType: json['message_type'] as String? ?? 'text',
+      mediaUrl: json['media_url'] as String?,
+      mediaName: json['media_name'] as String?,
+      mediaSize: json['media_size'] as int?,
+      isEdited: json['is_edited'] as bool? ?? false,
+      isDeleted: json['is_deleted'] as bool? ?? false,
+      replyToId: json['reply_to_id'] as String?,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
+      sender: sender,
+      isRead: json['is_read'] as bool? ?? false,
+      readBy: List<String>.from(json['read_by'] ?? []),
     );
   }
 }

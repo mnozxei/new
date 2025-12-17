@@ -35,17 +35,17 @@ class StartConversation extends ChatEvent {
 
 class CreateGroupConversation extends ChatEvent {
   const CreateGroupConversation({
-    required this.title,
+    required this.name,
     required this.participantIds,
     this.imageUrl,
   });
 
-  final String title;
+  final String name;
   final List<String> participantIds;
   final String? imageUrl;
 
   @override
-  List<Object?> get props => [title, participantIds, imageUrl];
+  List<Object?> get props => [name, participantIds, imageUrl];
 }
 
 class LoadMessages extends ChatEvent {
@@ -70,17 +70,17 @@ class SendMessage extends ChatEvent {
   const SendMessage({
     required this.conversationId,
     required this.content,
-    this.type = MessageType.text,
+    this.messageType = 'text',
     this.metadata,
   });
 
   final String conversationId;
   final String content;
-  final MessageType type;
+  final String messageType;
   final Map<String, dynamic>? metadata;
 
   @override
-  List<Object?> get props => [conversationId, content, type, metadata];
+  List<Object?> get props => [conversationId, content, messageType, metadata];
 }
 
 class MarkConversationAsRead extends ChatEvent {
@@ -113,16 +113,16 @@ class DeleteConversation extends ChatEvent {
 class UpdateGroupConversation extends ChatEvent {
   const UpdateGroupConversation({
     required this.conversationId,
-    this.title,
+    this.name,
     this.imageUrl,
   });
 
   final String conversationId;
-  final String? title;
+  final String? name;
   final String? imageUrl;
 
   @override
-  List<Object?> get props => [conversationId, title, imageUrl];
+  List<Object?> get props => [conversationId, name, imageUrl];
 }
 
 class AddGroupParticipants extends ChatEvent {
@@ -163,14 +163,14 @@ class LeaveGroup extends ChatEvent {
 class MuteConversation extends ChatEvent {
   const MuteConversation({
     required this.conversationId,
-    required this.duration,
+    this.mutedUntil,
   });
 
   final String conversationId;
-  final Duration duration;
+  final DateTime? mutedUntil;
 
   @override
-  List<Object?> get props => [conversationId, duration];
+  List<Object?> get props => [conversationId, mutedUntil];
 }
 
 class UnmuteConversation extends ChatEvent {
