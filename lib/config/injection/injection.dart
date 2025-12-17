@@ -2,6 +2,11 @@ import 'package:get_it/get_it.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/services/storage_service.dart';
+import '../../features/ads/data/datasources/ad_remote_data_source.dart';
+import '../../features/ads/data/repositories/ad_repository_impl.dart';
+import '../../features/ads/domain/repositories/ad_repository.dart';
+import '../../features/ads/presentation/bloc/ad_bloc.dart';
+import '../../features/ads/services/ad_injection_service.dart';
 import '../../features/auth/data/datasources/auth_remote_datasource.dart';
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
@@ -11,13 +16,36 @@ import '../../features/auth/domain/usecases/login_user.dart';
 import '../../features/auth/domain/usecases/logout_user.dart';
 import '../../features/auth/domain/usecases/register_user.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
+import '../../features/chat/data/datasources/chat_remote_data_source.dart';
+import '../../features/chat/data/repositories/chat_repository_impl.dart';
+import '../../features/chat/domain/repositories/chat_repository.dart';
+import '../../features/chat/presentation/bloc/chat_bloc.dart';
+import '../../features/companies/data/datasources/company_remote_data_source.dart';
+import '../../features/companies/data/repositories/company_repository_impl.dart';
+import '../../features/companies/domain/repositories/company_repository.dart';
+import '../../features/companies/presentation/bloc/company_bloc.dart';
+import '../../features/courses/data/datasources/course_remote_data_source.dart';
+import '../../features/courses/data/repositories/course_repository_impl.dart';
+import '../../features/courses/domain/repositories/course_repository.dart';
+import '../../features/courses/presentation/bloc/course_bloc.dart';
+import '../../features/jobs/data/datasources/job_remote_data_source.dart';
+import '../../features/jobs/data/repositories/job_repository_impl.dart';
+import '../../features/jobs/domain/repositories/job_repository.dart';
+import '../../features/jobs/presentation/bloc/job_bloc.dart';
+import '../../features/notifications/data/datasources/notification_remote_data_source.dart';
+import '../../features/notifications/data/repositories/notification_repository_impl.dart';
+import '../../features/notifications/domain/repositories/notification_repository.dart';
+import '../../features/notifications/presentation/bloc/notification_bloc.dart';
+import '../../features/posts/data/datasources/post_remote_data_source.dart';
+import '../../features/posts/data/repositories/post_repository_impl.dart';
+import '../../features/posts/domain/repositories/post_repository.dart';
+import '../../features/posts/presentation/bloc/post_bloc.dart';
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_user_profile.dart';
 import '../../features/profile/domain/usecases/update_user_profile.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
-import '../routes/app_router.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -44,6 +72,10 @@ void _registerServices() {
   getIt.registerLazySingleton<AuthService>(
     () => AuthServiceImpl(getIt<SupabaseClient>()),
   );
+
+  getIt.registerLazySingleton<AdInjectionService>(
+    () => AdInjectionService(adRepository: getIt<AdRepository>()),
+  );
 }
 
 void _registerDataSources() {
@@ -54,6 +86,34 @@ void _registerDataSources() {
   getIt.registerLazySingleton<ProfileRemoteDataSource>(
     () => ProfileRemoteDataSourceImpl(getIt<SupabaseClient>()),
   );
+
+  getIt.registerLazySingleton<CompanyRemoteDataSource>(
+    () => CompanyRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+
+  getIt.registerLazySingleton<JobRemoteDataSource>(
+    () => JobRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+
+  getIt.registerLazySingleton<CourseRemoteDataSource>(
+    () => CourseRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+
+  getIt.registerLazySingleton<PostRemoteDataSource>(
+    () => PostRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+
+  getIt.registerLazySingleton<ChatRemoteDataSource>(
+    () => ChatRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+
+  getIt.registerLazySingleton<NotificationRemoteDataSource>(
+    () => NotificationRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
+
+  getIt.registerLazySingleton<AdRemoteDataSource>(
+    () => AdRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
 }
 
 void _registerRepositories() {
@@ -63,6 +123,34 @@ void _registerRepositories() {
 
   getIt.registerLazySingleton<ProfileRepository>(
     () => ProfileRepositoryImpl(getIt<ProfileRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<CompanyRepository>(
+    () => CompanyRepositoryImpl(remoteDataSource: getIt<CompanyRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<JobRepository>(
+    () => JobRepositoryImpl(remoteDataSource: getIt<JobRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<CourseRepository>(
+    () => CourseRepositoryImpl(remoteDataSource: getIt<CourseRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<PostRepository>(
+    () => PostRepositoryImpl(remoteDataSource: getIt<PostRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<ChatRepository>(
+    () => ChatRepositoryImpl(remoteDataSource: getIt<ChatRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepositoryImpl(remoteDataSource: getIt<NotificationRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<AdRepository>(
+    () => AdRepositoryImpl(remoteDataSource: getIt<AdRemoteDataSource>()),
   );
 }
 
@@ -112,6 +200,34 @@ void _registerBlocs() {
       getUserProfile: getIt<GetUserProfile>(),
       updateUserProfile: getIt<UpdateUserProfile>(),
     ),
+  );
+
+  getIt.registerFactory<CompanyBloc>(
+    () => CompanyBloc(companyRepository: getIt<CompanyRepository>()),
+  );
+
+  getIt.registerFactory<JobBloc>(
+    () => JobBloc(jobRepository: getIt<JobRepository>()),
+  );
+
+  getIt.registerFactory<CourseBloc>(
+    () => CourseBloc(courseRepository: getIt<CourseRepository>()),
+  );
+
+  getIt.registerFactory<PostBloc>(
+    () => PostBloc(postRepository: getIt<PostRepository>()),
+  );
+
+  getIt.registerFactory<ChatBloc>(
+    () => ChatBloc(chatRepository: getIt<ChatRepository>()),
+  );
+
+  getIt.registerFactory<NotificationBloc>(
+    () => NotificationBloc(notificationRepository: getIt<NotificationRepository>()),
+  );
+
+  getIt.registerFactory<AdBloc>(
+    () => AdBloc(adRepository: getIt<AdRepository>()),
   );
 }
 
