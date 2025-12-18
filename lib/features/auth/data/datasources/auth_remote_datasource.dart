@@ -85,12 +85,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw AuthException('Registration failed: No user returned');
       }
 
-      await _createUserProfile(
-        userId: response.user!.id,
-        email: email,
-        fullName: fullName,
-        role: role,
-      );
+      // Wait for trigger to create the profile
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Try to update profile with additional details
+      // If it fails (RLS, etc.), the trigger-created profile is still valid
+      try {
+        await _createUserProfile(
+          userId: response.user!.id,
+          email: email,
+          fullName: fullName,
+          role: role,
+        );
+      } catch (_) {
+        // Ignore - trigger should have created basic profile
+      }
 
       final userProfile = await _fetchUserProfile(response.user!.id);
       _authStateController.add(userProfile);
@@ -98,7 +107,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on AuthException catch (e) {
       throw AuthException(_mapAuthError(e.message));
     } on PostgrestException catch (e) {
-      throw AuthException('Profile creation failed: ${e.message}');
+      throw AuthException('Registration failed: ${e.message}');
     }
   }
 
