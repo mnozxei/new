@@ -17,7 +17,7 @@ class CoursesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: GlassAppBar(
-        title: 'Courses',
+        title: 'الدورات',
         actions: [
           IconButton(
             icon: const Icon(Iconsax.filter),
@@ -34,7 +34,7 @@ class CoursesPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(AppConstants.spacingMedium),
             child: GlassSearchField(
-              hint: 'Search courses...',
+              hint: 'ابحث عن دورات...',
               onChanged: (query) {},
             ),
           ),
@@ -45,12 +45,12 @@ class CoursesPage extends StatelessWidget {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  _CategoryChip(label: 'All', isSelected: true),
-                  _CategoryChip(label: 'Development'),
-                  _CategoryChip(label: 'Design'),
-                  _CategoryChip(label: 'Marketing'),
-                  _CategoryChip(label: 'Business'),
-                  _CategoryChip(label: 'Finance'),
+                  _CategoryChip(label: 'الكل', isSelected: true),
+                  _CategoryChip(label: 'البرمجة'),
+                  _CategoryChip(label: 'التصميم'),
+                  _CategoryChip(label: 'التسويق'),
+                  _CategoryChip(label: 'الأعمال'),
+                  _CategoryChip(label: 'المالية'),
                 ],
               ),
             ),
@@ -185,7 +185,7 @@ class _CourseCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                     ),
                     child: const Text(
-                      'Development',
+                      'البرمجة',
                       style: TextStyle(
                         color: AppColors.white,
                         fontSize: 12,
@@ -203,7 +203,7 @@ class _CourseCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Flutter Development Masterclass',
+                  'دورة تطوير تطبيقات Flutter',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -217,7 +217,7 @@ class _CourseCard extends StatelessWidget {
                       radius: 12,
                       backgroundColor: AppColors.primaryLighter,
                       child: const Text(
-                        'I',
+                        'م',
                         style: TextStyle(
                           color: AppColors.white,
                           fontSize: 10,
@@ -227,7 +227,7 @@ class _CourseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppConstants.spacingSmall),
                     Text(
-                      'Instructor Name',
+                      'اسم المدرب',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondaryLight,
                       ),
@@ -251,14 +251,14 @@ class _CourseCard extends StatelessWidget {
                     ),
                     const SizedBox(width: AppConstants.spacingSmall),
                     Text(
-                      '(234 reviews)',
+                      '(234 تقييم)',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textTertiaryLight,
                       ),
                     ),
                     const Spacer(),
                     Text(
-                      '12 hours',
+                      '12 ساعة',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondaryLight,
                       ),
@@ -274,7 +274,7 @@ class _CourseCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppConstants.spacingExtraSmall),
                   Text(
-                    '${(index * 10).clamp(0, 100)}% complete',
+                    '${(index * 10).clamp(0, 100)}% مكتمل',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: AppColors.textTertiaryLight,
                     ),

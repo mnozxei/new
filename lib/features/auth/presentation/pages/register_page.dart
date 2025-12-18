@@ -54,7 +54,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          context.go(RouteNames.jobs);
+          context.go(RouteNames.posts);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -138,7 +138,7 @@ class _MobileRegisterLayout extends StatelessWidget {
               _buildLogo(),
               const SizedBox(height: AppConstants.spacingLarge),
               Text(
-                'Create Account',
+                'إنشاء حساب',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -146,7 +146,7 @@ class _MobileRegisterLayout extends StatelessWidget {
               ),
               const SizedBox(height: AppConstants.spacingSmall),
               Text(
-                'Join TAMAD HUB today',
+                'انضم إلى TAMAD HUB اليوم',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textSecondaryLight,
                 ),
@@ -203,13 +203,13 @@ class _MobileRegisterLayout extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          'Already have an account? ',
+          'لديك حساب بالفعل؟ ',
           style: theme.textTheme.bodyMedium,
         ),
         GestureDetector(
           onTap: () => context.go(RouteNames.login),
           child: Text(
-            'Sign In',
+            'تسجيل الدخول',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w600,
@@ -290,7 +290,7 @@ class _DesktopRegisterLayout extends StatelessWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingMedium),
                     Text(
-                      'Start Your Professional Journey\nWith Us Today',
+                      'ابدأ رحلتك المهنية\nمعنا اليوم',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: AppColors.white.withValues(alpha: 0.9),
                       ),
@@ -316,14 +316,14 @@ class _DesktopRegisterLayout extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Create Account',
+                        'إنشاء حساب',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: AppConstants.spacingSmall),
                       Text(
-                        'Join TAMAD HUB today',
+                        'انضم إلى TAMAD HUB اليوم',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondaryLight,
                         ),
@@ -344,13 +344,13 @@ class _DesktopRegisterLayout extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Already have an account? ',
+                            'لديك حساب بالفعل؟ ',
                             style: theme.textTheme.bodyMedium,
                           ),
                           GestureDetector(
                             onTap: () => context.go(RouteNames.login),
                             child: Text(
-                              'Sign In',
+                              'تسجيل الدخول',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
@@ -410,17 +410,17 @@ class _RegisterForm extends StatelessWidget {
               children: [
                 GlassTextField(
                   controller: fullNameController,
-                  label: 'Full Name',
-                  hint: 'Enter your full name',
+                  label: 'الاسم الكامل',
+                  hint: 'أدخل اسمك الكامل',
                   textInputAction: TextInputAction.next,
                   prefixIcon: const Icon(Iconsax.user),
                   enabled: !isLoading,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your full name';
+                      return 'الرجاء إدخال اسمك الكامل';
                     }
                     if (value.length < 2) {
-                      return 'Name must be at least 2 characters';
+                      return 'الاسم يجب أن يكون حرفين على الأقل';
                     }
                     return null;
                   },
@@ -428,26 +428,26 @@ class _RegisterForm extends StatelessWidget {
                 const SizedBox(height: AppConstants.spacingMedium),
                 GlassTextField(
                   controller: emailController,
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: 'البريد الإلكتروني',
+                  hint: 'أدخل بريدك الإلكتروني',
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   prefixIcon: const Icon(Iconsax.sms),
                   enabled: !isLoading,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'الرجاء إدخال البريد الإلكتروني';
                     }
                     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                         .hasMatch(value)) {
-                      return 'Please enter a valid email';
+                      return 'الرجاء إدخال بريد إلكتروني صحيح';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppConstants.spacingMedium),
                 Text(
-                  'Account Type',
+                  'نوع الحساب',
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: AppColors.textSecondaryLight,
                   ),
@@ -457,7 +457,7 @@ class _RegisterForm extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _RoleChip(
-                        label: 'User',
+                        label: 'مستخدم',
                         icon: Iconsax.user,
                         isSelected: selectedRole == UserRole.user,
                         onTap: isLoading
@@ -468,7 +468,7 @@ class _RegisterForm extends StatelessWidget {
                     const SizedBox(width: AppConstants.spacingSmall),
                     Expanded(
                       child: _RoleChip(
-                        label: 'Instructor',
+                        label: 'مدرب',
                         icon: Iconsax.teacher,
                         isSelected: selectedRole == UserRole.instructor,
                         onTap: isLoading
@@ -481,18 +481,18 @@ class _RegisterForm extends StatelessWidget {
                 const SizedBox(height: AppConstants.spacingMedium),
                 GlassTextField(
                   controller: passwordController,
-                  label: 'Password',
-                  hint: 'Enter your password',
+                  label: 'كلمة المرور',
+                  hint: 'أدخل كلمة المرور',
                   obscureText: true,
                   textInputAction: TextInputAction.next,
                   prefixIcon: const Icon(Iconsax.lock),
                   enabled: !isLoading,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
+                      return 'الرجاء إدخال كلمة المرور';
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
                     }
                     return null;
                   },
@@ -500,8 +500,8 @@ class _RegisterForm extends StatelessWidget {
                 const SizedBox(height: AppConstants.spacingMedium),
                 GlassTextField(
                   controller: confirmPasswordController,
-                  label: 'Confirm Password',
-                  hint: 'Confirm your password',
+                  label: 'تأكيد كلمة المرور',
+                  hint: 'أعد إدخال كلمة المرور',
                   obscureText: true,
                   textInputAction: TextInputAction.done,
                   prefixIcon: const Icon(Iconsax.lock_1),
@@ -509,10 +509,10 @@ class _RegisterForm extends StatelessWidget {
                   onSubmitted: (_) => onRegister(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return 'الرجاء تأكيد كلمة المرور';
                     }
                     if (value != passwordController.text) {
-                      return 'Passwords do not match';
+                      return 'كلمتا المرور غير متطابقتين';
                     }
                     return null;
                   },
@@ -532,7 +532,7 @@ class _RegisterForm extends StatelessWidget {
                                   AlwaysStoppedAnimation<Color>(AppColors.white),
                             ),
                           )
-                        : const Text('Create Account'),
+                        : const Text('إنشاء حساب'),
                   ),
                 ),
               ],

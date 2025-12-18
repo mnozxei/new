@@ -14,7 +14,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: GlassAppBar(
-        title: 'Settings',
+        title: 'الإعدادات',
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_right_1),
           onPressed: () => context.pop(),
@@ -29,84 +29,84 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _SettingsSection(
-                  title: 'Account',
+                  title: 'الحساب',
                   children: [
                     _SettingsTile(
                       icon: Iconsax.user,
-                      title: 'Account Information',
-                      subtitle: 'Update your personal details',
+                      title: 'معلومات الحساب',
+                      subtitle: 'تحديث بياناتك الشخصية',
                       onTap: () {},
                     ),
                     _SettingsTile(
                       icon: Iconsax.lock,
-                      title: 'Password & Security',
-                      subtitle: 'Manage your password and 2FA',
+                      title: 'كلمة المرور والأمان',
+                      subtitle: 'إدارة كلمة المرور والمصادقة الثنائية',
                       onTap: () {},
                     ),
                     _SettingsTile(
                       icon: Iconsax.shield_tick,
-                      title: 'Privacy',
-                      subtitle: 'Control who can see your profile',
+                      title: 'الخصوصية',
+                      subtitle: 'التحكم في من يمكنه رؤية ملفك الشخصي',
                       onTap: () {},
                     ),
                   ],
                 ),
                 const SizedBox(height: AppConstants.spacingMedium),
                 _SettingsSection(
-                  title: 'Preferences',
+                  title: 'التفضيلات',
                   children: [
                     _SettingsTile(
                       icon: Iconsax.notification,
-                      title: 'Notifications',
-                      subtitle: 'Manage your notification preferences',
+                      title: 'الإشعارات',
+                      subtitle: 'إدارة تفضيلات الإشعارات',
                       onTap: () {},
                     ),
                     _SettingsTile(
                       icon: Iconsax.moon,
-                      title: 'Appearance',
-                      subtitle: 'Theme and display settings',
+                      title: 'المظهر',
+                      subtitle: 'إعدادات السمة والعرض',
                       onTap: () {},
                     ),
                     _SettingsTile(
                       icon: Iconsax.language_square,
-                      title: 'Language',
-                      subtitle: 'Arabic',
+                      title: 'اللغة',
+                      subtitle: 'العربية',
                       onTap: () {},
                     ),
                   ],
                 ),
                 const SizedBox(height: AppConstants.spacingMedium),
                 _SettingsSection(
-                  title: 'Support',
+                  title: 'الدعم',
                   children: [
                     _SettingsTile(
                       icon: Iconsax.message_question,
-                      title: 'Help Center',
-                      subtitle: 'Get help and support',
+                      title: 'مركز المساعدة',
+                      subtitle: 'احصل على المساعدة والدعم',
                       onTap: () {},
                     ),
                     _SettingsTile(
                       icon: Iconsax.document,
-                      title: 'Terms of Service',
-                      subtitle: 'Read our terms and conditions',
+                      title: 'شروط الخدمة',
+                      subtitle: 'اقرأ الشروط والأحكام',
                       onTap: () {},
                     ),
                     _SettingsTile(
                       icon: Iconsax.shield_security,
-                      title: 'Privacy Policy',
-                      subtitle: 'Read our privacy policy',
+                      title: 'سياسة الخصوصية',
+                      subtitle: 'اقرأ سياسة الخصوصية',
                       onTap: () {},
                     ),
                   ],
                 ),
                 const SizedBox(height: AppConstants.spacingMedium),
                 _SettingsSection(
-                  title: 'Danger Zone',
+                  title: 'منطقة الخطر',
                   children: [
                     _SettingsTile(
                       icon: Iconsax.trash,
-                      title: 'Delete Account',
-                      subtitle: 'Permanently delete your account',
+                      title: 'حذف الحساب',
+                      subtitle: 'حذف حسابك نهائياً',
                       isDestructive: true,
                       onTap: () {},
                     ),

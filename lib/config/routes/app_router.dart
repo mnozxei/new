@@ -262,7 +262,7 @@ abstract final class AppRouter {
     }
 
     if (isAuthenticated && isAuthRoute && state.matchedLocation != RouteNames.splash) {
-      return RouteNames.jobs;
+      return RouteNames.posts;
     }
 
     return null;
@@ -291,7 +291,7 @@ class ErrorPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Page Not Found',
+              'الصفحة غير موجودة',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 8),
@@ -302,8 +302,8 @@ class ErrorPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.go(RouteNames.jobs),
-              child: const Text('Go Home'),
+              onPressed: () => context.go(RouteNames.posts),
+              child: const Text('الرئيسية'),
             ),
           ],
         ),

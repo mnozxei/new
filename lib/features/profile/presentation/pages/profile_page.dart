@@ -211,9 +211,9 @@ class _MobileProfilePage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _StatItem(label: 'Followers', value: '0'),
-            _StatItem(label: 'Following', value: '0'),
-            _StatItem(label: 'Posts', value: '0'),
+            _StatItem(label: 'المتابعون', value: '0'),
+            _StatItem(label: 'المتابَعون', value: '0'),
+            _StatItem(label: 'المنشورات', value: '0'),
           ],
         ),
       ),
@@ -231,7 +231,7 @@ class _MobileProfilePage extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => context.push('${RouteNames.profile}/edit'),
               icon: const Icon(Iconsax.edit),
-              label: const Text('Edit Profile'),
+              label: const Text('تعديل الملف الشخصي'),
             ),
           ),
           const SizedBox(width: AppConstants.spacingMedium),
@@ -257,37 +257,37 @@ class _MobileProfilePage extends StatelessWidget {
           children: [
             _MenuItem(
               icon: Iconsax.briefcase,
-              label: 'My Applications',
+              label: 'طلباتي',
               onTap: () => context.push(RouteNames.myApplications),
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.building,
-              label: 'My Companies',
+              label: 'شركاتي',
               onTap: () => context.push(RouteNames.companies),
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.book,
-              label: 'My Courses',
+              label: 'دوراتي',
               onTap: () {},
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.document_text,
-              label: 'My Posts',
+              label: 'منشوراتي',
               onTap: () {},
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.bookmark,
-              label: 'Saved Items',
+              label: 'المحفوظات',
               onTap: () {},
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.logout,
-              label: 'Sign Out',
+              label: 'تسجيل الخروج',
               isDestructive: true,
               onTap: () {
                 context.read<AuthBloc>().add(const AuthLogoutRequested());
@@ -312,7 +312,7 @@ class _DesktopProfilePage extends StatelessWidget {
 
     return Scaffold(
       appBar: GlassAppBar(
-        title: 'Profile',
+        title: 'الملف الشخصي',
         actions: [
           IconButton(
             icon: const Icon(Iconsax.setting_2),
@@ -422,9 +422,9 @@ class _DesktopProfilePage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatItem(label: 'Followers', value: '0', compact: true),
-              _StatItem(label: 'Following', value: '0', compact: true),
-              _StatItem(label: 'Posts', value: '0', compact: true),
+              _StatItem(label: 'المتابعون', value: '0', compact: true),
+              _StatItem(label: 'المتابَعون', value: '0', compact: true),
+              _StatItem(label: 'المنشورات', value: '0', compact: true),
             ],
           ),
           const SizedBox(height: AppConstants.spacingMedium),
@@ -433,7 +433,7 @@ class _DesktopProfilePage extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: () => context.push('${RouteNames.profile}/edit'),
               icon: const Icon(Iconsax.edit, size: 18),
-              label: const Text('Edit Profile'),
+              label: const Text('تعديل الملف الشخصي'),
             ),
           ),
         ],
@@ -443,28 +443,28 @@ class _DesktopProfilePage extends StatelessWidget {
 
   Widget _buildQuickActions(BuildContext context) {
     return GlassPanel(
-      title: 'Quick Actions',
+      title: 'إجراءات سريعة',
       intensity: GlassIntensity.light,
       child: Column(
         children: [
           _MenuItem(
             icon: Iconsax.briefcase,
-            label: 'My Applications',
+            label: 'طلباتي',
             onTap: () => context.push(RouteNames.myApplications),
           ),
           _MenuItem(
             icon: Iconsax.building,
-            label: 'My Companies',
+            label: 'شركاتي',
             onTap: () => context.push(RouteNames.companies),
           ),
           _MenuItem(
             icon: Iconsax.book,
-            label: 'My Courses',
+            label: 'دوراتي',
             onTap: () {},
           ),
           _MenuItem(
             icon: Iconsax.logout,
-            label: 'Sign Out',
+            label: 'تسجيل الخروج',
             isDestructive: true,
             onTap: () {
               context.read<AuthBloc>().add(const AuthLogoutRequested());
@@ -479,13 +479,13 @@ class _DesktopProfilePage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return GlassPanel(
-      title: 'About',
+      title: 'نبذة عني',
       intensity: GlassIntensity.light,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            user.bio ?? 'No bio added yet.',
+            user.bio ?? 'لم يتم إضافة نبذة بعد.',
             style: theme.textTheme.bodyLarge?.copyWith(
               color: user.bio == null ? AppColors.textTertiaryLight : null,
             ),
@@ -495,7 +495,7 @@ class _DesktopProfilePage extends StatelessWidget {
             _InfoRow(icon: Iconsax.location, label: user.location!),
           if (user.website != null)
             _InfoRow(icon: Iconsax.global, label: user.website!),
-          _InfoRow(icon: Iconsax.calendar, label: 'Joined December 2025'),
+          _InfoRow(icon: Iconsax.calendar, label: 'انضم في ديسمبر 2025'),
         ],
       ),
     );
@@ -505,7 +505,7 @@ class _DesktopProfilePage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return GlassPanel(
-      title: 'Recent Activity',
+      title: 'النشاط الأخير',
       intensity: GlassIntensity.light,
       child: Center(
         child: Padding(
@@ -519,7 +519,7 @@ class _DesktopProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: AppConstants.spacingMedium),
               Text(
-                'No recent activity',
+                'لا يوجد نشاط حديث',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textTertiaryLight,
                 ),

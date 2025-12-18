@@ -69,7 +69,7 @@ class _SplashPageState extends State<SplashPage>
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          context.go(RouteNames.jobs);
+          context.go(RouteNames.posts);
         } else if (state is AuthUnauthenticated || state is AuthError) {
           context.go(RouteNames.login);
         }
@@ -129,7 +129,7 @@ class _SplashPageState extends State<SplashPage>
                         ),
                         const SizedBox(height: AppConstants.spacingSmall),
                         Text(
-                          'Professional Platform',
+                          'منصة مهنية متكاملة',
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: AppColors.textSecondaryLight,
                           ),

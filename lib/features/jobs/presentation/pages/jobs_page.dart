@@ -30,7 +30,7 @@ class _MobileJobsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: GlassAppBar(
-        title: 'Jobs',
+        title: 'الوظائف',
         actions: [
           IconButton(
             icon: const Icon(Iconsax.filter),
@@ -47,7 +47,7 @@ class _MobileJobsPage extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(AppConstants.spacingMedium),
             child: GlassSearchField(
-              hint: 'Search jobs...',
+              hint: 'ابحث عن وظائف...',
               onChanged: (query) {},
             ),
           ),
@@ -76,12 +76,12 @@ class _DesktopJobsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: GlassAppBar(
-        title: 'Jobs',
+        title: 'الوظائف',
         actions: [
           GlassButton(
             onPressed: () => context.push(RouteNames.postJob),
             icon: Iconsax.add,
-            label: 'Post Job',
+            label: 'نشر وظيفة',
             intensity: GlassIntensity.light,
           ),
           const SizedBox(width: AppConstants.spacingSmall),
@@ -110,7 +110,7 @@ class _DesktopJobsPage extends StatelessWidget {
                     children: [
                       Expanded(
                         child: GlassSearchField(
-                          hint: 'Search jobs...',
+                          hint: 'ابحث عن وظائف...',
                           onChanged: (query) {},
                         ),
                       ),
@@ -155,24 +155,24 @@ class _FiltersPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Filters',
+            'التصفية',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           _FilterSection(
-            title: 'Job Type',
-            options: ['Full-time', 'Part-time', 'Contract', 'Remote', 'Internship'],
+            title: 'نوع العمل',
+            options: ['دوام كامل', 'دوام جزئي', 'عقد', 'عن بعد', 'تدريب'],
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           _FilterSection(
-            title: 'Experience Level',
-            options: ['Entry Level', 'Mid Level', 'Senior', 'Director', 'Executive'],
+            title: 'مستوى الخبرة',
+            options: ['مبتدئ', 'متوسط', 'خبير', 'مدير', 'تنفيذي'],
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           _FilterSection(
-            title: 'Salary Range',
+            title: 'نطاق الراتب',
             options: ['0-50K', '50K-100K', '100K-150K', '150K+'],
           ),
           const SizedBox(height: AppConstants.spacingLarge),
@@ -180,7 +180,7 @@ class _FiltersPanel extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {},
-              child: const Text('Apply Filters'),
+              child: const Text('تطبيق التصفية'),
             ),
           ),
           const SizedBox(height: AppConstants.spacingSmall),
@@ -188,7 +188,7 @@ class _FiltersPanel extends StatelessWidget {
             width: double.infinity,
             child: TextButton(
               onPressed: () {},
-              child: const Text('Clear All'),
+              child: const Text('مسح الكل'),
             ),
           ),
         ],
@@ -247,8 +247,8 @@ class _SortDropdown extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: 'Most Recent',
-          items: ['Most Recent', 'Most Relevant', 'Highest Salary', 'Nearest']
+          value: 'الأحدث',
+          items: ['الأحدث', 'الأكثر صلة', 'الأعلى راتباً', 'الأقرب']
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),
           onChanged: (value) {},
@@ -309,7 +309,7 @@ class _JobCard extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Company Name',
+                          'اسم الشركة',
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: AppColors.textSecondaryLight,
                           ),
@@ -322,7 +322,7 @@ class _JobCard extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      'Software Engineer',
+                      'مهندس برمجيات',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -339,16 +339,16 @@ class _JobCard extends StatelessWidget {
           const SizedBox(height: AppConstants.spacingMedium),
           Row(
             children: [
-              _JobTag(icon: Iconsax.location, label: 'Riyadh'),
+              _JobTag(icon: Iconsax.location, label: 'الرياض'),
               const SizedBox(width: AppConstants.spacingSmall),
-              _JobTag(icon: Iconsax.briefcase, label: 'Full-time'),
+              _JobTag(icon: Iconsax.briefcase, label: 'دوام كامل'),
               const SizedBox(width: AppConstants.spacingSmall),
-              _JobTag(icon: Iconsax.money, label: '15K-25K SAR'),
+              _JobTag(icon: Iconsax.money, label: '15K-25K ر.س'),
             ],
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           Text(
-            'We are looking for a skilled software engineer to join our team and help build innovative solutions...',
+            'نبحث عن مهندس برمجيات متميز للانضمام إلى فريقنا والمساعدة في بناء حلول مبتكرة...',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondaryLight,
             ),
@@ -360,13 +360,13 @@ class _JobCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '2 hours ago',
+                'منذ ساعتين',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.textTertiaryLight,
                 ),
               ),
               Text(
-                '${5 - index} vacancies left',
+                '${5 - index} وظائف متبقية',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: AppColors.success,
                   fontWeight: FontWeight.w500,

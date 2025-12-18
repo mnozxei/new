@@ -25,31 +25,31 @@ class _MainShellState extends State<MainShell> {
 
   static const List<_NavigationItem> _navigationItems = [
     _NavigationItem(
-      label: 'Jobs',
+      label: 'الرئيسية',
+      icon: Iconsax.home,
+      selectedIcon: Iconsax.home_15,
+      route: RouteNames.posts,
+    ),
+    _NavigationItem(
+      label: 'الوظائف',
       icon: Iconsax.briefcase,
       selectedIcon: Iconsax.briefcase5,
       route: RouteNames.jobs,
     ),
     _NavigationItem(
-      label: 'Courses',
+      label: 'الدورات',
       icon: Iconsax.book_1,
       selectedIcon: Iconsax.book,
       route: RouteNames.courses,
     ),
     _NavigationItem(
-      label: 'Posts',
-      icon: Iconsax.document_text,
-      selectedIcon: Iconsax.document_text_1,
-      route: RouteNames.posts,
-    ),
-    _NavigationItem(
-      label: 'Chat',
+      label: 'المحادثات',
       icon: Iconsax.message,
       selectedIcon: Iconsax.message_2,
       route: RouteNames.chat,
     ),
     _NavigationItem(
-      label: 'Profile',
+      label: 'حسابي',
       icon: Iconsax.user,
       selectedIcon: Iconsax.user_tick,
       route: RouteNames.profile,
@@ -326,7 +326,7 @@ class _DesktopSidebar extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    'Professional Platform',
+                    'منصة مهنية متكاملة',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDark
                           ? AppColors.textTertiaryDark
@@ -349,7 +349,7 @@ class _DesktopSidebar extends StatelessWidget {
         children: [
           _DesktopNavItem(
             icon: Iconsax.setting_2,
-            label: 'Settings',
+            label: 'الإعدادات',
             isSelected: false,
             isExpanded: isExpanded,
             onTap: () => context.go('${RouteNames.profile}/settings'),
@@ -357,7 +357,7 @@ class _DesktopSidebar extends StatelessWidget {
           const SizedBox(height: AppConstants.spacingSmall),
           _DesktopNavItem(
             icon: isExpanded ? Iconsax.sidebar_right : Iconsax.sidebar_left,
-            label: isExpanded ? 'Collapse' : 'Expand',
+            label: isExpanded ? 'طي القائمة' : 'توسيع',
             isSelected: false,
             isExpanded: isExpanded,
             onTap: onToggleExpanded,
@@ -533,7 +533,7 @@ class _DesktopSidePanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Quick Actions',
+                'إجراءات سريعة',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: isDark
                       ? AppColors.textSecondaryDark
@@ -543,22 +543,22 @@ class _DesktopSidePanel extends StatelessWidget {
               const SizedBox(height: AppConstants.spacingMedium),
               _QuickActionTile(
                 icon: Iconsax.add_circle,
-                label: 'Post a Job',
+                label: 'نشر وظيفة',
                 onTap: () => context.push(RouteNames.postJob),
               ),
               _QuickActionTile(
                 icon: Iconsax.edit,
-                label: 'Create Post',
+                label: 'إنشاء منشور',
                 onTap: () => context.push(RouteNames.createPost),
               ),
               _QuickActionTile(
                 icon: Iconsax.building,
-                label: 'My Companies',
+                label: 'شركاتي',
                 onTap: () => context.push(RouteNames.companies),
               ),
               const SizedBox(height: AppConstants.spacingLarge),
               Text(
-                'Notifications',
+                'الإشعارات',
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: isDark
                       ? AppColors.textSecondaryDark
@@ -569,7 +569,7 @@ class _DesktopSidePanel extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: Text(
-                    'No new notifications',
+                    'لا توجد إشعارات جديدة',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: isDark
                           ? AppColors.textTertiaryDark

@@ -47,7 +47,7 @@ class _LoginPageState extends State<LoginPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
-          context.go(RouteNames.jobs);
+          context.go(RouteNames.posts);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -115,7 +115,7 @@ class _MobileLoginLayout extends StatelessWidget {
               _buildLogo(),
               const SizedBox(height: AppConstants.spacingHuge),
               Text(
-                'Welcome Back',
+                'مرحباً بعودتك',
                 style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -123,7 +123,7 @@ class _MobileLoginLayout extends StatelessWidget {
               ),
               const SizedBox(height: AppConstants.spacingSmall),
               Text(
-                'Sign in to continue to TAMAD HUB',
+                'سجل دخولك للمتابعة إلى TAMAD HUB',
                 style: theme.textTheme.bodyLarge?.copyWith(
                   color: AppColors.textSecondaryLight,
                 ),
@@ -176,13 +176,13 @@ class _MobileLoginLayout extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          "Don't have an account? ",
+          'ليس لديك حساب؟ ',
           style: theme.textTheme.bodyMedium,
         ),
         GestureDetector(
           onTap: () => context.go(RouteNames.register),
           child: Text(
-            'Sign Up',
+            'إنشاء حساب',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.primary,
               fontWeight: FontWeight.w600,
@@ -255,7 +255,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingMedium),
                     Text(
-                      'Your Professional Platform for\nJobs, Courses, and Networking',
+                      'منصتك المهنية للوظائف\nوالدورات والتواصل',
                       style: theme.textTheme.titleLarge?.copyWith(
                         color: AppColors.white.withValues(alpha: 0.9),
                       ),
@@ -281,14 +281,14 @@ class _DesktopLoginLayout extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Welcome Back',
+                        'مرحباً بعودتك',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: AppConstants.spacingSmall),
                       Text(
-                        'Sign in to continue to TAMAD HUB',
+                        'سجل دخولك للمتابعة إلى TAMAD HUB',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: AppColors.textSecondaryLight,
                         ),
@@ -305,13 +305,13 @@ class _DesktopLoginLayout extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "Don't have an account? ",
+                            'ليس لديك حساب؟ ',
                             style: theme.textTheme.bodyMedium,
                           ),
                           GestureDetector(
                             onTap: () => context.go(RouteNames.register),
                             child: Text(
-                              'Sign Up',
+                              'إنشاء حساب',
                               style: theme.textTheme.bodyMedium?.copyWith(
                                 color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
@@ -361,19 +361,19 @@ class _LoginForm extends StatelessWidget {
               children: [
                 GlassTextField(
                   controller: emailController,
-                  label: 'Email',
-                  hint: 'Enter your email',
+                  label: 'البريد الإلكتروني',
+                  hint: 'أدخل بريدك الإلكتروني',
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
                   prefixIcon: const Icon(Iconsax.sms),
                   enabled: !isLoading,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'الرجاء إدخال البريد الإلكتروني';
                     }
                     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                         .hasMatch(value)) {
-                      return 'Please enter a valid email';
+                      return 'الرجاء إدخال بريد إلكتروني صحيح';
                     }
                     return null;
                   },
@@ -381,8 +381,8 @@ class _LoginForm extends StatelessWidget {
                 const SizedBox(height: AppConstants.spacingMedium),
                 GlassTextField(
                   controller: passwordController,
-                  label: 'Password',
-                  hint: 'Enter your password',
+                  label: 'كلمة المرور',
+                  hint: 'أدخل كلمة المرور',
                   obscureText: true,
                   textInputAction: TextInputAction.done,
                   prefixIcon: const Icon(Iconsax.lock),
@@ -390,20 +390,20 @@ class _LoginForm extends StatelessWidget {
                   onSubmitted: (_) => onLogin(),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return 'الرجاء إدخال كلمة المرور';
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: AppConstants.spacingSmall),
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: isLoading ? null : () {},
-                    child: const Text('Forgot Password?'),
+                    child: const Text('نسيت كلمة المرور؟'),
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacingMedium),
@@ -421,7 +421,7 @@ class _LoginForm extends StatelessWidget {
                                   AlwaysStoppedAnimation<Color>(AppColors.white),
                             ),
                           )
-                        : const Text('Sign In'),
+                        : const Text('تسجيل الدخول'),
                   ),
                 ),
               ],
