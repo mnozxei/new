@@ -35,7 +35,11 @@ class _MobileNotificationsPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.tick_circle),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم تحديد جميع الإشعارات كمقروءة')),
+              );
+            },
           ),
         ],
       ),
@@ -73,7 +77,11 @@ class _DesktopNotificationsPage extends StatelessWidget {
                   Text('الإشعارات', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                   const Spacer(),
                   TextButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('تم تحديد جميع الإشعارات كمقروءة')),
+                      );
+                    },
                     icon: const Icon(Iconsax.tick_circle),
                     label: const Text('تحديد الكل كمقروء'),
                   ),
@@ -124,7 +132,11 @@ class _NotificationItem extends StatelessWidget {
       child: Material(
         color: isDesktop && isUnread ? AppColors.primaryExtraLight : Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('تم فتح: ${notification.title}')),
+            );
+          },
           borderRadius: isDesktop ? null : BorderRadius.circular(AppConstants.borderRadiusMedium),
           child: Padding(
             padding: const EdgeInsets.all(AppConstants.spacingMedium),

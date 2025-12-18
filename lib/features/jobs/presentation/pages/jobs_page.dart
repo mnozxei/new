@@ -26,6 +26,60 @@ class JobsPage extends StatelessWidget {
 class _MobileJobsPage extends StatelessWidget {
   const _MobileJobsPage();
 
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          padding: const EdgeInsets.all(AppConstants.spacingLarge),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.dividerLight,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppConstants.spacingLarge),
+              Text('التصفية', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: AppConstants.spacingLarge),
+              _FilterSection(title: 'نوع العمل', options: ['دوام كامل', 'دوام جزئي', 'عقد', 'عن بعد', 'تدريب']),
+              const SizedBox(height: AppConstants.spacingMedium),
+              _FilterSection(title: 'مستوى الخبرة', options: ['مبتدئ', 'متوسط', 'خبير', 'مدير']),
+              const SizedBox(height: AppConstants.spacingLarge),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم تطبيق التصفية')),
+                    );
+                  },
+                  child: const Text('تطبيق'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +88,7 @@ class _MobileJobsPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.filter),
-            onPressed: () {},
+            onPressed: () => _showFilterSheet(context),
           ),
           IconButton(
             icon: const Icon(Iconsax.notification),
@@ -179,7 +233,11 @@ class _FiltersPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم تطبيق التصفية')),
+                );
+              },
               child: const Text('تطبيق التصفية'),
             ),
           ),
@@ -187,7 +245,11 @@ class _FiltersPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: TextButton(
-              onPressed: () {},
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم مسح جميع الفلاتر')),
+                );
+              },
               child: const Text('مسح الكل'),
             ),
           ),
@@ -332,7 +394,11 @@ class _JobCard extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Iconsax.bookmark),
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تمت الإضافة إلى المحفوظات')),
+                  );
+                },
               ),
             ],
           ),

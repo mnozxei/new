@@ -237,7 +237,11 @@ class _MobileProfilePage extends StatelessWidget {
           const SizedBox(width: AppConstants.spacingMedium),
           GlassIconButton(
             icon: Iconsax.share,
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم نسخ رابط الملف الشخصي')),
+              );
+            },
             intensity: GlassIntensity.light,
           ),
         ],
@@ -270,19 +274,23 @@ class _MobileProfilePage extends StatelessWidget {
             _MenuItem(
               icon: Iconsax.book,
               label: 'دوراتي',
-              onTap: () {},
+              onTap: () => context.push(RouteNames.courses),
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.document_text,
               label: 'منشوراتي',
-              onTap: () {},
+              onTap: () => context.push(RouteNames.posts),
             ),
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.bookmark,
               label: 'المحفوظات',
-              onTap: () {},
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('المحفوظات قيد التطوير')),
+                );
+              },
             ),
             const Divider(height: 1),
             _MenuItem(
@@ -460,7 +468,7 @@ class _DesktopProfilePage extends StatelessWidget {
           _MenuItem(
             icon: Iconsax.book,
             label: 'دوراتي',
-            onTap: () {},
+            onTap: () => context.push(RouteNames.courses),
           ),
           _MenuItem(
             icon: Iconsax.logout,

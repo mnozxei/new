@@ -21,7 +21,11 @@ class CoursesPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.filter),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('التصفية قيد التطوير')),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Iconsax.notification),
@@ -83,7 +87,11 @@ class _CategoryChip extends StatelessWidget {
       child: FilterChip(
         label: Text(label),
         selected: isSelected,
-        onSelected: (selected) {},
+        onSelected: (selected) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('تم اختيار: $label')),
+          );
+        },
       ),
     );
   }

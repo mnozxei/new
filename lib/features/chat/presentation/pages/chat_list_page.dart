@@ -33,7 +33,11 @@ class _MobileChatListPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.edit),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('بدء محادثة جديدة')),
+              );
+            },
           ),
         ],
       ),
@@ -89,7 +93,11 @@ class _DesktopChatListPage extends StatelessWidget {
                       const Spacer(),
                       GlassIconButton(
                         icon: Iconsax.edit,
-                        onPressed: () {},
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('بدء محادثة جديدة')),
+                          );
+                        },
                       ),
                     ],
                   ),
