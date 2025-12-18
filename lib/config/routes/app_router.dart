@@ -29,7 +29,7 @@ import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/profile/presentation/pages/user_profile_page.dart';
-import '../injection/injection.dart';
+import '../injection/injection.dart' show getIt, AuthService;
 import 'main_shell.dart';
 import 'route_names.dart';
 
@@ -266,12 +266,6 @@ abstract final class AppRouter {
     }
 
     return null;
-  }
-}
-
-class AuthService {
-  Future<bool> isAuthenticated() async {
-    return false;
   }
 }
 

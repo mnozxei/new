@@ -44,6 +44,16 @@ class _SplashPageState extends State<SplashPage>
     );
 
     _controller.forward();
+
+    // Fallback timeout - navigate to login if no auth state after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        final state = context.read<AuthBloc>().state;
+        if (state is AuthInitial || state is AuthLoading) {
+          context.go(RouteNames.login);
+        }
+      }
+    });
   }
 
   @override

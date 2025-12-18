@@ -242,6 +242,10 @@ class AuthServiceImpl implements AuthService {
 
   @override
   Future<bool> isAuthenticated() async {
-    return _client.auth.currentSession != null;
+    try {
+      return _client.auth.currentSession != null;
+    } catch (_) {
+      return false;
+    }
   }
 }
