@@ -31,19 +31,19 @@ class _MainShellState extends State<MainShell> {
       route: RouteNames.posts,
     ),
     _NavigationItem(
-      label: 'الوظائف',
+      label: 'وظائف',
       icon: Iconsax.briefcase,
       selectedIcon: Iconsax.briefcase5,
       route: RouteNames.jobs,
     ),
     _NavigationItem(
-      label: 'الدورات',
+      label: 'دورات',
       icon: Iconsax.book_1,
       selectedIcon: Iconsax.book,
       route: RouteNames.courses,
     ),
     _NavigationItem(
-      label: 'المحادثات',
+      label: 'محادثات',
       icon: Iconsax.message,
       selectedIcon: Iconsax.message_2,
       route: RouteNames.chat,

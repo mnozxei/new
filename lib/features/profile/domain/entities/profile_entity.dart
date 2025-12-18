@@ -77,13 +77,18 @@ class ProfileEntity extends Equatable {
 
   String? get initials {
     if (fullName != null && fullName!.isNotEmpty) {
-      final parts = fullName!.split(' ');
-      if (parts.length >= 2) {
+      final parts = fullName!.split(' ').where((p) => p.isNotEmpty).toList();
+      if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
         return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
       }
-      return parts[0][0].toUpperCase();
+      if (parts.isNotEmpty && parts[0].isNotEmpty) {
+        return parts[0][0].toUpperCase();
+      }
     }
-    return email[0].toUpperCase();
+    if (email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return '?';
   }
 
   ProfileEntity copyWith({

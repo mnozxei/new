@@ -37,7 +37,7 @@ class GlassBottomNavigation extends StatelessWidget {
     final bool isDark = theme.brightness == Brightness.dark;
     final double effectiveBlur = blurSigma ?? AppConstants.glassBlurSigma;
     final double effectiveOpacity = opacity ?? 0.8;
-    final double effectiveHeight = height ?? 80;
+    final double effectiveHeight = height ?? 85;
 
     final Color effectiveSelectedColor = selectedItemColor ??
         (isDark ? AppColors.primaryLight : AppColors.primary);
@@ -231,8 +231,13 @@ class _GlassBottomNavigationItemWidgetState
                       color: color,
                       fontWeight:
                           widget.isSelected ? FontWeight.w600 : FontWeight.w400,
+                      fontSize: 10,
                     ),
-                    child: Text(widget.item.label),
+                    child: Text(
+                      widget.item.label,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
                 ],
               ],
