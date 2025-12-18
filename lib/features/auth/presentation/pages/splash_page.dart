@@ -102,20 +102,18 @@ class _SplashPageState extends State<SplashPage>
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
                             borderRadius: BorderRadius.circular(
                               AppConstants.borderRadiusExtraLarge,
                             ),
                             boxShadow: AppColors.elevatedShadowLight,
                           ),
-                          child: const Center(
-                            child: Text(
-                              'T',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 64,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(
+                              AppConstants.borderRadiusExtraLarge,
+                            ),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),

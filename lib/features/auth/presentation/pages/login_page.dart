@@ -151,18 +151,14 @@ class _MobileLoginLayout extends StatelessWidget {
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
           boxShadow: AppColors.elevatedShadowLight,
         ),
-        child: const Center(
-          child: Text(
-            'T',
-            style: TextStyle(
-              color: AppColors.white,
-              fontSize: 40,
-              fontWeight: FontWeight.bold,
-            ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+          child: Image.asset(
+            'assets/images/logo.png',
+            fit: BoxFit.cover,
           ),
         ),
       ),
@@ -229,19 +225,24 @@ class _DesktopLoginLayout extends StatelessWidget {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(
                           AppConstants.borderRadiusExtraLarge,
                         ),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'T',
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 64,
-                            fontWeight: FontWeight.bold,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.black.withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(
+                          AppConstants.borderRadiusExtraLarge,
+                        ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
