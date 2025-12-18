@@ -35,38 +35,65 @@ class GlassBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bool isDark = theme.brightness == Brightness.dark;
-    final double effectiveBlur = blurSigma ?? AppConstants.glassBlurSigma;
-    final double effectiveOpacity = opacity ?? 0.8;
-    final double effectiveHeight = height ?? 85;
+    final double effectiveBlur = blurSigma ?? 20.0;
+    final double effectiveOpacity = opacity ?? 0.7;
+    final double effectiveHeight = height ?? 80;
 
     final Color effectiveSelectedColor = selectedItemColor ??
         (isDark ? AppColors.primaryLight : AppColors.primary);
     final Color effectiveUnselectedColor = unselectedItemColor ??
         (isDark ? AppColors.textTertiaryDark : AppColors.textTertiaryLight);
 
-    return ClipRRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: effectiveBlur,
-          sigmaY: effectiveBlur,
-        ),
-        child: Container(
-          height: effectiveHeight,
-          decoration: BoxDecoration(
-            color: backgroundColor ??
-                (isDark
-                    ? AppColors.surfaceDark.withValues(alpha: effectiveOpacity)
-                    : AppColors.surfaceLight
-                        .withValues(alpha: effectiveOpacity)),
-            border: Border(
-              top: BorderSide(
-                color: isDark ? AppColors.dividerDark : AppColors.dividerLight,
-                width: 0.5,
-              ),
-            ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: effectiveBlur,
+            sigmaY: effectiveBlur,
           ),
-          child: SafeArea(
-            top: false,
+          child: Container(
+            height: effectiveHeight,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? [
+                        Colors.white.withValues(alpha: 0.1),
+                        Colors.white.withValues(alpha: 0.05),
+                      ]
+                    : [
+                        Colors.white.withValues(alpha: effectiveOpacity),
+                        Colors.white.withValues(alpha: effectiveOpacity * 0.8),
+                      ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.8),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : AppColors.primary.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -5,
+                ),
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: List.generate(items.length, (index) {
@@ -156,6 +183,7 @@ class _GlassBottomNavigationItemWidgetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool isDark = theme.brightness == Brightness.dark;
     final color =
         widget.isSelected ? widget.selectedColor : widget.unselectedColor;
 
@@ -179,44 +207,70 @@ class _GlassBottomNavigationItemWidgetState
                   children: [
                     AnimatedContainer(
                       duration: AppConstants.animationDuration,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacingMedium,
-                        vertical: AppConstants.spacingSmall,
+                      curve: Curves.easeOutCubic,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: widget.isSelected ? 20 : 12,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: widget.isSelected
-                            ? widget.selectedColor.withValues(alpha: 0.1)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.borderRadiusLarge,
-                        ),
+                        gradient: widget.isSelected
+                            ? LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  widget.selectedColor.withValues(alpha: 0.2),
+                                  widget.selectedColor.withValues(alpha: 0.1),
+                                ],
+                              )
+                            : null,
+                        color: widget.isSelected ? null : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: widget.isSelected
+                            ? [
+                                BoxShadow(
+                                  color: widget.selectedColor.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ]
+                            : null,
                       ),
                       child: Icon(
                         widget.isSelected
                             ? (widget.item.selectedIcon ?? widget.item.icon)
                             : widget.item.icon,
                         color: color,
-                        size: AppConstants.iconSizeMedium,
+                        size: widget.isSelected ? 26 : 24,
                       ),
                     ),
                     if (widget.item.badge != null)
                       Positioned(
-                        top: 0,
-                        right: 0,
+                        top: -2,
+                        right: widget.isSelected ? 4 : -2,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.error,
+                            gradient: const LinearGradient(
+                              colors: [AppColors.error, Color(0xFFFF6B6B)],
+                            ),
                             borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.error.withValues(alpha: 0.4),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
                           child: Text(
                             widget.item.badge!,
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: AppColors.white,
                               fontSize: 10,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -224,14 +278,14 @@ class _GlassBottomNavigationItemWidgetState
                   ],
                 ),
                 if (widget.showLabel) ...[
-                  const SizedBox(height: AppConstants.spacingExtraSmall),
+                  const SizedBox(height: 4),
                   AnimatedDefaultTextStyle(
                     duration: AppConstants.animationDurationFast,
                     style: theme.textTheme.labelSmall!.copyWith(
                       color: color,
                       fontWeight:
-                          widget.isSelected ? FontWeight.w600 : FontWeight.w400,
-                      fontSize: 10,
+                          widget.isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: widget.isSelected ? 11 : 10,
                     ),
                     child: Text(
                       widget.item.label,

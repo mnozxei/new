@@ -35,6 +35,27 @@ class _MobilePostsPage extends StatelessWidget {
             icon: const Icon(Iconsax.search_normal),
             onPressed: () {},
           ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Iconsax.notification),
+                onPressed: () => context.push(RouteNames.notifications),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: AppColors.error,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.white, width: 1),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -71,6 +92,28 @@ class _DesktopPostsPage extends StatelessWidget {
                     children: [
                       Text('المنشورات', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const Spacer(),
+                      Stack(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Iconsax.notification),
+                            onPressed: () => context.push(RouteNames.notifications),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.white, width: 1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: AppConstants.spacingSmall),
                       GlassButton(
                         onPressed: () => context.pushNamed(RouteNames.createPost),
                         child: Row(
