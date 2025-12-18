@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/locale_service.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -21,7 +24,6 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   bool _isDarkMode = false;
   bool _notificationsEnabled = true;
-  String _selectedLanguage = 'العربية';
 
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -38,33 +40,36 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showLanguageDialog() {
+    final l10n = AppLocalizations.of(context)!;
+    final localeService = Provider.of<LocaleService>(context, listen: false);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('اختر اللغة'),
+        title: Text(l10n.settings_selectLanguage),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              title: const Text('العربية'),
-              trailing: _selectedLanguage == 'العربية'
+              title: Text(l10n.settings_languageArabic),
+              trailing: localeService.isArabic
                   ? const Icon(Iconsax.tick_circle, color: AppColors.primary)
                   : null,
               onTap: () {
-                setState(() => _selectedLanguage = 'العربية');
+                localeService.setLocale(const Locale('ar'));
                 Navigator.pop(ctx);
-                _showSnackBar('تم تغيير اللغة إلى العربية');
+                _showSnackBar(l10n.settings_languageChanged(l10n.settings_languageArabic));
               },
             ),
             ListTile(
-              title: const Text('English'),
-              trailing: _selectedLanguage == 'English'
+              title: Text(l10n.settings_languageEnglish),
+              trailing: localeService.isEnglish
                   ? const Icon(Iconsax.tick_circle, color: AppColors.primary)
                   : null,
               onTap: () {
-                setState(() => _selectedLanguage = 'English');
+                localeService.setLocale(const Locale('en'));
                 Navigator.pop(ctx);
-                _showSnackBar('Language changed to English');
+                _showSnackBar(l10n.settings_languageChanged(l10n.settings_languageEnglish));
               },
             ),
           ],
@@ -72,7 +77,7 @@ class _SettingsPageState extends State<SettingsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
+            child: Text(l10n.common_cancel),
           ),
         ],
       ),
@@ -256,7 +261,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     _SettingsTile(
                       icon: Iconsax.language_square,
                       title: 'اللغة',
-                      subtitle: _selectedLanguage,
+                      subtitle: Provider.of<LocaleService>(context).isArabic ? 'العربية' : 'English',
                       onTap: _showLanguageDialog,
                     ),
                   ],
