@@ -153,16 +153,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String fullName,
     required UserRole role,
   }) async {
-    await _client.from('profiles').insert({
+    // Use upsert to handle case where trigger already created the profile
+    await _client.from('profiles').upsert({
       'id': userId,
       'email': email,
       'full_name': fullName,
       'role': role.name,
       'is_email_verified': false,
       'is_profile_complete': false,
-      'created_at': DateTime.now().toIso8601String(),
       'updated_at': DateTime.now().toIso8601String(),
-    });
+    }, onConflict: 'id');
   }
 
   String _mapAuthError(String message) {
