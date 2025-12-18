@@ -151,7 +151,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         .from('profiles')
         .select()
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+
+    if (response == null) {
+      // Profile doesn't exist yet - create it from auth metadata
+      final user = _client.auth.currentUser;
+      final email = user?.email ?? '';
+      final fullName = user?.userMetadata?['full_name'] as String? ?? '';
+      final roleStr = user?.userMetadata?['role'] as String? ?? 'user';
+
+      await _client.from('profiles').insert({
+        'id': userId,
+        'email': email,
+        'full_name': fullName,
+        'role': roleStr,
+      });
+
+      // Fetch the newly created profile
+      final newResponse = await _client
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+      return UserModel.fromJson(newResponse);
+    }
 
     return UserModel.fromJson(response);
   }
