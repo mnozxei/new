@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="تماد هب - منصة احترافية للتوظيف والدورات التدريبية والتواصل المهني">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="تماد هب">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <!-- Theme color -->
+  <meta name="theme-color" content="#6366F1">
+
+  <!-- Viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- Open Graph / Social -->
+  <meta property="og:title" content="تماد هب - TAMAD HUB">
+  <meta property="og:description" content="منصة احترافية للتوظيف والدورات التدريبية والتواصل المهني">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="icons/Icon-512.png">
+
+  <title>تماد هب - TAMAD HUB</title>
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    :root {
+      --primary-color: #6366F1;
+      --background-color: #0F172A;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--background-color);
+    }
+
+    /* Loading screen */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      background: linear-gradient(135deg, var(--primary-color), #8B5CF6);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 20px 60px rgba(99, 102, 241, 0.3);
+      margin-bottom: 32px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .logo-text {
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      font-family: 'Cairo', 'Segoe UI', sans-serif;
+    }
+
+    .app-name {
+      color: white;
+      font-size: 28px;
+      font-weight: 600;
+      font-family: 'Cairo', 'Segoe UI', sans-serif;
+      margin-bottom: 16px;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--primary-color);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading-container">
+    <div class="logo">
+      <span class="logo-text">تماد</span>
+    </div>
+    <p class="app-name">تماد هب</p>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
