@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
+import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -27,6 +28,7 @@ import '../../features/posts/presentation/pages/post_details_page.dart';
 import '../../features/posts/presentation/pages/posts_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/profile/presentation/pages/saved_items_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
 import '../../features/profile/presentation/pages/user_profile_page.dart';
 import '../injection/injection.dart' show getIt, AuthService;
@@ -59,6 +61,11 @@ abstract final class AppRouter {
         path: RouteNames.register,
         name: RouteNames.register,
         builder: (context, state) => const RegisterPage(),
+      ),
+      GoRoute(
+        path: RouteNames.forgotPassword,
+        name: RouteNames.forgotPassword,
+        builder: (context, state) => const ForgotPasswordPage(),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -241,6 +248,11 @@ abstract final class AppRouter {
             name: RouteNames.adminDashboard,
             builder: (context, state) => const AdminDashboardPage(),
           ),
+          GoRoute(
+            path: RouteNames.savedItems,
+            name: RouteNames.savedItems,
+            builder: (context, state) => const SavedItemsPage(),
+          ),
         ],
       ),
     ],
@@ -255,6 +267,7 @@ abstract final class AppRouter {
     final isAuthenticated = await authService.isAuthenticated();
     final isAuthRoute = state.matchedLocation == RouteNames.login ||
         state.matchedLocation == RouteNames.register ||
+        state.matchedLocation == RouteNames.forgotPassword ||
         state.matchedLocation == RouteNames.splash;
 
     if (!isAuthenticated && !isAuthRoute) {

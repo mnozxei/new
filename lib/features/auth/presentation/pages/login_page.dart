@@ -402,7 +402,7 @@ class _LoginForm extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: isLoading ? null : () {},
+                    onPressed: isLoading ? null : () => context.push(RouteNames.forgotPassword),
                     child: const Text('نسيت كلمة المرور؟'),
                   ),
                 ),

@@ -35,4 +35,7 @@ abstract final class RouteNames {
   static const String companyVerification = 'companyVerification';
 
   static const String adminDashboard = '/admin';
+
+  static const String savedItems = '/saved-items';
+  static const String forgotPassword = '/forgot-password';
 }

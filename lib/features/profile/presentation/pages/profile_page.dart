@@ -286,11 +286,7 @@ class _MobileProfilePage extends StatelessWidget {
             _MenuItem(
               icon: Iconsax.bookmark,
               label: 'المحفوظات',
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('المحفوظات قيد التطوير')),
-                );
-              },
+              onTap: () => context.push(RouteNames.savedItems),
             ),
             const Divider(height: 1),
             _MenuItem(

@@ -1,0 +1,455 @@
+{
+  "@@locale": "ar",
+  "@@last_modified": "2025-12-18",
+
+  "appName": "تماد هب",
+  "appTagline": "منصة مهنية متكاملة",
+
+  "common_ok": "موافق",
+  "common_cancel": "إلغاء",
+  "common_save": "حفظ",
+  "common_delete": "حذف",
+  "common_edit": "تعديل",
+  "common_close": "إغلاق",
+  "common_search": "بحث",
+  "common_filter": "تصفية",
+  "common_apply": "تطبيق",
+  "common_clear": "مسح",
+  "common_clearAll": "مسح الكل",
+  "common_loading": "جاري التحميل...",
+  "common_error": "خطأ",
+  "common_success": "نجاح",
+  "common_retry": "إعادة المحاولة",
+  "common_back": "رجوع",
+  "common_next": "التالي",
+  "common_previous": "السابق",
+  "common_submit": "إرسال",
+  "common_share": "مشاركة",
+  "common_follow": "متابعة",
+  "common_following": "متابَع",
+  "common_unfollow": "إلغاء المتابعة",
+  "common_like": "إعجاب",
+  "common_comment": "تعليق",
+  "common_more": "المزيد",
+  "common_seeAll": "عرض الكل",
+  "common_noResults": "لا توجد نتائج",
+  "common_underDevelopment": "قيد التطوير",
+  "common_comingSoon": "قريباً",
+
+  "nav_home": "الرئيسية",
+  "nav_jobs": "وظائف",
+  "nav_courses": "دورات",
+  "nav_chat": "محادثات",
+  "nav_profile": "حسابي",
+
+  "auth_welcomeBack": "مرحباً بعودتك",
+  "auth_loginSubtitle": "سجل دخولك للمتابعة إلى TAMAD HUB",
+  "auth_createAccount": "إنشاء حساب",
+  "auth_createAccountSubtitle": "انضم إلى TAMAD HUB اليوم",
+  "auth_email": "البريد الإلكتروني",
+  "auth_emailHint": "أدخل بريدك الإلكتروني",
+  "auth_password": "كلمة المرور",
+  "auth_passwordHint": "أدخل كلمة المرور",
+  "auth_confirmPassword": "تأكيد كلمة المرور",
+  "auth_confirmPasswordHint": "أعد إدخال كلمة المرور",
+  "auth_fullName": "الاسم الكامل",
+  "auth_fullNameHint": "أدخل اسمك الكامل",
+  "auth_accountType": "نوع الحساب",
+  "auth_user": "مستخدم",
+  "auth_instructor": "مدرب",
+  "auth_login": "تسجيل الدخول",
+  "auth_register": "إنشاء حساب",
+  "auth_forgotPassword": "نسيت كلمة المرور؟",
+  "auth_noAccount": "ليس لديك حساب؟",
+  "auth_haveAccount": "لديك حساب بالفعل؟",
+  "auth_logout": "تسجيل الخروج",
+  "auth_logoutConfirm": "هل أنت متأكد من تسجيل الخروج؟",
+  "auth_emailRequired": "الرجاء إدخال البريد الإلكتروني",
+  "auth_emailInvalid": "الرجاء إدخال بريد إلكتروني صحيح",
+  "auth_passwordRequired": "الرجاء إدخال كلمة المرور",
+  "auth_passwordTooShort": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+  "auth_confirmPasswordRequired": "الرجاء تأكيد كلمة المرور",
+  "auth_passwordsNotMatch": "كلمتا المرور غير متطابقتين",
+  "auth_nameRequired": "الرجاء إدخال اسمك الكامل",
+  "auth_nameTooShort": "الاسم يجب أن يكون حرفين على الأقل",
+  "auth_resetPasswordSent": "تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني",
+  "auth_enterEmailForReset": "أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور",
+  "auth_sendResetLink": "إرسال رابط إعادة التعيين",
+
+  "profile_title": "الملف الشخصي",
+  "profile_editProfile": "تعديل الملف الشخصي",
+  "profile_followers": "المتابعون",
+  "profile_following": "المتابَعون",
+  "profile_posts": "المنشورات",
+  "profile_aboutMe": "نبذة عني",
+  "profile_noAbout": "لم يتم إضافة نبذة بعد.",
+  "profile_recentActivity": "النشاط الأخير",
+  "profile_noActivity": "لا يوجد نشاط حديث",
+  "profile_joinedOn": "انضم في {date}",
+  "@profile_joinedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "profile_myApplications": "طلباتي",
+  "profile_myCompanies": "شركاتي",
+  "profile_myCourses": "دوراتي",
+  "profile_myPosts": "منشوراتي",
+  "profile_savedItems": "المحفوظات",
+  "profile_quickActions": "إجراءات سريعة",
+  "profile_profileLinkCopied": "تم نسخ رابط الملف الشخصي",
+
+  "settings_title": "الإعدادات",
+  "settings_account": "الحساب",
+  "settings_accountInfo": "معلومات الحساب",
+  "settings_accountInfoSub": "تحديث بياناتك الشخصية",
+  "settings_security": "كلمة المرور والأمان",
+  "settings_securitySub": "إدارة كلمة المرور والمصادقة الثنائية",
+  "settings_privacy": "الخصوصية",
+  "settings_privacySub": "التحكم في من يمكنه رؤية ملفك الشخصي",
+  "settings_preferences": "التفضيلات",
+  "settings_notifications": "الإشعارات",
+  "settings_notificationsEnabled": "الإشعارات مفعلة",
+  "settings_notificationsDisabled": "الإشعارات معطلة",
+  "settings_notificationsToggled": "تم {status} الإشعارات",
+  "@settings_notificationsToggled": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "settings_theme": "المظهر",
+  "settings_themeLight": "الوضع الفاتح",
+  "settings_themeDark": "الوضع الداكن",
+  "settings_themeSwitched": "تم التبديل إلى {mode}",
+  "@settings_themeSwitched": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "settings_language": "اللغة",
+  "settings_languageArabic": "العربية",
+  "settings_languageEnglish": "English",
+  "settings_languageChanged": "تم تغيير اللغة إلى {language}",
+  "@settings_languageChanged": {
+    "placeholders": {
+      "language": {
+        "type": "String"
+      }
+    }
+  },
+  "settings_selectLanguage": "اختر اللغة",
+  "settings_support": "الدعم",
+  "settings_helpCenter": "مركز المساعدة",
+  "settings_helpCenterSub": "احصل على المساعدة والدعم",
+  "settings_termsOfService": "شروط الخدمة",
+  "settings_termsOfServiceSub": "اقرأ الشروط والأحكام",
+  "settings_privacyPolicy": "سياسة الخصوصية",
+  "settings_privacyPolicySub": "اقرأ سياسة الخصوصية",
+  "settings_aboutApp": "عن التطبيق",
+  "settings_version": "الإصدار {version}",
+  "@settings_version": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settings_session": "الجلسة",
+  "settings_logoutSub": "تسجيل الخروج من حسابك",
+  "settings_dangerZone": "منطقة الخطر",
+  "settings_deleteAccount": "حذف الحساب",
+  "settings_deleteAccountSub": "حذف حسابك نهائياً",
+  "settings_deleteAccountTitle": "حذف الحساب",
+  "settings_deleteAccountConfirm": "هل أنت متأكد من حذف حسابك نهائياً؟\n\nهذا الإجراء لا يمكن التراجع عنه وسيتم حذف جميع بياناتك.",
+  "settings_deleteAccountRequested": "تم إرسال طلب حذف الحساب. سيتم مراجعته خلال 24 ساعة.",
+  "settings_passwordResetSent": "سيتم إرسال رابط تغيير كلمة المرور إلى بريدك الإلكتروني",
+  "settings_privacyUnderDev": "إعدادات الخصوصية قيد التطوير",
+  "settings_helpCenterUnderDev": "مركز المساعدة قيد التطوير",
+  "settings_couldNotOpenLink": "تعذر فتح الرابط",
+  "settings_allRightsReserved": "جميع الحقوق محفوظة.",
+
+  "jobs_title": "الوظائف",
+  "jobs_searchHint": "ابحث عن وظائف...",
+  "jobs_postJob": "نشر وظيفة",
+  "jobs_filter": "التصفية",
+  "jobs_sort": "ترتيب",
+  "jobs_sortNewest": "الأحدث",
+  "jobs_sortRelevant": "الأكثر صلة",
+  "jobs_sortHighestSalary": "الأعلى راتباً",
+  "jobs_sortNearest": "الأقرب",
+  "jobs_jobType": "نوع العمل",
+  "jobs_fullTime": "دوام كامل",
+  "jobs_partTime": "دوام جزئي",
+  "jobs_contract": "عقد",
+  "jobs_remote": "عن بعد",
+  "jobs_internship": "تدريب",
+  "jobs_experienceLevel": "مستوى الخبرة",
+  "jobs_entryLevel": "مبتدئ",
+  "jobs_midLevel": "متوسط",
+  "jobs_seniorLevel": "خبير",
+  "jobs_manager": "مدير",
+  "jobs_executive": "تنفيذي",
+  "jobs_salaryRange": "نطاق الراتب",
+  "jobs_applyFilter": "تطبيق التصفية",
+  "jobs_filterApplied": "تم تطبيق التصفية",
+  "jobs_filtersCleared": "تم مسح جميع الفلاتر",
+  "jobs_companyName": "اسم الشركة",
+  "jobs_location": "الموقع",
+  "jobs_salary": "الراتب",
+  "jobs_postedAgo": "منذ {time}",
+  "@jobs_postedAgo": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "jobs_positionsLeft": "{count} وظائف متبقية",
+  "@jobs_positionsLeft": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jobs_savedToBookmarks": "تمت الإضافة إلى المحفوظات",
+  "jobs_removedFromBookmarks": "تمت الإزالة من المحفوظات",
+  "jobs_applyNow": "تقدم الآن",
+  "jobs_jobDescription": "وصف الوظيفة",
+  "jobs_requirements": "المتطلبات",
+  "jobs_benefits": "المزايا",
+  "jobs_aboutCompany": "عن الشركة",
+  "jobs_softwareEngineer": "مهندس برمجيات",
+  "jobs_lookingFor": "نبحث عن مهندس برمجيات متميز للانضمام إلى فريقنا والمساعدة في بناء حلول مبتكرة...",
+
+  "courses_title": "الدورات",
+  "courses_searchHint": "ابحث عن دورات...",
+  "courses_filterUnderDev": "التصفية قيد التطوير",
+  "courses_categorySelected": "تم اختيار: {category}",
+  "@courses_categorySelected": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "courses_all": "الكل",
+  "courses_programming": "البرمجة",
+  "courses_design": "التصميم",
+  "courses_marketing": "التسويق",
+  "courses_business": "الأعمال",
+  "courses_finance": "المالية",
+  "courses_flutterDev": "دورة تطوير تطبيقات Flutter",
+  "courses_instructorName": "اسم المدرب",
+  "courses_rating": "{rating}",
+  "@courses_rating": {
+    "placeholders": {
+      "rating": {
+        "type": "String"
+      }
+    }
+  },
+  "courses_reviews": "({count} تقييم)",
+  "@courses_reviews": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courses_hours": "{count} ساعة",
+  "@courses_hours": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courses_completed": "{percent}% مكتمل",
+  "@courses_completed": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "courses_startCourse": "ابدأ الدورة",
+  "courses_continueCourse": "استمر في الدورة",
+
+  "posts_title": "المنشورات",
+  "posts_newPost": "منشور جديد",
+  "posts_createPost": "إنشاء منشور",
+  "posts_whatsOnYourMind": "ما الذي يدور في ذهنك؟",
+  "posts_post": "نشر",
+  "posts_addImage": "إضافة صورة",
+  "posts_addVideo": "إضافة فيديو",
+  "posts_trendingTopics": "المواضيع الرائجة",
+  "posts_topicPosts": "{count} منشور",
+  "@posts_topicPosts": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posts_suggestedFollows": "اقتراحات المتابعة",
+  "posts_companyFollowers": "{count} متابع",
+  "@posts_companyFollowers": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posts_samplePost": "هذا نص تجريبي للمنشور رقم {index}. يمكن أن يحتوي المنشور على نص طويل ومحتوى متنوع.",
+  "@posts_samplePost": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "posts_hoursAgo": "منذ {hours} ساعات",
+  "@posts_hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "posts_companyName": "شركة التقنية المتقدمة",
+  "posts_liked": "تم الإعجاب",
+  "posts_unliked": "تم إلغاء الإعجاب",
+  "posts_shared": "تمت المشاركة",
+  "posts_commentAdded": "تم إضافة التعليق",
+
+  "chat_title": "المحادثات",
+  "chat_searchHint": "بحث في المحادثات...",
+  "chat_newChat": "محادثة جديدة",
+  "chat_startNewChat": "بدء محادثة جديدة",
+  "chat_selectConversation": "اختر محادثة للبدء",
+  "chat_typeMessage": "اكتب رسالة...",
+  "chat_send": "إرسال",
+  "chat_online": "متصل",
+  "chat_offline": "غير متصل",
+  "chat_now": "الآن",
+  "chat_minutesAgo": "{count} د",
+  "@chat_minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chat_hoursAgo": "{count} س",
+  "@chat_hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chat_yesterday": "أمس",
+  "chat_sampleMessages_1": "شكراً جزيلاً لك!",
+  "chat_sampleMessages_2": "هل يمكنك إرسال الملفات؟",
+  "chat_sampleMessages_3": "موعدنا غداً إن شاء الله",
+  "chat_sampleMessages_4": "تم استلام الطلب",
+  "chat_sampleMessages_5": "مرحباً، كيف حالك؟",
+
+  "notifications_title": "الإشعارات",
+  "notifications_markAllRead": "تحديد الكل كمقروء",
+  "notifications_allMarkedRead": "تم تحديد جميع الإشعارات كمقروءة",
+  "notifications_opened": "تم فتح: {title}",
+  "@notifications_opened": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "notifications_noNotifications": "لا توجد إشعارات جديدة",
+  "notifications_jobAccepted_title": "تم قبول طلبك",
+  "notifications_jobAccepted_message": "تهانينا! تم قبول طلبك لوظيفة مطور Flutter في شركة التقنية المتقدمة",
+  "notifications_newMessage_title": "رسالة جديدة",
+  "notifications_newMessage_message": "لديك رسالة جديدة من أحمد محمد",
+  "notifications_newCourse_title": "دورة جديدة متاحة",
+  "notifications_newCourse_message": "تم إضافة دورة جديدة في تطوير تطبيقات الموبايل",
+  "notifications_companyVerified_title": "تم التحقق من شركتك",
+  "notifications_companyVerified_message": "تم التحقق من بيانات شركتك بنجاح",
+  "notifications_postLiked_title": "إعجاب بمنشورك",
+  "notifications_postLiked_message": "أعجب {count} شخص بمنشورك الأخير",
+  "@notifications_postLiked_message": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifications_newComment_title": "تعليق جديد",
+  "notifications_newComment_message": "علق سعود على منشورك: \"محتوى رائع!\"",
+  "notifications_newFollower_title": "متابع جديد",
+  "notifications_newFollower_message": "بدأ خالد العتيبي بمتابعتك",
+  "notifications_appUpdate_title": "تحديث التطبيق",
+  "notifications_appUpdate_message": "تم إضافة ميزات جديدة للتطبيق",
+  "notifications_minutesAgo": "منذ {count} دقائق",
+  "@notifications_minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifications_hoursAgo": "منذ {count} ساعات",
+  "@notifications_hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notifications_daysAgo": "منذ {count} أيام",
+  "@notifications_daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "companies_title": "شركاتي",
+  "companies_createCompany": "إنشاء شركة",
+  "companies_verification": "التحقق",
+  "companies_verified": "موثقة",
+  "companies_pending": "قيد المراجعة",
+
+  "admin_dashboard": "لوحة التحكم",
+
+  "savedItems_title": "المحفوظات",
+  "savedItems_empty": "لا توجد عناصر محفوظة",
+  "savedItems_emptyMessage": "ستظهر هنا العناصر التي تقوم بحفظها",
+  "savedItems_jobs": "الوظائف المحفوظة",
+  "savedItems_posts": "المنشورات المحفوظة",
+  "savedItems_courses": "الدورات المحفوظة",
+
+  "forgotPassword_title": "نسيت كلمة المرور",
+  "forgotPassword_subtitle": "أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة تعيين كلمة المرور",
+  "forgotPassword_sendLink": "إرسال الرابط",
+  "forgotPassword_backToLogin": "العودة لتسجيل الدخول",
+  "forgotPassword_emailSent": "تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني",
+  "forgotPassword_checkEmail": "تحقق من بريدك الإلكتروني",
+
+  "error_pageNotFound": "الصفحة غير موجودة",
+  "error_goHome": "الرئيسية",
+  "error_unknown": "خطأ غير معروف",
+  "error_networkError": "خطأ في الاتصال",
+  "error_tryAgain": "حاول مرة أخرى",
+
+  "desktop_sidebar_collapse": "طي القائمة",
+  "desktop_sidebar_expand": "توسيع"
+}
