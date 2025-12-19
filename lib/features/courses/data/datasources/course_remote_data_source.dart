@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/entities/certificate_entity.dart';
 import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/quiz_entity.dart';
 import '../../domain/repositories/course_repository.dart';
@@ -75,6 +76,15 @@ abstract class CourseRemoteDataSource {
   Future<QuizAttemptEntity?> getLatestQuizAttempt(String quizId);
   Future<bool> isQuizPassed(String quizId);
   Future<bool> isLessonUnlocked(String lessonId);
+
+  // Certificate methods
+  Future<CertificateEntity> issueCertificate(String enrollmentId);
+  Future<CertificateEntity?> getCertificate(String certificateId);
+  Future<CertificateEntity?> getCertificateByEnrollment(String enrollmentId);
+  Future<CertificateEntity?> getCertificateBySerial(String serialNumber);
+  Future<CertificateVerificationResult> verifyCertificate(String serialNumber);
+  Future<List<CertificateEntity>> getUserCertificates();
+  Future<void> revokeCertificate(String certificateId, String reason);
 }
 
 class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
@@ -690,13 +700,15 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
 
     // All requirements met - mark course as complete
     final now = DateTime.now();
+    final enrollmentId = enrollmentResponse['id'] as String;
+
     final response = await _supabase
         .from('enrollments')
         .update({
           'status': 'completed',
           'completed_at': now.toIso8601String(),
         })
-        .eq('id', enrollmentResponse['id'])
+        .eq('id', enrollmentId)
         .select('''
           *,
           course:courses(
@@ -705,6 +717,13 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
           )
         ''')
         .single();
+
+    // Automatically issue certificate
+    try {
+      await issueCertificate(enrollmentId);
+    } catch (_) {
+      // Certificate issuance failure should not fail course completion
+    }
 
     return _mapEnrollmentFromJson(response);
   }
@@ -1531,6 +1550,191 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
           : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : now,
+    );
+  }
+
+  // ============================================
+  // CERTIFICATE METHODS IMPLEMENTATION
+  // ============================================
+
+  @override
+  Future<CertificateEntity> issueCertificate(String enrollmentId) async {
+    // Get enrollment details
+    final enrollmentResponse = await _supabase
+        .from('enrollments')
+        .select('''
+          *,
+          course:courses(
+            *,
+            instructor:profiles!instructor_id(*)
+          ),
+          user:profiles!user_id(*)
+        ''')
+        .eq('id', enrollmentId)
+        .single();
+
+    // Check if enrollment is completed
+    if (enrollmentResponse['status'] != 'completed') {
+      throw Exception('Enrollment is not completed');
+    }
+
+    // Check if certificate already exists
+    final existingCertificate = await getCertificateByEnrollment(enrollmentId);
+    if (existingCertificate != null) {
+      return existingCertificate;
+    }
+
+    // Generate unique serial number
+    final serialNumber = CertificateSerialGenerator.generate();
+
+    // Extract names for caching
+    final course = enrollmentResponse['course'] as Map<String, dynamic>?;
+    final user = enrollmentResponse['user'] as Map<String, dynamic>?;
+    final instructor = course?['instructor'] as Map<String, dynamic>?;
+
+    final now = DateTime.now();
+    final verificationUrl = 'https://tamad.hub/verify/$serialNumber';
+
+    final response = await _supabase
+        .from('certificates')
+        .insert({
+          'enrollment_id': enrollmentId,
+          'course_id': enrollmentResponse['course_id'],
+          'user_id': enrollmentResponse['user_id'],
+          'serial_number': serialNumber,
+          'status': 'issued',
+          'course_name': course?['title'],
+          'student_name': user?['full_name'],
+          'instructor_name': instructor?['full_name'],
+          'verification_url': verificationUrl,
+          'qr_code_data': verificationUrl,
+          'issued_at': now.toIso8601String(),
+          'created_at': now.toIso8601String(),
+        })
+        .select()
+        .single();
+
+    // Update enrollment with certificate URL
+    await _supabase
+        .from('enrollments')
+        .update({
+          'certificate_url': verificationUrl,
+        })
+        .eq('id', enrollmentId);
+
+    return _mapCertificateFromJson(response);
+  }
+
+  @override
+  Future<CertificateEntity?> getCertificate(String certificateId) async {
+    final response = await _supabase
+        .from('certificates')
+        .select()
+        .eq('id', certificateId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapCertificateFromJson(response);
+  }
+
+  @override
+  Future<CertificateEntity?> getCertificateByEnrollment(String enrollmentId) async {
+    final response = await _supabase
+        .from('certificates')
+        .select()
+        .eq('enrollment_id', enrollmentId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapCertificateFromJson(response);
+  }
+
+  @override
+  Future<CertificateEntity?> getCertificateBySerial(String serialNumber) async {
+    final response = await _supabase
+        .from('certificates')
+        .select()
+        .eq('serial_number', serialNumber)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapCertificateFromJson(response);
+  }
+
+  @override
+  Future<CertificateVerificationResult> verifyCertificate(String serialNumber) async {
+    // Validate serial number format
+    if (!CertificateSerialGenerator.isValid(serialNumber)) {
+      return CertificateVerificationResult.invalid('صيغة رقم الشهادة غير صحيحة');
+    }
+
+    final certificate = await getCertificateBySerial(serialNumber);
+
+    if (certificate == null) {
+      return CertificateVerificationResult.notFound();
+    }
+
+    if (certificate.status == CertificateStatus.revoked) {
+      return CertificateVerificationResult.revoked(
+        certificate.revokedReason ?? 'سبب غير محدد',
+      );
+    }
+
+    return CertificateVerificationResult.valid(certificate);
+  }
+
+  @override
+  Future<List<CertificateEntity>> getUserCertificates() async {
+    final response = await _supabase
+        .from('certificates')
+        .select()
+        .eq('user_id', _currentUserId)
+        .eq('status', 'issued')
+        .order('issued_at', ascending: false);
+
+    return (response as List).map((json) => _mapCertificateFromJson(json)).toList();
+  }
+
+  @override
+  Future<void> revokeCertificate(String certificateId, String reason) async {
+    final now = DateTime.now();
+    await _supabase
+        .from('certificates')
+        .update({
+          'status': 'revoked',
+          'revoked_at': now.toIso8601String(),
+          'revoked_reason': reason,
+        })
+        .eq('id', certificateId);
+  }
+
+  CertificateEntity _mapCertificateFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    return CertificateEntity(
+      id: json['id'] as String,
+      enrollmentId: json['enrollment_id'] as String,
+      courseId: json['course_id'] as String,
+      userId: json['user_id'] as String,
+      serialNumber: json['serial_number'] as String,
+      status: CertificateStatus.fromString(json['status'] as String? ?? 'issued'),
+      courseName: json['course_name'] as String?,
+      studentName: json['student_name'] as String?,
+      instructorName: json['instructor_name'] as String?,
+      companyName: json['company_name'] as String?,
+      pdfUrl: json['pdf_url'] as String?,
+      verificationUrl: json['verification_url'] as String?,
+      qrCodeData: json['qr_code_data'] as String?,
+      issuedAt: json['issued_at'] != null
+          ? DateTime.parse(json['issued_at'] as String)
+          : now,
+      revokedAt: json['revoked_at'] != null
+          ? DateTime.parse(json['revoked_at'] as String)
+          : null,
+      revokedReason: json['revoked_reason'] as String?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : now,

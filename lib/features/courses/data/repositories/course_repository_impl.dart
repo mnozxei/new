@@ -1,3 +1,4 @@
+import '../../domain/entities/certificate_entity.dart';
 import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/quiz_entity.dart';
 import '../../domain/repositories/course_repository.dart';
@@ -307,5 +308,44 @@ class CourseRepositoryImpl implements CourseRepository {
   @override
   Future<bool> isLessonUnlocked(String lessonId) async {
     return _remoteDataSource.isLessonUnlocked(lessonId);
+  }
+
+  // ============================================
+  // CERTIFICATE METHODS
+  // ============================================
+
+  @override
+  Future<CertificateEntity> issueCertificate(String enrollmentId) async {
+    return _remoteDataSource.issueCertificate(enrollmentId);
+  }
+
+  @override
+  Future<CertificateEntity?> getCertificate(String certificateId) async {
+    return _remoteDataSource.getCertificate(certificateId);
+  }
+
+  @override
+  Future<CertificateEntity?> getCertificateByEnrollment(String enrollmentId) async {
+    return _remoteDataSource.getCertificateByEnrollment(enrollmentId);
+  }
+
+  @override
+  Future<CertificateEntity?> getCertificateBySerial(String serialNumber) async {
+    return _remoteDataSource.getCertificateBySerial(serialNumber);
+  }
+
+  @override
+  Future<CertificateVerificationResult> verifyCertificate(String serialNumber) async {
+    return _remoteDataSource.verifyCertificate(serialNumber);
+  }
+
+  @override
+  Future<List<CertificateEntity>> getUserCertificates() async {
+    return _remoteDataSource.getUserCertificates();
+  }
+
+  @override
+  Future<void> revokeCertificate(String certificateId, String reason) async {
+    await _remoteDataSource.revokeCertificate(certificateId, reason);
   }
 }

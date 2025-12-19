@@ -1,3 +1,4 @@
+import '../entities/certificate_entity.dart';
 import '../entities/course_entity.dart';
 import '../entities/quiz_entity.dart';
 
@@ -183,6 +184,31 @@ abstract class CourseRepository {
 
   /// Check if lesson is unlocked (previous quiz passed if required)
   Future<bool> isLessonUnlocked(String lessonId);
+
+  // ============================================
+  // CERTIFICATE METHODS
+  // ============================================
+
+  /// Issue a certificate for a completed enrollment
+  Future<CertificateEntity> issueCertificate(String enrollmentId);
+
+  /// Get certificate by ID
+  Future<CertificateEntity?> getCertificate(String certificateId);
+
+  /// Get certificate by enrollment ID
+  Future<CertificateEntity?> getCertificateByEnrollment(String enrollmentId);
+
+  /// Get certificate by serial number
+  Future<CertificateEntity?> getCertificateBySerial(String serialNumber);
+
+  /// Verify a certificate by serial number
+  Future<CertificateVerificationResult> verifyCertificate(String serialNumber);
+
+  /// Get all certificates for the current user
+  Future<List<CertificateEntity>> getUserCertificates();
+
+  /// Revoke a certificate (admin only)
+  Future<void> revokeCertificate(String certificateId, String reason);
 }
 
 class CreateCourseParams {
