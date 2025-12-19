@@ -169,3 +169,12 @@ class RejectVerification extends CompanyEvent {
   @override
   List<Object?> get props => [companyId, reason];
 }
+
+class LoadCompanyMembers extends CompanyEvent {
+  const LoadCompanyMembers(this.companyId);
+
+  final String companyId;
+
+  @override
+  List<Object?> get props => [companyId];
+}

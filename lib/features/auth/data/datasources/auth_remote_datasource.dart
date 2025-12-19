@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../core/auth/auth.dart';
 import '../../domain/entities/user_entity.dart';
 import '../models/user_model.dart';
 

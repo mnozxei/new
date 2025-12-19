@@ -129,7 +129,7 @@ class QuizCompleted extends StudentState {
   final QuizAttemptEntity result;
 
   bool get passed => result.passed;
-  int get score => result.score;
+  double get score => result.score;
 
   @override
   List<Object?> get props => [result];

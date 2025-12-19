@@ -9,7 +9,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../domain/entities/course_entity.dart';
-import '../bloc/course_bloc.dart';
+import '../bloc/course_bloc.dart' hide EnrollInCourse;
 import '../bloc/student_bloc.dart';
 
 class CourseEnrollmentPage extends StatefulWidget {
@@ -60,7 +60,7 @@ class _CourseEnrollmentPageState extends State<CourseEnrollmentPage> {
   @override
   void initState() {
     super.initState();
-    context.read<CourseBloc>().add(LoadCourseDetails(widget.courseId));
+    context.read<CourseBloc>().add(LoadCourseDetails(courseId: widget.courseId));
   }
 
   void _processEnrollment() {

@@ -1,4 +1,5 @@
 import '../../domain/entities/course_entity.dart';
+import '../../domain/entities/quiz_entity.dart';
 import '../../domain/repositories/course_repository.dart';
 import '../datasources/course_remote_data_source.dart';
 
@@ -206,5 +207,95 @@ class CourseRepositoryImpl implements CourseRepository {
   @override
   Future<CourseStats> getCourseStats(String courseId) async {
     return _remoteDataSource.getCourseStats(courseId);
+  }
+
+  // ============================================
+  // QUIZ METHODS
+  // ============================================
+
+  @override
+  Future<List<QuizEntity>> getCourseQuizzes(String courseId) async {
+    return [];
+  }
+
+  @override
+  Future<QuizEntity?> getQuizById(String quizId) async {
+    return null;
+  }
+
+  @override
+  Future<QuizEntity?> getLessonQuiz(String lessonId) async {
+    return null;
+  }
+
+  @override
+  Future<QuizEntity> createQuiz(CreateQuizParams params) async {
+    throw UnimplementedError('createQuiz not implemented');
+  }
+
+  @override
+  Future<QuizEntity> updateQuiz(String quizId, UpdateQuizParams params) async {
+    throw UnimplementedError('updateQuiz not implemented');
+  }
+
+  @override
+  Future<void> deleteQuiz(String quizId) async {
+    throw UnimplementedError('deleteQuiz not implemented');
+  }
+
+  @override
+  Future<QuizQuestionEntity> addQuestion(AddQuestionParams params) async {
+    throw UnimplementedError('addQuestion not implemented');
+  }
+
+  @override
+  Future<QuizQuestionEntity> updateQuestion(
+    String questionId,
+    UpdateQuestionParams params,
+  ) async {
+    throw UnimplementedError('updateQuestion not implemented');
+  }
+
+  @override
+  Future<void> deleteQuestion(String questionId) async {
+    throw UnimplementedError('deleteQuestion not implemented');
+  }
+
+  @override
+  Future<void> reorderQuestions(String quizId, List<String> questionIds) async {
+    // TODO: Implement
+  }
+
+  @override
+  Future<QuizAttemptEntity> startQuizAttempt(String quizId) async {
+    throw UnimplementedError('startQuizAttempt not implemented');
+  }
+
+  @override
+  Future<QuizAttemptEntity> submitQuizAttempt(
+    String attemptId,
+    Map<String, dynamic> answers,
+  ) async {
+    throw UnimplementedError('submitQuizAttempt not implemented');
+  }
+
+  @override
+  Future<List<QuizAttemptEntity>> getQuizAttempts(String quizId) async {
+    return [];
+  }
+
+  @override
+  Future<QuizAttemptEntity?> getLatestQuizAttempt(String quizId) async {
+    return null;
+  }
+
+  @override
+  Future<bool> isQuizPassed(String quizId) async {
+    return true;
+  }
+
+  @override
+  Future<bool> isLessonUnlocked(String lessonId) async {
+    return true;
   }
 }

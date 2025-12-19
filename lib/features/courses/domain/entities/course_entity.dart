@@ -15,6 +15,9 @@ enum CourseLevel {
       orElse: () => CourseLevel.beginner,
     );
   }
+
+  /// Get all course levels
+  static List<CourseLevel> get allLevels => CourseLevel.values;
 }
 
 enum EnrollmentStatus {

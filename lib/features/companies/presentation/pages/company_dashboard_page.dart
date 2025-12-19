@@ -28,7 +28,7 @@ class _CompanyDashboardPageState extends State<CompanyDashboardPage> {
   @override
   void initState() {
     super.initState();
-    context.read<CompanyBloc>().add(LoadCompanyDetails(widget.companyId));
+    context.read<CompanyBloc>().add(LoadCompanyDetails(companyId: widget.companyId));
   }
 
   @override
@@ -75,7 +75,7 @@ class _CompanyDashboardPageState extends State<CompanyDashboardPage> {
                     onPressed: () {
                       context
                           .read<CompanyBloc>()
-                          .add(LoadCompanyDetails(widget.companyId));
+                          .add(LoadCompanyDetails(companyId: widget.companyId));
                     },
                     child: const Text('إعادة المحاولة'),
                   ),

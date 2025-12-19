@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/auth/auth.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 
 class ProfileEntity extends Equatable {

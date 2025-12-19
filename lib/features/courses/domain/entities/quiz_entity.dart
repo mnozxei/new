@@ -295,6 +295,7 @@ class QuizAttemptEntity extends Equatable {
     required this.userId,
     required this.quizId,
     required this.courseId,
+    this.attemptNumber = 1,
     this.score = 0,
     this.passed = false,
     this.timeTakenSeconds,
@@ -308,6 +309,7 @@ class QuizAttemptEntity extends Equatable {
   final String userId;
   final String quizId;
   final String courseId;
+  final int attemptNumber;
   final double score;
   final bool passed;
   final int? timeTakenSeconds;

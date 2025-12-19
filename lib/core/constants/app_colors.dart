@@ -66,6 +66,9 @@ abstract final class AppColors {
   static const Color dividerLight = Color(0xFFE1DBEA);
   static const Color dividerDark = Color(0xFF453F51);
 
+  static const Color borderLight = Color(0xFFE1DBEA);
+  static const Color borderDark = Color(0xFF453F51);
+
   static const Color shadowLight = Color(0x1A786E8B);
   static const Color shadowDark = Color(0x40000000);
 

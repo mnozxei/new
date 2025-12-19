@@ -1,3 +1,4 @@
+import '../../../../core/auth/auth.dart';
 import '../../../auth/domain/entities/user_entity.dart';
 import '../../domain/entities/profile_entity.dart';
 

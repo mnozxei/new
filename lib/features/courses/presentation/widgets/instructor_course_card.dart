@@ -177,7 +177,7 @@ class InstructorCourseCard extends StatelessWidget {
               ),
               _StatItem(
                 icon: Iconsax.star1,
-                value: course.averageRating?.toStringAsFixed(1) ?? '-',
+                value: course.ratingAverage > 0 ? course.ratingAverage.toStringAsFixed(1) : '-',
                 label: 'تقييم',
               ),
               _StatItem(

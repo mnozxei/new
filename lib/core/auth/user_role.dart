@@ -15,6 +15,9 @@ enum UserRole {
   companyInstructor,
   admin;
 
+  /// Alias for userInstructor for backwards compatibility
+  static UserRole get instructor => UserRole.userInstructor;
+
   static UserRole fromString(String value) {
     switch (value.toLowerCase()) {
       case 'admin':
