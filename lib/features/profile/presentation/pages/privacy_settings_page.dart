@@ -131,7 +131,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
             onTap: () => context.push(RouteNames.blockedUsers),
           ),
 
-          const SizedBox(height: AppConstants.spacingXLarge),
+          const SizedBox(height: AppConstants.spacingExtraLarge),
 
           // Save Button
           FilledButton(

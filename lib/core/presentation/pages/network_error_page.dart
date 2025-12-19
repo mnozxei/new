@@ -25,7 +25,7 @@ class NetworkErrorPage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(AppConstants.spacingXLarge),
+            padding: const EdgeInsets.all(AppConstants.spacingExtraLarge),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -43,7 +43,7 @@ class NetworkErrorPage extends StatelessWidget {
                     color: AppColors.info,
                   ),
                 ),
-                const SizedBox(height: AppConstants.spacingXLarge),
+                const SizedBox(height: AppConstants.spacingExtraLarge),
 
                 // Title
                 Text(
@@ -95,7 +95,7 @@ class NetworkErrorPage extends StatelessWidget {
                   ),
                 ],
 
-                const SizedBox(height: AppConstants.spacingXLarge),
+                const SizedBox(height: AppConstants.spacingExtraLarge),
 
                 // Retry button
                 SizedBox(
@@ -122,7 +122,7 @@ class NetworkErrorPage extends StatelessWidget {
                   label: const Text('العودة للرئيسية'),
                 ),
 
-                const SizedBox(height: AppConstants.spacingXLarge),
+                const SizedBox(height: AppConstants.spacingExtraLarge),
 
                 // Tips
                 Container(

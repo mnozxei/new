@@ -38,7 +38,7 @@ class _CertificatePageState extends State<CertificatePage> {
   Future<void> _shareCertificate(EnrollmentEntity enrollment) async {
     await ShareService.instance.shareCertificate(
       context: context,
-      certificateId: enrollment.id,
+      verifyCode: enrollment.id,
       courseName: enrollment.course?.title ?? '',
       holderName: 'المتدرب', // This would come from user profile
     );
