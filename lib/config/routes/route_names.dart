@@ -39,7 +39,7 @@ abstract final class RouteNames {
   static const String userProfile = '/user';
 
   static const String notifications = '/notifications';
-  static const String notificationSettings = 'settings';
+  static const String notificationSettings = 'notification-settings';
 
   static const String companies = '/companies';
   static const String createCompany = 'createCompany';
