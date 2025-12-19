@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/impressions_service.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/verified_badge.dart';
 
-class CompanyDetailsPage extends StatelessWidget {
+class CompanyDetailsPage extends StatefulWidget {
   const CompanyDetailsPage({
     required this.companyId,
     super.key,
@@ -19,18 +23,124 @@ class CompanyDetailsPage extends StatelessWidget {
   final String companyId;
 
   @override
+  State<CompanyDetailsPage> createState() => _CompanyDetailsPageState();
+}
+
+class _CompanyDetailsPageState extends State<CompanyDetailsPage> {
+  final ImpressionsService _impressionsService = ImpressionsService();
+  bool _isFollowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordImpression();
+  }
+
+  void _recordImpression() {
+    _impressionsService.recordImpression(
+      entityType: ImpressionEntityType.company,
+      entityId: widget.companyId,
+    );
+  }
+
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
+  void _handleFollow() {
+    if (_isAuthenticated) {
+      setState(() => _isFollowing = !_isFollowing);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isFollowing ? 'تمت المتابعة بنجاح' : 'تم إلغاء المتابعة'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } else {
+      LoginRequiredDialog.showForAction(context, 'follow');
+    }
+  }
+
+  void _handleShare() {
+    Share.share(
+      'تعرف على شركة التقنية المتقدمة على تماد هب\nhttps://tamadhub.com/companies/${widget.companyId}',
+      subject: 'شركة على تماد هب',
+    );
+  }
+
+  void _handleMessage() {
+    if (_isAuthenticated) {
+      context.pushNamed(RouteNames.chatRoom, pathParameters: {'id': 'company-${widget.companyId}'});
+    } else {
+      LoginRequiredDialog.showForAction(context, 'chat');
+    }
+  }
+
+  void _handleViewAllJobs() {
+    context.push('${RouteNames.search}?type=jobs&company=${widget.companyId}');
+  }
+
+  void _handleViewAllPosts() {
+    context.push('${RouteNames.search}?type=posts&company=${widget.companyId}');
+  }
+
+  void _handleJobTap(int index) {
+    context.pushNamed(RouteNames.jobDetails, pathParameters: {'id': 'company-${widget.companyId}-job-$index'});
+  }
+
+  void _handlePostTap(int index) {
+    context.pushNamed(RouteNames.postDetails, pathParameters: {'id': 'company-${widget.companyId}-post-$index'});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ResponsiveLayout(
-      mobile: _MobileCompanyDetailsPage(companyId: companyId),
-      desktop: _DesktopCompanyDetailsPage(companyId: companyId),
+      mobile: _MobileCompanyDetailsPage(
+        companyId: widget.companyId,
+        isFollowing: _isFollowing,
+        onFollow: _handleFollow,
+        onShare: _handleShare,
+        onMessage: _handleMessage,
+        onViewAllJobs: _handleViewAllJobs,
+        onViewAllPosts: _handleViewAllPosts,
+        onJobTap: _handleJobTap,
+        onPostTap: _handlePostTap,
+      ),
+      desktop: _DesktopCompanyDetailsPage(
+        companyId: widget.companyId,
+        isFollowing: _isFollowing,
+        onFollow: _handleFollow,
+        onShare: _handleShare,
+        onMessage: _handleMessage,
+        onViewAllJobs: _handleViewAllJobs,
+        onViewAllPosts: _handleViewAllPosts,
+        onJobTap: _handleJobTap,
+        onPostTap: _handlePostTap,
+      ),
     );
   }
 }
 
 class _MobileCompanyDetailsPage extends StatelessWidget {
-  const _MobileCompanyDetailsPage({required this.companyId});
+  const _MobileCompanyDetailsPage({
+    required this.companyId,
+    required this.isFollowing,
+    required this.onFollow,
+    required this.onShare,
+    required this.onMessage,
+    required this.onViewAllJobs,
+    required this.onViewAllPosts,
+    required this.onJobTap,
+    required this.onPostTap,
+  });
 
   final String companyId;
+  final bool isFollowing;
+  final VoidCallback onFollow;
+  final VoidCallback onShare;
+  final VoidCallback onMessage;
+  final VoidCallback onViewAllJobs;
+  final VoidCallback onViewAllPosts;
+  final void Function(int) onJobTap;
+  final void Function(int) onPostTap;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +173,7 @@ class _MobileCompanyDetailsPage extends StatelessWidget {
                   ),
                   child: const Icon(Iconsax.share, color: AppColors.textPrimaryLight),
                 ),
-                onPressed: () {},
+                onPressed: onShare,
               ),
             ],
             flexibleSpace: FlexibleSpaceBar(
@@ -124,13 +234,13 @@ class _MobileCompanyDetailsPage extends StatelessWidget {
                     children: [
                       Expanded(
                         child: GlassButton(
-                          onPressed: () {},
+                          onPressed: onFollow,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Iconsax.add, size: 18),
+                              Icon(isFollowing ? Iconsax.tick_circle : Iconsax.add, size: 18),
                               const SizedBox(width: AppConstants.spacingSmall),
-                              Text('متابعة', style: theme.textTheme.labelLarge),
+                              Text(isFollowing ? 'متابَع' : 'متابعة', style: theme.textTheme.labelLarge),
                             ],
                           ),
                         ),
@@ -138,18 +248,25 @@ class _MobileCompanyDetailsPage extends StatelessWidget {
                       const SizedBox(width: AppConstants.spacingSmall),
                       GlassIconButton(
                         icon: Iconsax.message,
-                        onPressed: () {},
+                        onPressed: onMessage,
                       ),
                     ],
                   ),
                   const SizedBox(height: AppConstants.spacingLarge),
-                  _CompanyStats(),
+                  const _CompanyStats(),
                   const SizedBox(height: AppConstants.spacingLarge),
-                  _AboutSection(),
+                  const _AboutSection(),
                   const SizedBox(height: AppConstants.spacingLarge),
-                  _JobsSection(companyId: companyId),
+                  _JobsSection(
+                    companyId: companyId,
+                    onViewAll: onViewAllJobs,
+                    onJobTap: onJobTap,
+                  ),
                   const SizedBox(height: AppConstants.spacingLarge),
-                  _PostsSection(),
+                  _PostsSection(
+                    onViewAll: onViewAllPosts,
+                    onPostTap: onPostTap,
+                  ),
                 ],
               ),
             ),
@@ -161,9 +278,27 @@ class _MobileCompanyDetailsPage extends StatelessWidget {
 }
 
 class _DesktopCompanyDetailsPage extends StatelessWidget {
-  const _DesktopCompanyDetailsPage({required this.companyId});
+  const _DesktopCompanyDetailsPage({
+    required this.companyId,
+    required this.isFollowing,
+    required this.onFollow,
+    required this.onShare,
+    required this.onMessage,
+    required this.onViewAllJobs,
+    required this.onViewAllPosts,
+    required this.onJobTap,
+    required this.onPostTap,
+  });
 
   final String companyId;
+  final bool isFollowing;
+  final VoidCallback onFollow;
+  final VoidCallback onShare;
+  final VoidCallback onMessage;
+  final VoidCallback onViewAllJobs;
+  final VoidCallback onViewAllPosts;
+  final void Function(int) onJobTap;
+  final void Function(int) onPostTap;
 
   @override
   Widget build(BuildContext context) {
@@ -232,11 +367,18 @@ class _DesktopCompanyDetailsPage extends StatelessWidget {
                         ),
                         Text('تقنية المعلومات • الرياض، المملكة العربية السعودية', style: theme.textTheme.bodyLarge?.copyWith(color: AppColors.textSecondaryLight)),
                         const SizedBox(height: AppConstants.spacingLarge),
-                        _AboutSection(),
+                        const _AboutSection(),
                         const SizedBox(height: AppConstants.spacingLarge),
-                        _JobsSection(companyId: companyId),
+                        _JobsSection(
+                          companyId: companyId,
+                          onViewAll: onViewAllJobs,
+                          onJobTap: onJobTap,
+                        ),
                         const SizedBox(height: AppConstants.spacingLarge),
-                        _PostsSection(),
+                        _PostsSection(
+                          onViewAll: onViewAllPosts,
+                          onPostTap: onPostTap,
+                        ),
                       ],
                     ),
                   ),
@@ -253,25 +395,25 @@ class _DesktopCompanyDetailsPage extends StatelessWidget {
                                 children: [
                                   Expanded(
                                     child: GlassButton(
-                                      onPressed: () {},
+                                      onPressed: onFollow,
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
-                                          const Icon(Iconsax.add, size: 18),
+                                          Icon(isFollowing ? Iconsax.tick_circle : Iconsax.add, size: 18),
                                           const SizedBox(width: AppConstants.spacingSmall),
-                                          Text('متابعة', style: theme.textTheme.labelLarge),
+                                          Text(isFollowing ? 'متابَع' : 'متابعة', style: theme.textTheme.labelLarge),
                                         ],
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: AppConstants.spacingSmall),
-                                  GlassIconButton(icon: Iconsax.message, onPressed: () {}),
+                                  GlassIconButton(icon: Iconsax.message, onPressed: onMessage),
                                   const SizedBox(width: AppConstants.spacingSmall),
-                                  GlassIconButton(icon: Iconsax.share, onPressed: () {}),
+                                  GlassIconButton(icon: Iconsax.share, onPressed: onShare),
                                 ],
                               ),
                               const SizedBox(height: AppConstants.spacingLarge),
-                              _CompanyStats(),
+                              const _CompanyStats(),
                             ],
                           ),
                         ),
@@ -303,6 +445,8 @@ class _DesktopCompanyDetailsPage extends StatelessWidget {
 }
 
 class _CompanyStats extends StatelessWidget {
+  const _CompanyStats();
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -340,6 +484,8 @@ class _StatItem extends StatelessWidget {
 }
 
 class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -395,25 +541,32 @@ class _Tag extends StatelessWidget {
 }
 
 class _JobsSection extends StatelessWidget {
-  const _JobsSection({required this.companyId});
+  const _JobsSection({
+    required this.companyId,
+    required this.onViewAll,
+    required this.onJobTap,
+  });
 
   final String companyId;
+  final VoidCallback onViewAll;
+  final void Function(int) onJobTap;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GlassPanel(
       title: 'الوظائف المتاحة',
       trailing: TextButton(
-        onPressed: () {},
+        onPressed: onViewAll,
         child: const Text('عرض الكل'),
       ),
       intensity: GlassIntensity.light,
       child: Column(
         children: List.generate(
           3,
-          (index) => _JobItem(index: index),
+          (index) => _JobItem(
+            index: index,
+            onTap: () => onJobTap(index),
+          ),
         ),
       ),
     );
@@ -421,66 +574,82 @@ class _JobsSection extends StatelessWidget {
 }
 
 class _JobItem extends StatelessWidget {
-  const _JobItem({required this.index});
+  const _JobItem({
+    required this.index,
+    required this.onTap,
+  });
 
   final int index;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final jobs = ['مطور Flutter', 'مهندس DevOps', 'محلل بيانات'];
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppConstants.spacingSmall),
-      padding: const EdgeInsets.all(AppConstants.spacingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.primaryExtraLight,
-        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLighter,
-              borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppConstants.spacingSmall),
+        padding: const EdgeInsets.all(AppConstants.spacingMedium),
+        decoration: BoxDecoration(
+          color: AppColors.primaryExtraLight,
+          borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLighter,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+              ),
+              child: const Icon(Iconsax.briefcase, color: AppColors.white),
             ),
-            child: const Icon(Iconsax.briefcase, color: AppColors.white),
-          ),
-          const SizedBox(width: AppConstants.spacingMedium),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(jobs[index % jobs.length], style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                Text('دوام كامل • الرياض', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
-              ],
+            const SizedBox(width: AppConstants.spacingMedium),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(jobs[index % jobs.length], style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('دوام كامل • الرياض', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+                ],
+              ),
             ),
-          ),
-          const Icon(Iconsax.arrow_left_2, size: 20, color: AppColors.textSecondaryLight),
-        ],
+            const Icon(Iconsax.arrow_left_2, size: 20, color: AppColors.textSecondaryLight),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _PostsSection extends StatelessWidget {
+  const _PostsSection({
+    required this.onViewAll,
+    required this.onPostTap,
+  });
+
+  final VoidCallback onViewAll;
+  final void Function(int) onPostTap;
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GlassPanel(
       title: 'آخر المنشورات',
       trailing: TextButton(
-        onPressed: () {},
+        onPressed: onViewAll,
         child: const Text('عرض الكل'),
       ),
       intensity: GlassIntensity.light,
       child: Column(
         children: List.generate(
           2,
-          (index) => _PostItem(index: index),
+          (index) => _PostItem(
+            index: index,
+            onTap: () => onPostTap(index),
+          ),
         ),
       ),
     );
@@ -488,44 +657,51 @@ class _PostsSection extends StatelessWidget {
 }
 
 class _PostItem extends StatelessWidget {
-  const _PostItem({required this.index});
+  const _PostItem({
+    required this.index,
+    required this.onTap,
+  });
 
   final int index;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppConstants.spacingMedium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'نحن سعداء بالإعلان عن إطلاق منتجنا الجديد الذي سيغير مفهوم التقنية في المنطقة...',
-            style: theme.textTheme.bodyMedium,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: AppConstants.spacingSmall),
-          Row(
-            children: [
-              Icon(Iconsax.like_1, size: 16, color: AppColors.textSecondaryLight),
-              const SizedBox(width: 4),
-              Text('${(index + 1) * 45}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
-              const SizedBox(width: AppConstants.spacingMedium),
-              Icon(Iconsax.message, size: 16, color: AppColors.textSecondaryLight),
-              const SizedBox(width: 4),
-              Text('${(index + 1) * 12}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
-              const Spacer(),
-              Text('منذ ${index + 1} يوم', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textTertiaryLight)),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppConstants.spacingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'نحن سعداء بالإعلان عن إطلاق منتجنا الجديد الذي سيغير مفهوم التقنية في المنطقة...',
+              style: theme.textTheme.bodyMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: AppConstants.spacingSmall),
+            Row(
+              children: [
+                Icon(Iconsax.like_1, size: 16, color: AppColors.textSecondaryLight),
+                const SizedBox(width: 4),
+                Text('${(index + 1) * 45}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+                const SizedBox(width: AppConstants.spacingMedium),
+                Icon(Iconsax.message, size: 16, color: AppColors.textSecondaryLight),
+                const SizedBox(width: 4),
+                Text('${(index + 1) * 12}', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+                const Spacer(),
+                Text('منذ ${index + 1} يوم', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textTertiaryLight)),
+              ],
+            ),
+            if (index < 1) ...[
+              const SizedBox(height: AppConstants.spacingMedium),
+              const Divider(),
             ],
-          ),
-          if (index < 1) ...[
-            const SizedBox(height: AppConstants.spacingMedium),
-            const Divider(),
           ],
-        ],
+        ),
       ),
     );
   }

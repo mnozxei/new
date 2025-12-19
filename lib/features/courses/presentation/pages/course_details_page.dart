@@ -1,20 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/widgets/glass_app_bar.dart';
+import '../../../../core/services/impressions_service.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
+import '../../../../core/widgets/verified_badge.dart';
 
-class CourseDetailsPage extends StatelessWidget {
+class CourseDetailsPage extends StatefulWidget {
   const CourseDetailsPage({
     required this.courseId,
     super.key,
   });
 
   final String courseId;
+
+  @override
+  State<CourseDetailsPage> createState() => _CourseDetailsPageState();
+}
+
+class _CourseDetailsPageState extends State<CourseDetailsPage> {
+  final ImpressionsService _impressionsService = ImpressionsService();
+  bool _isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordImpression();
+  }
+
+  void _recordImpression() {
+    _impressionsService.recordImpression(
+      entityType: ImpressionEntityType.course,
+      entityId: widget.courseId,
+    );
+  }
+
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
+  void _handleSave() {
+    if (_isAuthenticated) {
+      setState(() => _isSaved = !_isSaved);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isSaved ? 'تم حفظ الدورة' : 'تم إزالة الحفظ'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } else {
+      LoginRequiredDialog.showForAction(context, 'save');
+    }
+  }
+
+  void _handleShare() {
+    Share.share(
+      'تعلم معي في هذه الدورة على تماد هب\nhttps://tamadhub.com/courses/${widget.courseId}',
+      subject: 'دورة تدريبية على تماد هب',
+    );
+  }
+
+  void _handleEnroll() {
+    if (_isAuthenticated) {
+      context.pushNamed(RouteNames.courseEnroll, pathParameters: {'id': widget.courseId});
+    } else {
+      LoginRequiredDialog.showForAction(context, 'enroll');
+    }
+  }
+
+  void _handleViewInstructor() {
+    context.push('/user/instructor-${widget.courseId}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +97,33 @@ class CourseDetailsPage extends StatelessWidget {
               ),
               onPressed: () => context.pop(),
             ),
+            actions: [
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.black.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _isSaved ? Iconsax.bookmark5 : Iconsax.bookmark,
+                    color: AppColors.white,
+                  ),
+                ),
+                onPressed: _handleSave,
+              ),
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.black.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Iconsax.share, color: AppColors.white),
+                ),
+                onPressed: _handleShare,
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: const BoxDecoration(
@@ -59,7 +146,7 @@ class CourseDetailsPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Flutter Development Masterclass',
+                    'دورة تطوير تطبيقات Flutter الشاملة',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -72,7 +159,7 @@ class CourseDetailsPage extends StatelessWidget {
                       Text('4.8', style: theme.textTheme.titleSmall),
                       const SizedBox(width: AppConstants.spacingSmall),
                       Text(
-                        '(234 reviews)',
+                        '(234 تقييم)',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondaryLight,
                         ),
@@ -81,7 +168,7 @@ class CourseDetailsPage extends StatelessWidget {
                       const Icon(Iconsax.people, size: 18, color: AppColors.textSecondaryLight),
                       const SizedBox(width: AppConstants.spacingExtraSmall),
                       Text(
-                        '1,234 enrolled',
+                        '1,234 طالب',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondaryLight,
                         ),
@@ -89,23 +176,23 @@ class CourseDetailsPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: AppConstants.spacingMedium),
-                  _InstructorCard(),
+                  _InstructorCard(onViewProfile: _handleViewInstructor),
                   const SizedBox(height: AppConstants.spacingMedium),
-                  _CourseStats(),
+                  const _CourseStats(),
                   const SizedBox(height: AppConstants.spacingMedium),
                   GlassPanel(
-                    title: 'About This Course',
+                    title: 'عن هذه الدورة',
                     intensity: GlassIntensity.light,
                     child: Text(
-                      'Learn Flutter from scratch and build beautiful, natively compiled applications for mobile, web, and desktop from a single codebase. This comprehensive course covers everything you need to know to become a proficient Flutter developer.',
+                      'تعلم Flutter من الصفر وقم ببناء تطبيقات جميلة ومترجمة محلياً للهاتف والويب وسطح المكتب من قاعدة كود واحدة. تغطي هذه الدورة الشاملة كل ما تحتاج معرفته لتصبح مطور Flutter محترف.',
                       style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingMedium),
                   GlassPanel(
-                    title: 'Course Content',
+                    title: 'محتوى الدورة',
                     trailing: Text(
-                      '12 sections',
+                      '12 قسم',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondaryLight,
                       ),
@@ -116,7 +203,7 @@ class CourseDetailsPage extends StatelessWidget {
                         5,
                         (index) => _SectionItem(
                           index: index,
-                          courseId: courseId,
+                          courseId: widget.courseId,
                         ),
                       ),
                     ),
@@ -128,12 +215,16 @@ class CourseDetailsPage extends StatelessWidget {
           ),
         ],
       ),
-      bottomSheet: _EnrollBottomSheet(),
+      bottomSheet: _EnrollBottomSheet(onEnroll: _handleEnroll),
     );
   }
 }
 
 class _InstructorCard extends StatelessWidget {
+  const _InstructorCard({required this.onViewProfile});
+
+  final VoidCallback onViewProfile;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -146,7 +237,7 @@ class _InstructorCard extends StatelessWidget {
             radius: 24,
             backgroundColor: AppColors.primaryLighter,
             child: const Text(
-              'I',
+              'م',
               style: TextStyle(
                 color: AppColors.white,
                 fontWeight: FontWeight.bold,
@@ -159,14 +250,23 @@ class _InstructorCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Instructor Name',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'أحمد المدرب',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: AppConstants.spacingExtraSmall),
+                    const VerifiedBadge(
+                      size: VerifiedBadgeSize.small,
+                      type: VerifiedBadgeType.instructor,
+                    ),
+                  ],
                 ),
                 Text(
-                  'Senior Flutter Developer',
+                  'مطور Flutter أول',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondaryLight,
                   ),
@@ -175,8 +275,8 @@ class _InstructorCard extends StatelessWidget {
             ),
           ),
           OutlinedButton(
-            onPressed: () {},
-            child: const Text('View Profile'),
+            onPressed: onViewProfile,
+            child: const Text('عرض الملف'),
           ),
         ],
       ),
@@ -185,31 +285,33 @@ class _InstructorCard extends StatelessWidget {
 }
 
 class _CourseStats extends StatelessWidget {
+  const _CourseStats();
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return const Row(
       children: [
         Expanded(
           child: _StatCard(
             icon: Iconsax.clock,
-            value: '12h 30m',
-            label: 'Duration',
+            value: '12س 30د',
+            label: 'المدة',
           ),
         ),
-        const SizedBox(width: AppConstants.spacingSmall),
+        SizedBox(width: AppConstants.spacingSmall),
         Expanded(
           child: _StatCard(
             icon: Iconsax.video_play,
             value: '85',
-            label: 'Lessons',
+            label: 'درس',
           ),
         ),
-        const SizedBox(width: AppConstants.spacingSmall),
+        SizedBox(width: AppConstants.spacingSmall),
         Expanded(
           child: _StatCard(
             icon: Iconsax.medal_star,
-            value: 'Certificate',
-            label: 'Included',
+            value: 'شهادة',
+            label: 'معتمدة',
           ),
         ),
       ],
@@ -271,11 +373,11 @@ class _SectionItem extends StatelessWidget {
 
     return ExpansionTile(
       title: Text(
-        'Section ${index + 1}: Getting Started',
+        'القسم ${index + 1}: البداية',
         style: theme.textTheme.titleSmall,
       ),
       subtitle: Text(
-        '5 lessons',
+        '5 دروس',
         style: theme.textTheme.bodySmall?.copyWith(
           color: AppColors.textSecondaryLight,
         ),
@@ -295,11 +397,11 @@ class _SectionItem extends StatelessWidget {
             ),
           ),
           title: Text(
-            'Lesson ${lessonIndex + 1}: Introduction',
+            'الدرس ${lessonIndex + 1}: المقدمة',
             style: theme.textTheme.bodyMedium,
           ),
           subtitle: Text(
-            '10 min',
+            '10 دقائق',
             style: theme.textTheme.bodySmall?.copyWith(
               color: AppColors.textTertiaryLight,
             ),
@@ -314,6 +416,10 @@ class _SectionItem extends StatelessWidget {
 }
 
 class _EnrollBottomSheet extends StatelessWidget {
+  const _EnrollBottomSheet({required this.onEnroll});
+
+  final VoidCallback onEnroll;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -338,14 +444,14 @@ class _EnrollBottomSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Free',
+                  'مجاني',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.primary,
                   ),
                 ),
                 Text(
-                  'Lifetime access',
+                  'وصول مدى الحياة',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textSecondaryLight,
                   ),
@@ -357,8 +463,8 @@ class _EnrollBottomSheet extends StatelessWidget {
               child: SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {},
-                  child: const Text('Enroll Now'),
+                  onPressed: onEnroll,
+                  child: const Text('سجل الآن'),
                 ),
               ),
             ),

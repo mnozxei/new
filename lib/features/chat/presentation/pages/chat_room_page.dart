@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -8,6 +9,7 @@ import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/glass_text_field.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../bloc/chat_bloc.dart';
 
 class ChatRoomPage extends StatefulWidget {
   const ChatRoomPage({
@@ -24,12 +26,197 @@ class ChatRoomPage extends StatefulWidget {
 class _ChatRoomPageState extends State<ChatRoomPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load messages when page opens
+    context.read<ChatBloc>().add(LoadMessages(conversationId: widget.chatId));
+  }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  void _sendMessage() {
+    final message = _messageController.text.trim();
+    if (message.isEmpty) return;
+
+    context.read<ChatBloc>().add(SendMessage(
+      conversationId: widget.chatId,
+      content: message,
+    ));
+
+    _messageController.clear();
+    _focusNode.requestFocus();
+
+    // Scroll to bottom after sending
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _showAttachmentOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _AttachmentOption(
+                  icon: Iconsax.image,
+                  label: 'صورة',
+                  color: AppColors.primary,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showComingSoon('إرسال الصور');
+                  },
+                ),
+                _AttachmentOption(
+                  icon: Iconsax.document,
+                  label: 'ملف',
+                  color: AppColors.info,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showComingSoon('إرسال الملفات');
+                  },
+                ),
+                _AttachmentOption(
+                  icon: Iconsax.location,
+                  label: 'موقع',
+                  color: AppColors.success,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showComingSoon('مشاركة الموقع');
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showComingSoon(String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('قريباً: $feature'),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showMoreOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Iconsax.user),
+              title: const Text('عرض الملف الشخصي'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/user/${widget.chatId}');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.search_normal),
+              title: const Text('البحث في المحادثة'),
+              onTap: () {
+                Navigator.pop(context);
+                _showComingSoon('البحث في المحادثة');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.notification_1),
+              title: const Text('كتم الإشعارات'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم كتم الإشعارات')),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Iconsax.trash, color: AppColors.error),
+              title: Text('حذف المحادثة', style: TextStyle(color: AppColors.error)),
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmation();
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('حذف المحادثة'),
+        content: const Text('هل أنت متأكد من حذف هذه المحادثة؟ لا يمكن التراجع عن هذا الإجراء.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<ChatBloc>().add(DeleteConversation(conversationId: widget.chatId));
+              context.pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم حذف المحادثة')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -39,11 +226,63 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
         chatId: widget.chatId,
         messageController: _messageController,
         scrollController: _scrollController,
+        focusNode: _focusNode,
+        onSend: _sendMessage,
+        onAttachment: _showAttachmentOptions,
+        onVoice: () => _showComingSoon('الرسائل الصوتية'),
+        onCall: () => _showComingSoon('المكالمات الصوتية'),
+        onMore: _showMoreOptions,
       ),
       desktop: _DesktopChatRoomPage(
         chatId: widget.chatId,
         messageController: _messageController,
         scrollController: _scrollController,
+        focusNode: _focusNode,
+        onSend: _sendMessage,
+        onAttachment: _showAttachmentOptions,
+        onVoice: () => _showComingSoon('الرسائل الصوتية'),
+        onCall: () => _showComingSoon('المكالمات الصوتية'),
+        onVideo: () => _showComingSoon('مكالمات الفيديو'),
+        onMore: _showMoreOptions,
+      ),
+    );
+  }
+}
+
+class _AttachmentOption extends StatelessWidget {
+  const _AttachmentOption({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: theme.textTheme.bodySmall),
+        ],
       ),
     );
   }
@@ -54,11 +293,23 @@ class _MobileChatRoomPage extends StatelessWidget {
     required this.chatId,
     required this.messageController,
     required this.scrollController,
+    required this.focusNode,
+    required this.onSend,
+    required this.onAttachment,
+    required this.onVoice,
+    required this.onCall,
+    required this.onMore,
   });
 
   final String chatId;
   final TextEditingController messageController;
   final ScrollController scrollController;
+  final FocusNode focusNode;
+  final VoidCallback onSend;
+  final VoidCallback onAttachment;
+  final VoidCallback onVoice;
+  final VoidCallback onCall;
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -106,16 +357,29 @@ class _MobileChatRoomPage extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
         actions: [
-          IconButton(icon: const Icon(Iconsax.call), onPressed: () {}),
-          IconButton(icon: const Icon(Iconsax.more), onPressed: () {}),
+          IconButton(icon: const Icon(Iconsax.call), onPressed: onCall),
+          IconButton(icon: const Icon(Iconsax.more), onPressed: onMore),
         ],
       ),
       body: Column(
         children: [
           Expanded(
-            child: _MessageList(scrollController: scrollController),
+            child: BlocBuilder<ChatBloc, ChatState>(
+              builder: (context, state) {
+                if (state is ChatLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return _MessageList(scrollController: scrollController);
+              },
+            ),
           ),
-          _MessageInput(controller: messageController),
+          _MessageInput(
+            controller: messageController,
+            focusNode: focusNode,
+            onSend: onSend,
+            onAttachment: onAttachment,
+            onVoice: onVoice,
+          ),
         ],
       ),
     );
@@ -127,11 +391,25 @@ class _DesktopChatRoomPage extends StatelessWidget {
     required this.chatId,
     required this.messageController,
     required this.scrollController,
+    required this.focusNode,
+    required this.onSend,
+    required this.onAttachment,
+    required this.onVoice,
+    required this.onCall,
+    required this.onVideo,
+    required this.onMore,
   });
 
   final String chatId;
   final TextEditingController messageController;
   final ScrollController scrollController;
+  final FocusNode focusNode;
+  final VoidCallback onSend;
+  final VoidCallback onAttachment;
+  final VoidCallback onVoice;
+  final VoidCallback onCall;
+  final VoidCallback onVideo;
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -176,7 +454,16 @@ class _DesktopChatRoomPage extends StatelessWidget {
                 Expanded(
                   child: ListView.builder(
                     itemCount: 10,
-                    itemBuilder: (context, index) => _MiniChatItem(index: index, isSelected: index.toString() == chatId),
+                    itemBuilder: (context, index) => _MiniChatItem(
+                      index: index,
+                      isSelected: index.toString() == chatId,
+                      onTap: () {
+                        context.pushReplacementNamed(
+                          'chatRoom',
+                          pathParameters: {'id': index.toString()},
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -229,18 +516,31 @@ class _DesktopChatRoomPage extends StatelessWidget {
                         ],
                       ),
                       const Spacer(),
-                      GlassIconButton(icon: Iconsax.call, onPressed: () {}),
+                      GlassIconButton(icon: Iconsax.call, onPressed: onCall),
                       const SizedBox(width: AppConstants.spacingSmall),
-                      GlassIconButton(icon: Iconsax.video, onPressed: () {}),
+                      GlassIconButton(icon: Iconsax.video, onPressed: onVideo),
                       const SizedBox(width: AppConstants.spacingSmall),
-                      GlassIconButton(icon: Iconsax.more, onPressed: () {}),
+                      GlassIconButton(icon: Iconsax.more, onPressed: onMore),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: _MessageList(scrollController: scrollController),
+                  child: BlocBuilder<ChatBloc, ChatState>(
+                    builder: (context, state) {
+                      if (state is ChatLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return _MessageList(scrollController: scrollController);
+                    },
+                  ),
                 ),
-                _MessageInput(controller: messageController),
+                _MessageInput(
+                  controller: messageController,
+                  focusNode: focusNode,
+                  onSend: onSend,
+                  onAttachment: onAttachment,
+                  onVoice: onVoice,
+                ),
               ],
             ),
           ),
@@ -254,46 +554,51 @@ class _MiniChatItem extends StatelessWidget {
   const _MiniChatItem({
     required this.index,
     required this.isSelected,
+    required this.onTap,
   });
 
   final int index;
   final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(AppConstants.spacingMedium),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primaryExtraLight : Colors.transparent,
-        border: Border(
-          bottom: BorderSide(
-            color: theme.brightness == Brightness.dark
-                ? AppColors.dividerDark
-                : AppColors.dividerLight,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primaryLighter,
-            child: Text('${index + 1}', style: const TextStyle(color: AppColors.white, fontSize: 12)),
-          ),
-          const SizedBox(width: AppConstants.spacingMedium),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('محادثة ${index + 1}', style: theme.textTheme.titleSmall),
-                Text('آخر رسالة...', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppConstants.spacingMedium),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primaryExtraLight : Colors.transparent,
+          border: Border(
+            bottom: BorderSide(
+              color: theme.brightness == Brightness.dark
+                  ? AppColors.dividerDark
+                  : AppColors.dividerLight,
+              width: 0.5,
             ),
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.primaryLighter,
+              child: Text('${index + 1}', style: const TextStyle(color: AppColors.white, fontSize: 12)),
+            ),
+            const SizedBox(width: AppConstants.spacingMedium),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('محادثة ${index + 1}', style: theme.textTheme.titleSmall),
+                  Text('آخر رسالة...', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -410,9 +715,19 @@ class _MessageBubble extends StatelessWidget {
 }
 
 class _MessageInput extends StatelessWidget {
-  const _MessageInput({required this.controller});
+  const _MessageInput({
+    required this.controller,
+    required this.focusNode,
+    required this.onSend,
+    required this.onAttachment,
+    required this.onVoice,
+  });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
+  final VoidCallback onSend;
+  final VoidCallback onAttachment;
+  final VoidCallback onVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -435,20 +750,22 @@ class _MessageInput extends StatelessWidget {
           children: [
             GlassIconButton(
               icon: Iconsax.attach_circle,
-              onPressed: () {},
+              onPressed: onAttachment,
             ),
             const SizedBox(width: AppConstants.spacingSmall),
             Expanded(
               child: GlassTextField(
                 controller: controller,
+                focusNode: focusNode,
                 hintText: 'اكتب رسالة...',
                 maxLines: 1,
+                onSubmitted: (_) => onSend(),
               ),
             ),
             const SizedBox(width: AppConstants.spacingSmall),
             GlassIconButton(
               icon: Iconsax.microphone,
-              onPressed: () {},
+              onPressed: onVoice,
             ),
             const SizedBox(width: AppConstants.spacingSmall),
             Container(
@@ -458,7 +775,7 @@ class _MessageInput extends StatelessWidget {
               ),
               child: IconButton(
                 icon: const Icon(Iconsax.send_1, color: AppColors.white),
-                onPressed: () {},
+                onPressed: onSend,
               ),
             ),
           ],
