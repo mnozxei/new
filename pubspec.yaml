@@ -54,8 +54,9 @@ dependencies:
   uuid: ^4.2.2
   path_provider: ^2.1.1
   image_picker: ^1.0.5
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
   url_launcher: ^6.2.2
+  share_plus: ^10.0.0
 
   # Realtime
   web_socket_channel: ^2.4.0
@@ -88,31 +89,5 @@ flutter:
   uses-material-design: true
   generate: true
 
-  assets:
-    - assets/images/
-    - assets/icons/
-    - assets/fonts/
-
-  fonts:
-    - family: Cairo
-      fonts:
-        - asset: assets/fonts/Cairo-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Cairo-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Cairo-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Cairo-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Cairo-Bold.ttf
-          weight: 700
-    - family: Tajawal
-      fonts:
-        - asset: assets/fonts/Tajawal-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Tajawal-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Tajawal-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Tajawal-Bold.ttf
-          weight: 700
+  # Assets will be loaded as needed
+  # Fonts are provided by google_fonts package

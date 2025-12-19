@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/share_service.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
@@ -309,9 +309,11 @@ class _PostCard extends StatelessWidget {
   }
 
   void _handleShare(BuildContext context) {
-    Share.share(
-      'شاهد هذا المنشور على تماد هب\nhttps://tamadhub.com/posts/$index',
-      subject: 'منشور من تماد هب',
+    const shareService = ShareService();
+    shareService.shareEntity(
+      entityType: ShareEntityType.post,
+      entityId: '$index',
+      title: 'شاهد هذا المنشور على تماد هب',
     );
   }
 

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/impressions_service.dart';
+import '../../../../core/services/share_service.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/verified_badge.dart';
@@ -87,9 +87,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
               title: const Text('مشاركة الملف الشخصي'),
               onTap: () {
                 Navigator.pop(context);
-                Share.share(
-                  'تعرف على هذا الملف الشخصي على تماد هب\nhttps://tamadhub.com/user/${widget.userId}',
-                  subject: 'ملف شخصي على تماد هب',
+                const shareService = ShareService();
+                shareService.shareEntity(
+                  entityType: ShareEntityType.profile,
+                  entityId: widget.userId,
+                  title: 'تعرف على هذا الملف الشخصي على تماد هب',
                 );
               },
             ),

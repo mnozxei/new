@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/routes/route_names.dart';
+import '../services/share_service.dart';
 import '../widgets/login_required_dialog.dart';
 
 /// Mixin for handling visitor-safe actions
@@ -53,8 +53,12 @@ mixin VisitorActionMixin<T extends StatefulWidget> on State<T> {
     required String url,
     String? text,
   }) {
-    final shareText = text != null ? '$title\n\n$text\n\n$url' : '$title\n\n$url';
-    Share.share(shareText, subject: title);
+    const shareService = ShareService();
+    shareService.shareUrl(
+      url: url,
+      title: title,
+      description: text,
+    );
   }
 
   /// Show coming soon snackbar for features not yet implemented
