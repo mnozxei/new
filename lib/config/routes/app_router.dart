@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth.dart';
 import '../../features/courses/presentation/bloc/instructor_bloc.dart';
+import '../../features/courses/presentation/bloc/student_bloc.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -21,6 +22,10 @@ import '../../features/courses/presentation/pages/course_builder_page.dart';
 import '../../features/courses/presentation/pages/instructor_application_page.dart';
 import '../../features/courses/presentation/pages/instructor_dashboard_page.dart';
 import '../../features/courses/presentation/pages/lesson_page.dart';
+import '../../features/courses/presentation/pages/course_enrollment_page.dart';
+import '../../features/courses/presentation/pages/quiz_page.dart';
+import '../../features/courses/presentation/pages/certificate_page.dart';
+import '../../features/courses/presentation/pages/my_learning_page.dart';
 import '../../features/jobs/presentation/pages/job_applications_page.dart';
 import '../../features/jobs/presentation/pages/job_details_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
@@ -144,9 +149,51 @@ abstract final class AppRouter {
                       return LessonPage(courseId: courseId, lessonId: lessonId);
                     },
                   ),
+                  GoRoute(
+                    path: RouteNames.courseEnroll,
+                    name: RouteNames.courseEnroll,
+                    builder: (context, state) {
+                      final courseId = state.pathParameters['courseId']!;
+                      return BlocProvider(
+                        create: (context) => getIt<StudentBloc>(),
+                        child: CourseEnrollmentPage(courseId: courseId),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: '${RouteNames.quiz}/:quizId',
+                    name: RouteNames.quiz,
+                    builder: (context, state) {
+                      final courseId = state.pathParameters['courseId']!;
+                      final quizId = state.pathParameters['quizId']!;
+                      return BlocProvider(
+                        create: (context) => getIt<StudentBloc>(),
+                        child: QuizPage(courseId: courseId, quizId: quizId),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: RouteNames.certificate,
+                    name: RouteNames.certificate,
+                    builder: (context, state) {
+                      final courseId = state.pathParameters['courseId']!;
+                      return BlocProvider(
+                        create: (context) => getIt<StudentBloc>(),
+                        child: CertificatePage(courseId: courseId),
+                      );
+                    },
+                  ),
                 ],
               ),
             ],
+          ),
+          GoRoute(
+            path: RouteNames.myLearning,
+            name: RouteNames.myLearning,
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<StudentBloc>(),
+              child: const MyLearningPage(),
+            ),
           ),
           GoRoute(
             path: RouteNames.instructorDashboard,

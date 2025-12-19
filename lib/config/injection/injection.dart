@@ -31,6 +31,7 @@ import '../../features/courses/data/repositories/course_repository_impl.dart';
 import '../../features/courses/domain/repositories/course_repository.dart';
 import '../../features/courses/presentation/bloc/course_bloc.dart';
 import '../../features/courses/presentation/bloc/instructor_bloc.dart';
+import '../../features/courses/presentation/bloc/student_bloc.dart';
 import '../../features/jobs/data/datasources/job_remote_datasource.dart';
 import '../../features/jobs/data/repositories/job_repository_impl.dart';
 import '../../features/jobs/domain/repositories/job_repository.dart';
@@ -219,6 +220,10 @@ void _registerBlocs() {
 
   getIt.registerFactory<InstructorBloc>(
     () => InstructorBloc(repository: getIt<CourseRepository>()),
+  );
+
+  getIt.registerFactory<StudentBloc>(
+    () => StudentBloc(repository: getIt<CourseRepository>()),
   );
 
   getIt.registerFactory<PostBloc>(

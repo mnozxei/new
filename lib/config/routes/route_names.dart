@@ -13,6 +13,10 @@ abstract final class RouteNames {
   static const String courses = '/courses';
   static const String courseDetails = 'courseDetails';
   static const String lesson = 'lesson';
+  static const String courseEnroll = 'enroll';
+  static const String quiz = 'quiz';
+  static const String certificate = 'certificate';
+  static const String myLearning = '/my-learning';
   static const String instructorDashboard = '/instructor';
   static const String instructorApplication = '/become-instructor';
   static const String courseBuilder = 'course-builder';
