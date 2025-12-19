@@ -262,7 +262,7 @@ abstract final class AppRouter {
                 },
               ),
               GoRoute(
-                path: '${RouteNames.courseAnalytics}/:courseId',
+                path: 'courses/:courseId/analytics',
                 name: RouteNames.courseAnalytics,
                 builder: (context, state) {
                   final courseId = state.pathParameters['courseId']!;
