@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/impressions_service.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/verified_badge.dart';
 
-class JobDetailsPage extends StatelessWidget {
+class JobDetailsPage extends StatefulWidget {
   const JobDetailsPage({
     required this.jobId,
     super.key,
@@ -18,23 +23,103 @@ class JobDetailsPage extends StatelessWidget {
   final String jobId;
 
   @override
+  State<JobDetailsPage> createState() => _JobDetailsPageState();
+}
+
+class _JobDetailsPageState extends State<JobDetailsPage> {
+  final ImpressionsService _impressionsService = ImpressionsService();
+  bool _isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordImpression();
+  }
+
+  void _recordImpression() {
+    _impressionsService.recordImpression(
+      entityType: ImpressionEntityType.job,
+      entityId: widget.jobId,
+    );
+  }
+
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
+  void _handleSave(BuildContext context) {
+    if (_isAuthenticated) {
+      setState(() => _isSaved = !_isSaved);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isSaved ? 'تم حفظ الوظيفة' : 'تم إزالة الحفظ'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } else {
+      LoginRequiredDialog.showForAction(context, 'save');
+    }
+  }
+
+  void _handleShare() {
+    Share.share(
+      'تقدم لهذه الوظيفة على تماد هب\nhttps://tamadhub.com/jobs/${widget.jobId}',
+      subject: 'فرصة عمل على تماد هب',
+    );
+  }
+
+  void _handleApply(BuildContext context) {
+    if (_isAuthenticated) {
+      context.pushNamed(RouteNames.jobApply, pathParameters: {'id': widget.jobId});
+    } else {
+      LoginRequiredDialog.showForAction(context, 'apply');
+    }
+  }
+
+  void _handleViewCompany(BuildContext context) {
+    context.push('/companies/company-${widget.jobId}');
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ResponsiveLayout(
-      mobile: _MobileJobDetails(jobId: jobId),
-      desktop: _DesktopJobDetails(jobId: jobId),
+      mobile: _MobileJobDetails(
+        jobId: widget.jobId,
+        isSaved: _isSaved,
+        onSave: () => _handleSave(context),
+        onShare: _handleShare,
+        onApply: () => _handleApply(context),
+        onViewCompany: () => _handleViewCompany(context),
+      ),
+      desktop: _DesktopJobDetails(
+        jobId: widget.jobId,
+        isSaved: _isSaved,
+        onSave: () => _handleSave(context),
+        onShare: _handleShare,
+        onApply: () => _handleApply(context),
+        onViewCompany: () => _handleViewCompany(context),
+      ),
     );
   }
 }
 
 class _MobileJobDetails extends StatelessWidget {
-  const _MobileJobDetails({required this.jobId});
+  const _MobileJobDetails({
+    required this.jobId,
+    required this.isSaved,
+    required this.onSave,
+    required this.onShare,
+    required this.onApply,
+    required this.onViewCompany,
+  });
 
   final String jobId;
+  final bool isSaved;
+  final VoidCallback onSave;
+  final VoidCallback onShare;
+  final VoidCallback onApply;
+  final VoidCallback onViewCompany;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: GlassAppBar(
         leading: IconButton(
@@ -43,31 +128,32 @@ class _MobileJobDetails extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.bookmark),
-            onPressed: () {},
+            icon: Icon(isSaved ? Iconsax.bookmark5 : Iconsax.bookmark),
+            color: isSaved ? AppColors.primary : null,
+            onPressed: onSave,
           ),
           IconButton(
             icon: const Icon(Iconsax.share),
-            onPressed: () {},
+            onPressed: onShare,
           ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _JobHeader(),
+            const _JobHeader(),
             Padding(
               padding: const EdgeInsets.all(AppConstants.spacingMedium),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _JobInfoSection(),
+                  const _JobInfoSection(),
                   const SizedBox(height: AppConstants.spacingMedium),
-                  _JobDescriptionSection(),
+                  const _JobDescriptionSection(),
                   const SizedBox(height: AppConstants.spacingMedium),
-                  _JobRequirementsSection(),
+                  const _JobRequirementsSection(),
                   const SizedBox(height: AppConstants.spacingMedium),
-                  _CompanySection(),
+                  _CompanySection(onViewCompany: onViewCompany),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -75,15 +161,27 @@ class _MobileJobDetails extends StatelessWidget {
           ],
         ),
       ),
-      bottomSheet: _ApplyBottomSheet(),
+      bottomSheet: _ApplyBottomSheet(onApply: onApply),
     );
   }
 }
 
 class _DesktopJobDetails extends StatelessWidget {
-  const _DesktopJobDetails({required this.jobId});
+  const _DesktopJobDetails({
+    required this.jobId,
+    required this.isSaved,
+    required this.onSave,
+    required this.onShare,
+    required this.onApply,
+    required this.onViewCompany,
+  });
 
   final String jobId;
+  final bool isSaved;
+  final VoidCallback onSave;
+  final VoidCallback onShare;
+  final VoidCallback onApply;
+  final VoidCallback onViewCompany;
 
   @override
   Widget build(BuildContext context) {
@@ -93,15 +191,16 @@ class _DesktopJobDetails extends StatelessWidget {
           icon: const Icon(Iconsax.arrow_right_1),
           onPressed: () => context.pop(),
         ),
-        title: 'Job Details',
+        title: 'تفاصيل الوظيفة',
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.bookmark),
-            onPressed: () {},
+            icon: Icon(isSaved ? Iconsax.bookmark5 : Iconsax.bookmark),
+            color: isSaved ? AppColors.primary : null,
+            onPressed: onSave,
           ),
           IconButton(
             icon: const Icon(Iconsax.share),
-            onPressed: () {},
+            onPressed: onShare,
           ),
         ],
       ),
@@ -117,11 +216,11 @@ class _DesktopJobDetails extends StatelessWidget {
                   flex: 2,
                   child: Column(
                     children: [
-                      _JobHeader(),
+                      const _JobHeader(),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      _JobDescriptionSection(),
+                      const _JobDescriptionSection(),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      _JobRequirementsSection(),
+                      const _JobRequirementsSection(),
                     ],
                   ),
                 ),
@@ -130,11 +229,11 @@ class _DesktopJobDetails extends StatelessWidget {
                   width: 350,
                   child: Column(
                     children: [
-                      _ApplyCard(),
+                      _ApplyCard(onApply: onApply, onSave: onSave, isSaved: isSaved),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      _JobInfoSection(),
+                      const _JobInfoSection(),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      _CompanySection(),
+                      _CompanySection(onViewCompany: onViewCompany),
                     ],
                   ),
                 ),
@@ -148,6 +247,8 @@ class _DesktopJobDetails extends StatelessWidget {
 }
 
 class _JobHeader extends StatelessWidget {
+  const _JobHeader();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -163,8 +264,7 @@ class _JobHeader extends StatelessWidget {
                 height: 64,
                 decoration: BoxDecoration(
                   color: AppColors.primaryLighter,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.borderRadiusMedium),
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
                 ),
                 child: const Center(
                   child: Text(
@@ -185,7 +285,7 @@ class _JobHeader extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Company Name',
+                          'اسم الشركة',
                           style: theme.textTheme.titleSmall?.copyWith(
                             color: AppColors.textSecondaryLight,
                           ),
@@ -199,7 +299,7 @@ class _JobHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: AppConstants.spacingExtraSmall),
                     Text(
-                      'Senior Software Engineer',
+                      'مهندس برمجيات أول',
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -213,11 +313,11 @@ class _JobHeader extends StatelessWidget {
           Wrap(
             spacing: AppConstants.spacingSmall,
             runSpacing: AppConstants.spacingSmall,
-            children: [
-              _Tag(icon: Iconsax.location, label: 'Riyadh, Saudi Arabia'),
-              _Tag(icon: Iconsax.briefcase, label: 'Full-time'),
-              _Tag(icon: Iconsax.money, label: '20K-35K SAR'),
-              _Tag(icon: Iconsax.chart, label: 'Senior Level'),
+            children: const [
+              _Tag(icon: Iconsax.location, label: 'الرياض، السعودية'),
+              _Tag(icon: Iconsax.briefcase, label: 'دوام كامل'),
+              _Tag(icon: Iconsax.money, label: '20-35 ألف ريال'),
+              _Tag(icon: Iconsax.chart, label: 'مستوى كبير'),
             ],
           ),
         ],
@@ -227,18 +327,20 @@ class _JobHeader extends StatelessWidget {
 }
 
 class _JobInfoSection extends StatelessWidget {
+  const _JobInfoSection();
+
   @override
   Widget build(BuildContext context) {
     return GlassPanel(
-      title: 'Job Information',
+      title: 'معلومات الوظيفة',
       intensity: GlassIntensity.light,
-      child: Column(
+      child: const Column(
         children: [
-          _InfoRow(label: 'Posted', value: '2 days ago'),
-          _InfoRow(label: 'Applications', value: '45 applicants'),
-          _InfoRow(label: 'Vacancies', value: '3 positions'),
-          _InfoRow(label: 'Status', value: 'Open', isHighlighted: true),
-          _InfoRow(label: 'Deadline', value: 'January 15, 2026'),
+          _InfoRow(label: 'تاريخ النشر', value: 'منذ يومين'),
+          _InfoRow(label: 'عدد المتقدمين', value: '45 متقدم'),
+          _InfoRow(label: 'الشواغر', value: '3 مناصب'),
+          _InfoRow(label: 'الحالة', value: 'مفتوح', isHighlighted: true),
+          _InfoRow(label: 'آخر موعد', value: '15 يناير 2026'),
         ],
       ),
     );
@@ -246,44 +348,44 @@ class _JobInfoSection extends StatelessWidget {
 }
 
 class _JobDescriptionSection extends StatelessWidget {
+  const _JobDescriptionSection();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return GlassPanel(
-      title: 'Job Description',
+      title: 'وصف الوظيفة',
       intensity: GlassIntensity.light,
       child: Text(
-        '''We are looking for a talented Senior Software Engineer to join our growing team. In this role, you will be responsible for designing, developing, and maintaining high-quality software solutions.
+        '''نبحث عن مهندس برمجيات أول موهوب للانضمام إلى فريقنا المتنامي. في هذا الدور، ستكون مسؤولاً عن تصميم وتطوير وصيانة حلول برمجية عالية الجودة.
 
-You will work closely with cross-functional teams to deliver innovative products that meet our customers' needs. The ideal candidate has a strong background in software development, excellent problem-solving skills, and a passion for learning new technologies.
+ستعمل بشكل وثيق مع فرق متعددة الوظائف لتقديم منتجات مبتكرة تلبي احتياجات عملائنا. المرشح المثالي لديه خلفية قوية في تطوير البرمجيات، ومهارات ممتازة في حل المشكلات، وشغف بتعلم تقنيات جديدة.
 
-This is an exciting opportunity to make a significant impact in a fast-paced, dynamic environment.''',
-        style: theme.textTheme.bodyLarge?.copyWith(
-          height: 1.6,
-        ),
+هذه فرصة مثيرة لإحداث تأثير كبير في بيئة سريعة وديناميكية.''',
+        style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
       ),
     );
   }
 }
 
 class _JobRequirementsSection extends StatelessWidget {
+  const _JobRequirementsSection();
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return GlassPanel(
-      title: 'Requirements',
+      title: 'المتطلبات',
       intensity: GlassIntensity.light,
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _RequirementItem('5+ years of experience in software development'),
-          _RequirementItem('Strong proficiency in Flutter and Dart'),
-          _RequirementItem('Experience with RESTful APIs and microservices'),
-          _RequirementItem('Excellent communication skills in Arabic and English'),
-          _RequirementItem("Bachelor's degree in Computer Science or related field"),
-          _RequirementItem('Experience with agile development methodologies'),
+          _RequirementItem('5+ سنوات خبرة في تطوير البرمجيات'),
+          _RequirementItem('إتقان Flutter و Dart'),
+          _RequirementItem('خبرة في RESTful APIs والخدمات المصغرة'),
+          _RequirementItem('مهارات تواصل ممتازة بالعربية والإنجليزية'),
+          _RequirementItem('بكالوريوس في علوم الحاسب أو مجال ذي صلة'),
+          _RequirementItem('خبرة في منهجيات التطوير الرشيقة'),
         ],
       ),
     );
@@ -291,12 +393,16 @@ class _JobRequirementsSection extends StatelessWidget {
 }
 
 class _CompanySection extends StatelessWidget {
+  const _CompanySection({required this.onViewCompany});
+
+  final VoidCallback onViewCompany;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return GlassPanel(
-      title: 'About Company',
+      title: 'عن الشركة',
       intensity: GlassIntensity.light,
       child: Column(
         children: [
@@ -307,8 +413,7 @@ class _CompanySection extends StatelessWidget {
                 height: 48,
                 decoration: BoxDecoration(
                   color: AppColors.primaryLighter,
-                  borderRadius:
-                      BorderRadius.circular(AppConstants.borderRadiusSmall),
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
                 ),
                 child: const Center(
                   child: Text(
@@ -329,7 +434,7 @@ class _CompanySection extends StatelessWidget {
                     Row(
                       children: [
                         Text(
-                          'Company Name',
+                          'اسم الشركة',
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -342,7 +447,7 @@ class _CompanySection extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      'Technology Company',
+                      'شركة تقنية',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: AppColors.textSecondaryLight,
                       ),
@@ -354,15 +459,15 @@ class _CompanySection extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           Text(
-            'A leading technology company specializing in innovative software solutions for businesses worldwide.',
+            'شركة تقنية رائدة متخصصة في حلول برمجية مبتكرة للشركات حول العالم.',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondaryLight,
             ),
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           OutlinedButton(
-            onPressed: () {},
-            child: const Text('View Company Profile'),
+            onPressed: onViewCompany,
+            child: const Text('عرض ملف الشركة'),
           ),
         ],
       ),
@@ -371,6 +476,10 @@ class _CompanySection extends StatelessWidget {
 }
 
 class _ApplyBottomSheet extends StatelessWidget {
+  const _ApplyBottomSheet({required this.onApply});
+
+  final VoidCallback onApply;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -390,8 +499,8 @@ class _ApplyBottomSheet extends StatelessWidget {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: () {},
-            child: const Text('Apply Now'),
+            onPressed: onApply,
+            child: const Text('تقدم الآن'),
           ),
         ),
       ),
@@ -400,6 +509,16 @@ class _ApplyBottomSheet extends StatelessWidget {
 }
 
 class _ApplyCard extends StatelessWidget {
+  const _ApplyCard({
+    required this.onApply,
+    required this.onSave,
+    required this.isSaved,
+  });
+
+  final VoidCallback onApply;
+  final VoidCallback onSave;
+  final bool isSaved;
+
   @override
   Widget build(BuildContext context) {
     return GlassPanel(
@@ -410,17 +529,17 @@ class _ApplyCard extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: () {},
-              child: const Text('Apply Now'),
+              onPressed: onApply,
+              child: const Text('تقدم الآن'),
             ),
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Iconsax.bookmark),
-              label: const Text('Save Job'),
+              onPressed: onSave,
+              icon: Icon(isSaved ? Iconsax.bookmark5 : Iconsax.bookmark),
+              label: Text(isSaved ? 'تم الحفظ' : 'حفظ الوظيفة'),
             ),
           ),
         ],
@@ -532,10 +651,7 @@ class _RequirementItem extends StatelessWidget {
           ),
           const SizedBox(width: AppConstants.spacingSmall),
           Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyLarge,
-            ),
+            child: Text(text, style: theme.textTheme.bodyLarge),
           ),
         ],
       ),

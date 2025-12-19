@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/verified_badge.dart';
 
@@ -25,6 +28,8 @@ class PostsPage extends StatelessWidget {
 class _MobilePostsPage extends StatelessWidget {
   const _MobilePostsPage();
 
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,13 +38,19 @@ class _MobilePostsPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.search_normal),
-            onPressed: () {},
+            onPressed: () => context.push(RouteNames.search),
           ),
           Stack(
             children: [
               IconButton(
                 icon: const Icon(Iconsax.notification),
-                onPressed: () => context.push(RouteNames.notifications),
+                onPressed: () {
+                  if (_isAuthenticated) {
+                    context.push(RouteNames.notifications);
+                  } else {
+                    LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول لعرض الإشعارات');
+                  }
+                },
               ),
               Positioned(
                 top: 8,
@@ -59,7 +70,13 @@ class _MobilePostsPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.pushNamed(RouteNames.createPost),
+        onPressed: () {
+          if (_isAuthenticated) {
+            context.pushNamed(RouteNames.createPost);
+          } else {
+            LoginRequiredDialog.showForAction(context, 'create');
+          }
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Iconsax.add, color: AppColors.white),
       ),
@@ -74,6 +91,8 @@ class _MobilePostsPage extends StatelessWidget {
 
 class _DesktopPostsPage extends StatelessWidget {
   const _DesktopPostsPage();
+
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
 
   @override
   Widget build(BuildContext context) {
@@ -92,11 +111,21 @@ class _DesktopPostsPage extends StatelessWidget {
                     children: [
                       Text('المنشورات', style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
                       const Spacer(),
+                      IconButton(
+                        icon: const Icon(Iconsax.search_normal),
+                        onPressed: () => context.push(RouteNames.search),
+                      ),
                       Stack(
                         children: [
                           IconButton(
                             icon: const Icon(Iconsax.notification),
-                            onPressed: () => context.push(RouteNames.notifications),
+                            onPressed: () {
+                              if (_isAuthenticated) {
+                                context.push(RouteNames.notifications);
+                              } else {
+                                LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول لعرض الإشعارات');
+                              }
+                            },
                           ),
                           Positioned(
                             top: 8,
@@ -115,7 +144,13 @@ class _DesktopPostsPage extends StatelessWidget {
                       ),
                       const SizedBox(width: AppConstants.spacingSmall),
                       GlassButton(
-                        onPressed: () => context.pushNamed(RouteNames.createPost),
+                        onPressed: () {
+                          if (_isAuthenticated) {
+                            context.pushNamed(RouteNames.createPost);
+                          } else {
+                            LoginRequiredDialog.showForAction(context, 'create');
+                          }
+                        },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -150,14 +185,17 @@ class _DesktopPostsPage extends StatelessWidget {
                   child: Column(
                     children: List.generate(
                       5,
-                      (index) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSmall),
-                        child: Row(
-                          children: [
-                            Text('#موضوع_${index + 1}', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.primary)),
-                            const Spacer(),
-                            Text('${(index + 1) * 123} منشور', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
-                          ],
+                      (index) => InkWell(
+                        onTap: () => context.push('${RouteNames.search}?q=موضوع_${index + 1}'),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSmall),
+                          child: Row(
+                            children: [
+                              Text('#موضوع_${index + 1}', style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.primary)),
+                              const Spacer(),
+                              Text('${(index + 1) * 123} منشور', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -188,6 +226,95 @@ class _PostCard extends StatelessWidget {
 
   final int index;
 
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
+  void _showMoreOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Iconsax.bookmark),
+              title: const Text('حفظ المنشور'),
+              onTap: () {
+                Navigator.pop(context);
+                if (_isAuthenticated) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('تم حفظ المنشور')),
+                  );
+                } else {
+                  LoginRequiredDialog.showForAction(context, 'save');
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.link),
+              title: const Text('نسخ الرابط'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم نسخ الرابط')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Iconsax.flag),
+              title: const Text('الإبلاغ عن المنشور'),
+              onTap: () {
+                Navigator.pop(context);
+                if (_isAuthenticated) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('شكراً لإبلاغك. سنراجع المنشور.')),
+                  );
+                } else {
+                  LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول للإبلاغ');
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleLike(BuildContext context) {
+    if (_isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم الإعجاب بالمنشور'), duration: Duration(seconds: 1)),
+      );
+    } else {
+      LoginRequiredDialog.showForAction(context, 'like');
+    }
+  }
+
+  void _handleComment(BuildContext context) {
+    if (_isAuthenticated) {
+      context.pushNamed(RouteNames.postDetails, pathParameters: {'id': '$index'});
+    } else {
+      LoginRequiredDialog.showForAction(context, 'comment');
+    }
+  }
+
+  void _handleShare(BuildContext context) {
+    Share.share(
+      'شاهد هذا المنشور على تماد هب\nhttps://tamadhub.com/posts/$index',
+      subject: 'منشور من تماد هب',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -204,7 +331,7 @@ class _PostCard extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundColor: AppColors.primaryLighter,
-                child: Text('ش', style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
+                child: const Text('ش', style: TextStyle(color: AppColors.white, fontWeight: FontWeight.bold)),
               ),
               const SizedBox(width: AppConstants.spacingMedium),
               Expanded(
@@ -224,7 +351,7 @@ class _PostCard extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Iconsax.more, size: 20),
-                onPressed: () {},
+                onPressed: () => _showMoreOptions(context),
               ),
             ],
           ),
@@ -248,11 +375,11 @@ class _PostCard extends StatelessWidget {
           const SizedBox(height: AppConstants.spacingMedium),
           Row(
             children: [
-              _PostAction(icon: Iconsax.like_1, label: '${(index + 1) * 12}', onTap: () {}),
+              _PostAction(icon: Iconsax.like_1, label: '${(index + 1) * 12}', onTap: () => _handleLike(context)),
               const SizedBox(width: AppConstants.spacingLarge),
-              _PostAction(icon: Iconsax.message, label: '${(index + 1) * 3}', onTap: () {}),
+              _PostAction(icon: Iconsax.message, label: '${(index + 1) * 3}', onTap: () => _handleComment(context)),
               const SizedBox(width: AppConstants.spacingLarge),
-              _PostAction(icon: Iconsax.share, label: 'مشاركة', onTap: () {}),
+              _PostAction(icon: Iconsax.share, label: 'مشاركة', onTap: () => _handleShare(context)),
             ],
           ),
         ],
@@ -298,6 +425,8 @@ class _SuggestedCompany extends StatelessWidget {
 
   final int index;
 
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -306,23 +435,37 @@ class _SuggestedCompany extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSmall),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: AppColors.primaryLighter,
-            child: Text('${index + 1}', style: const TextStyle(color: AppColors.white)),
+          GestureDetector(
+            onTap: () => context.push('/companies/company-$index'),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.primaryLighter,
+              child: Text('${index + 1}', style: const TextStyle(color: AppColors.white)),
+            ),
           ),
           const SizedBox(width: AppConstants.spacingMedium),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('شركة ${index + 1}', style: theme.textTheme.titleSmall),
-                Text('${(index + 1) * 1000} متابع', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
-              ],
+            child: GestureDetector(
+              onTap: () => context.push('/companies/company-$index'),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('شركة ${index + 1}', style: theme.textTheme.titleSmall),
+                  Text('${(index + 1) * 1000} متابع', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+                ],
+              ),
             ),
           ),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              if (_isAuthenticated) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تمت المتابعة بنجاح'), duration: Duration(seconds: 1)),
+                );
+              } else {
+                LoginRequiredDialog.showForAction(context, 'follow');
+              }
+            },
             child: const Text('متابعة'),
           ),
         ],
