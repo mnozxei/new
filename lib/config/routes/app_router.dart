@@ -480,7 +480,7 @@ abstract final class AppRouter {
                 name: RouteNames.adminInstructorVerifications,
                 builder: (context, state) => BlocProvider(
                   create: (context) => getIt<VerificationBloc>()
-                    ..add(const LoadPendingVerifications()),
+                    ..add(const LoadPendingInstructorApplications()),
                   child: const AdminInstructorVerificationsPage(),
                 ),
               ),
@@ -489,7 +489,7 @@ abstract final class AppRouter {
                 name: RouteNames.adminCompanyVerifications,
                 builder: (context, state) => BlocProvider(
                   create: (context) => getIt<VerificationBloc>()
-                    ..add(const LoadPendingVerifications(type: VerificationType.company)),
+                    ..add(const LoadPendingCompanyVerifications()),
                   child: const AdminCompanyVerificationsPage(),
                 ),
               ),
