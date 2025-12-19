@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth.dart';
+import '../../features/courses/presentation/bloc/instructor_bloc.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -15,6 +17,8 @@ import '../../features/companies/presentation/pages/create_company_page.dart';
 import '../../features/companies/presentation/pages/my_companies_page.dart';
 import '../../features/courses/presentation/pages/course_details_page.dart';
 import '../../features/courses/presentation/pages/courses_page.dart';
+import '../../features/courses/presentation/pages/course_builder_page.dart';
+import '../../features/courses/presentation/pages/instructor_application_page.dart';
 import '../../features/courses/presentation/pages/instructor_dashboard_page.dart';
 import '../../features/courses/presentation/pages/lesson_page.dart';
 import '../../features/jobs/presentation/pages/job_applications_page.dart';
@@ -147,7 +151,40 @@ abstract final class AppRouter {
           GoRoute(
             path: RouteNames.instructorDashboard,
             name: RouteNames.instructorDashboard,
-            builder: (context, state) => const InstructorDashboardPage(),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<InstructorBloc>(),
+              child: const InstructorDashboardPage(),
+            ),
+            routes: [
+              GoRoute(
+                path: RouteNames.courseBuilder,
+                name: RouteNames.courseBuilder,
+                builder: (context, state) {
+                  final courseId = state.uri.queryParameters['courseId'];
+                  return BlocProvider(
+                    create: (context) => getIt<InstructorBloc>(),
+                    child: CourseBuilderPage(courseId: courseId),
+                  );
+                },
+              ),
+              GoRoute(
+                path: '${RouteNames.courseAnalytics}/:courseId',
+                name: RouteNames.courseAnalytics,
+                builder: (context, state) {
+                  final courseId = state.pathParameters['courseId']!;
+                  // TODO: Create CourseAnalyticsPage
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('Course Analytics')),
+                    body: Center(child: Text('Analytics for $courseId')),
+                  );
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: RouteNames.instructorApplication,
+            name: RouteNames.instructorApplication,
+            builder: (context, state) => const InstructorApplicationPage(),
           ),
           GoRoute(
             path: RouteNames.posts,

@@ -14,6 +14,10 @@ abstract final class RouteNames {
   static const String courseDetails = 'courseDetails';
   static const String lesson = 'lesson';
   static const String instructorDashboard = '/instructor';
+  static const String instructorApplication = '/become-instructor';
+  static const String courseBuilder = 'course-builder';
+  static const String myCourses = 'my-courses';
+  static const String courseAnalytics = 'analytics';
 
   static const String posts = '/posts';
   static const String postDetails = 'postDetails';
