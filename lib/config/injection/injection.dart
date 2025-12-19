@@ -50,6 +50,10 @@ import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_user_profile.dart';
 import '../../features/profile/domain/usecases/update_user_profile.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
+import '../../features/admin/data/datasources/admin_remote_data_source.dart';
+import '../../features/admin/data/repositories/admin_repository_impl.dart';
+import '../../features/admin/domain/repositories/admin_repository.dart';
+import '../../features/admin/presentation/bloc/admin_bloc.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -118,6 +122,10 @@ void _registerDataSources() {
   getIt.registerLazySingleton<AdRemoteDataSource>(
     () => AdRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
   );
+
+  getIt.registerLazySingleton<AdminRemoteDataSource>(
+    () => AdminRemoteDataSourceImpl(supabaseClient: getIt<SupabaseClient>()),
+  );
 }
 
 void _registerRepositories() {
@@ -155,6 +163,10 @@ void _registerRepositories() {
 
   getIt.registerLazySingleton<AdRepository>(
     () => AdRepositoryImpl(remoteDataSource: getIt<AdRemoteDataSource>()),
+  );
+
+  getIt.registerLazySingleton<AdminRepository>(
+    () => AdminRepositoryImpl(remoteDataSource: getIt<AdminRemoteDataSource>()),
   );
 }
 
@@ -240,6 +252,10 @@ void _registerBlocs() {
 
   getIt.registerFactory<AdBloc>(
     () => AdBloc(repository: getIt<AdRepository>()),
+  );
+
+  getIt.registerFactory<AdminBloc>(
+    () => AdminBloc(repository: getIt<AdminRepository>()),
   );
 }
 
