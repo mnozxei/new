@@ -104,4 +104,41 @@ abstract final class RouteNames {
 
   // ===== SAVED ITEMS =====
   static const String savedItems = '/saved-items';
+
+  // ===== VERIFICATION =====
+  static const String verificationDocuments = '/verification/documents';
+  static const String verificationRequirements = '/verification/requirements';
+
+  // ===== ADMIN VERIFICATION QUEUES =====
+  static const String adminInstructorVerifications = '/admin/verifications/instructors';
+  static const String adminCompanyVerifications = '/admin/verifications/companies';
+
+  // ===== COURSE PUBLISHING =====
+  static const String coursePublish = '/instructor/courses/:courseId/publish';
+  static const String coursePreview = '/courses/:courseId/preview';
+
+  // ===== QUIZ AUTHORING =====
+  static const String quizBuilder = '/instructor/courses/:courseId/quizzes/:quizId/build';
+  static const String questionBank = '/instructor/courses/:courseId/questions';
+  static const String quizAttempts = '/courses/:courseId/quiz/:quizId/attempts';
+  static const String lockedLesson = '/courses/:courseId/lessons/:lessonId/locked';
+  static const String finalQuizGate = '/courses/:courseId/final-quiz';
+
+  // ===== CERTIFICATE =====
+  static const String certificateVerifyPublic = '/verify/:code';
+  static const String certificateRevoke = '/instructor/certificates/:certificateId/revoke';
+
+  // ===== JOBS PIPELINE =====
+  static const String applicationPipeline = '/companies/:companyId/jobs/:jobId/pipeline';
+  static const String applicantReview = '/companies/:companyId/jobs/:jobId/applications/:applicationId';
+
+  // ===== SOCIAL SAFETY =====
+  static const String reportContent = '/report';
+  static const String blockedUsers = '/settings/blocked';
+  static const String privacySettings = '/settings/privacy';
+
+  // ===== SYSTEM ERROR PAGES =====
+  static const String unauthorized = '/403';
+  static const String notFound = '/404';
+  static const String networkError = '/error';
 }
