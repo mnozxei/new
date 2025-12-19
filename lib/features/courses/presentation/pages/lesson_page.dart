@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/login_required_dialog.dart';
 
-class LessonPage extends StatelessWidget {
+class LessonPage extends StatefulWidget {
   const LessonPage({
     required this.courseId,
     required this.lessonId,
@@ -18,20 +20,114 @@ class LessonPage extends StatelessWidget {
   final String lessonId;
 
   @override
+  State<LessonPage> createState() => _LessonPageState();
+}
+
+class _LessonPageState extends State<LessonPage> {
+  final TextEditingController _notesController = TextEditingController();
+  bool _isBookmarked = false;
+  bool _isCompleted = false;
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+
+  void _handleBookmark() {
+    if (_isAuthenticated) {
+      setState(() => _isBookmarked = !_isBookmarked);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isBookmarked ? 'تم حفظ الدرس' : 'تم إزالة الحفظ'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    } else {
+      LoginRequiredDialog.showForAction(context, 'save');
+    }
+  }
+
+  void _handleSaveNotes() {
+    if (!_isAuthenticated) {
+      LoginRequiredDialog.showForAction(context, 'save');
+      return;
+    }
+
+    final notes = _notesController.text.trim();
+    if (notes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('الملاحظات فارغة')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم حفظ الملاحظات')),
+    );
+  }
+
+  void _handleDownloadResource(String title) {
+    if (_isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('جاري تحميل: $title')),
+      );
+    } else {
+      LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول لتحميل الموارد');
+    }
+  }
+
+  void _handlePreviousLesson() {
+    // Extract lesson number and navigate to previous
+    final lessonNum = int.tryParse(widget.lessonId.replaceAll(RegExp(r'[^0-9]'), '')) ?? 1;
+    if (lessonNum > 0) {
+      context.pushReplacement('/courses/${widget.courseId}/lesson/lesson-${lessonNum - 1}');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('هذا هو الدرس الأول')),
+      );
+    }
+  }
+
+  void _handleCompleteAndNext() {
+    if (!_isAuthenticated) {
+      LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول لإكمال الدروس');
+      return;
+    }
+
+    setState(() => _isCompleted = true);
+
+    // Extract lesson number and navigate to next
+    final lessonNum = int.tryParse(widget.lessonId.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم إكمال الدرس! ✓')),
+    );
+
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        context.pushReplacement('/courses/${widget.courseId}/lesson/lesson-${lessonNum + 1}');
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: GlassAppBar(
-        title: 'Lesson 1',
+        title: 'الدرس الأول',
         leading: IconButton(
           icon: const Icon(Iconsax.arrow_right_1),
           onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Iconsax.bookmark),
-            onPressed: () {},
+            icon: Icon(_isBookmarked ? Iconsax.bookmark_25 : Iconsax.bookmark),
+            onPressed: _handleBookmark,
           ),
         ],
       ),
@@ -46,21 +142,28 @@ class LessonPage extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.white.withValues(alpha: 0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Iconsax.play,
-                        size: 32,
-                        color: AppColors.white,
+                    GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('قريباً: مشغل الفيديو')),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.white.withValues(alpha: 0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Iconsax.play,
+                          size: 32,
+                          color: AppColors.white,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingMedium),
                     Text(
-                      'Video Player Placeholder',
+                      'اضغط للتشغيل',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: AppColors.white.withValues(alpha: 0.7),
                       ),
@@ -75,7 +178,7 @@ class LessonPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Introduction to Flutter',
+                    'مقدمة في Flutter',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -83,50 +186,57 @@ class LessonPage extends StatelessWidget {
                   const SizedBox(height: AppConstants.spacingSmall),
                   Row(
                     children: [
-                      _LessonTag(icon: Iconsax.clock, label: '10 min'),
+                      _LessonTag(icon: Iconsax.clock, label: '10 دقائق'),
                       const SizedBox(width: AppConstants.spacingSmall),
-                      _LessonTag(icon: Iconsax.video_play, label: 'Video'),
+                      _LessonTag(icon: Iconsax.video_play, label: 'فيديو'),
+                      if (_isCompleted) ...[
+                        const SizedBox(width: AppConstants.spacingSmall),
+                        _LessonTag(icon: Iconsax.tick_circle, label: 'مكتمل', isSuccess: true),
+                      ],
                     ],
                   ),
                   const SizedBox(height: AppConstants.spacingMedium),
                   GlassPanel(
-                    title: 'Lesson Description',
+                    title: 'وصف الدرس',
                     intensity: GlassIntensity.light,
                     child: Text(
-                      'In this lesson, you will learn the fundamentals of Flutter, including its architecture, widget system, and how to set up your development environment. By the end of this lesson, you will have a solid understanding of what Flutter is and how it works.',
+                      'في هذا الدرس، ستتعلم أساسيات Flutter، بما في ذلك بنيته ونظام الويدجت وكيفية إعداد بيئة التطوير الخاصة بك. بنهاية هذا الدرس، سيكون لديك فهم قوي لما هو Flutter وكيف يعمل.',
                       style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingMedium),
                   GlassPanel(
-                    title: 'Resources',
+                    title: 'الموارد',
                     intensity: GlassIntensity.light,
                     child: Column(
                       children: [
                         _ResourceItem(
                           icon: Iconsax.document_download,
-                          title: 'Lesson Slides',
+                          title: 'شرائح الدرس',
                           subtitle: 'PDF - 2.4 MB',
+                          onDownload: () => _handleDownloadResource('شرائح الدرس'),
                         ),
                         const Divider(),
                         _ResourceItem(
                           icon: Iconsax.code,
-                          title: 'Source Code',
+                          title: 'الكود المصدري',
                           subtitle: 'ZIP - 1.2 MB',
+                          onDownload: () => _handleDownloadResource('الكود المصدري'),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingMedium),
                   GlassPanel(
-                    title: 'Notes',
+                    title: 'ملاحظاتك',
                     intensity: GlassIntensity.light,
                     child: Column(
                       children: [
                         TextField(
+                          controller: _notesController,
                           maxLines: 4,
                           decoration: InputDecoration(
-                            hintText: 'Write your notes here...',
+                            hintText: 'اكتب ملاحظاتك هنا...',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(
                                 AppConstants.borderRadiusMedium,
@@ -138,9 +248,9 @@ class LessonPage extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton.icon(
-                            onPressed: () {},
+                            onPressed: _handleSaveNotes,
                             icon: const Icon(Iconsax.save_2, size: 18),
-                            label: const Text('Save Notes'),
+                            label: const Text('حفظ الملاحظات'),
                           ),
                         ),
                       ],
@@ -153,7 +263,11 @@ class LessonPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomSheet: _NavigationBottomSheet(),
+      bottomSheet: _NavigationBottomSheet(
+        onPrevious: _handlePreviousLesson,
+        onCompleteAndNext: _handleCompleteAndNext,
+        isCompleted: _isCompleted,
+      ),
     );
   }
 }
@@ -162,14 +276,18 @@ class _LessonTag extends StatelessWidget {
   const _LessonTag({
     required this.icon,
     required this.label,
+    this.isSuccess = false,
   });
 
   final IconData icon;
   final String label;
+  final bool isSuccess;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = isSuccess ? AppColors.success : AppColors.primary;
+    final bgColor = isSuccess ? AppColors.success.withValues(alpha: 0.1) : AppColors.primaryExtraLight;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -177,18 +295,18 @@ class _LessonTag extends StatelessWidget {
         vertical: AppConstants.spacingExtraSmall,
       ),
       decoration: BoxDecoration(
-        color: AppColors.primaryExtraLight,
+        color: bgColor,
         borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.primary),
+          Icon(icon, size: 14, color: color),
           const SizedBox(width: AppConstants.spacingExtraSmall),
           Text(
             label,
             style: theme.textTheme.bodySmall?.copyWith(
-              color: AppColors.primary,
+              color: color,
             ),
           ),
         ],
@@ -202,11 +320,13 @@ class _ResourceItem extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.onDownload,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -231,13 +351,23 @@ class _ResourceItem extends StatelessWidget {
       ),
       trailing: IconButton(
         icon: const Icon(Iconsax.import_1),
-        onPressed: () {},
+        onPressed: onDownload,
       ),
     );
   }
 }
 
 class _NavigationBottomSheet extends StatelessWidget {
+  const _NavigationBottomSheet({
+    required this.onPrevious,
+    required this.onCompleteAndNext,
+    required this.isCompleted,
+  });
+
+  final VoidCallback onPrevious;
+  final VoidCallback onCompleteAndNext;
+  final bool isCompleted;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -257,17 +387,17 @@ class _NavigationBottomSheet extends StatelessWidget {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: onPrevious,
                 icon: const Icon(Iconsax.arrow_right_1),
-                label: const Text('Previous'),
+                label: const Text('السابق'),
               ),
             ),
             const SizedBox(width: AppConstants.spacingMedium),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Iconsax.tick_circle),
-                label: const Text('Complete & Next'),
+                onPressed: onCompleteAndNext,
+                icon: Icon(isCompleted ? Iconsax.arrow_left_2 : Iconsax.tick_circle),
+                label: Text(isCompleted ? 'التالي' : 'إكمال والتالي'),
               ),
             ),
           ],
