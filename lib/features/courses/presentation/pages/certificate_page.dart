@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/certificate_service.dart';
+import '../../../../core/services/share_service.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../domain/entities/course_entity.dart';
@@ -23,74 +26,165 @@ class CertificatePage extends StatefulWidget {
 }
 
 class _CertificatePageState extends State<CertificatePage> {
+  final _certificateService = CertificateService();
+  bool _isProcessing = false;
+
   @override
   void initState() {
     super.initState();
     context.read<StudentBloc>().add(LoadCertificate(widget.courseId));
   }
 
+  Future<void> _shareCertificate(EnrollmentEntity enrollment) async {
+    await ShareService.instance.shareCertificate(
+      context: context,
+      certificateId: enrollment.id,
+      courseName: enrollment.course?.title ?? '',
+      holderName: 'المتدرب', // This would come from user profile
+    );
+  }
+
+  Future<void> _downloadCertificate(EnrollmentEntity enrollment) async {
+    if (_isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final certificateData = CertificateData(
+        id: enrollment.id,
+        verifyCode: 'TH-${enrollment.id.substring(0, 12).toUpperCase()}',
+        holderName: 'المتدرب', // This would come from user profile
+        courseName: enrollment.course?.title ?? '',
+        instructorName: enrollment.course?.instructor?.fullName ?? '',
+        issuerName: enrollment.course?.instructor?.fullName ?? '',
+        issueDate: enrollment.completedAt ?? DateTime.now(),
+      );
+
+      await _certificateService.shareCertificate(certificateData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم إنشاء الشهادة بنجاح'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('فشل في إنشاء الشهادة'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  Future<void> _shareToLinkedIn(EnrollmentEntity enrollment) async {
+    final url = Uri.parse(
+      'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME'
+      '&name=${Uri.encodeComponent(enrollment.course?.title ?? '')}'
+      '&organizationName=${Uri.encodeComponent(AppConstants.appName)}'
+      '&certUrl=${Uri.encodeComponent('${AppConstants.appWebUrl}/verify/${enrollment.id}')}'
+    );
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تعذر فتح LinkedIn'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: GlassAppBar(
-        title: 'الشهادة',
-        leading: IconButton(
-          icon: const Icon(Iconsax.arrow_right_1),
-          onPressed: () => context.pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Iconsax.share),
-            onPressed: () {
-              // TODO: Share certificate
-            },
-            tooltip: 'مشاركة',
-          ),
-          IconButton(
-            icon: const Icon(Iconsax.document_download),
-            onPressed: () {
-              // TODO: Download certificate
-            },
-            tooltip: 'تحميل',
-          ),
-        ],
-      ),
-      body: BlocBuilder<StudentBloc, StudentState>(
-        builder: (context, state) {
-          if (state is CertificateLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return BlocBuilder<StudentBloc, StudentState>(
+      builder: (context, state) {
+        final enrollment = state is CertificateLoaded ? state.enrollment : null;
 
-          if (state is StudentError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Iconsax.warning_2,
-                    size: 64,
-                    color: AppColors.error.withValues(alpha: 0.5),
-                  ),
-                  const SizedBox(height: AppConstants.spacingMedium),
-                  Text(
-                    state.message,
-                    style: theme.textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppConstants.spacingMedium),
-                  FilledButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('العودة'),
-                  ),
-                ],
+        return Scaffold(
+          appBar: GlassAppBar(
+            title: 'الشهادة',
+            leading: IconButton(
+              icon: const Icon(Iconsax.arrow_right_1),
+              onPressed: () => context.pop(),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Iconsax.share),
+                onPressed: enrollment != null
+                    ? () => _shareCertificate(enrollment)
+                    : null,
+                tooltip: 'مشاركة',
               ),
-            );
-          }
+              IconButton(
+                icon: _isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Iconsax.document_download),
+                onPressed: enrollment != null && !_isProcessing
+                    ? () => _downloadCertificate(enrollment)
+                    : null,
+                tooltip: 'تحميل',
+              ),
+            ],
+          ),
+          body: _buildBody(theme, state),
+        );
+      },
+    );
+  }
 
-          if (state is CertificateLoaded) {
-            return SingleChildScrollView(
+  Widget _buildBody(ThemeData theme, StudentState state) {
+    if (state is CertificateLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state is StudentError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Iconsax.warning_2,
+              size: 64,
+              color: AppColors.error.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: AppConstants.spacingMedium),
+            Text(
+              state.message,
+              style: theme.textTheme.titleMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppConstants.spacingMedium),
+            FilledButton(
+              onPressed: () => context.pop(),
+              child: const Text('العودة'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state is CertificateLoaded) {
+      return SingleChildScrollView(
               padding: const EdgeInsets.all(AppConstants.spacingMedium),
               child: Column(
                 children: [
@@ -140,9 +234,7 @@ class _CertificatePageState extends State<CertificatePage> {
                     children: [
                       Expanded(
                         child: OutlinedButton.icon(
-                          onPressed: () {
-                            // TODO: Share to LinkedIn
-                          },
+                          onPressed: () => _shareToLinkedIn(state.enrollment),
                           icon: const Icon(Iconsax.share),
                           label: const Text('شارك على LinkedIn'),
                         ),
@@ -156,10 +248,16 @@ class _CertificatePageState extends State<CertificatePage> {
                     children: [
                       Expanded(
                         child: FilledButton.icon(
-                          onPressed: () {
-                            // TODO: Download PDF
-                          },
-                          icon: const Icon(Iconsax.document_download),
+                          onPressed: _isProcessing
+                              ? null
+                              : () => _downloadCertificate(state.enrollment),
+                          icon: _isProcessing
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Iconsax.document_download),
                           label: const Text('تحميل PDF'),
                         ),
                       ),
@@ -193,12 +291,9 @@ class _CertificatePageState extends State<CertificatePage> {
                 ],
               ),
             );
-          }
+    }
 
-          return const SizedBox.shrink();
-        },
-      ),
-    );
+    return const SizedBox.shrink();
   }
 
   String _formatDate(DateTime? date) {
