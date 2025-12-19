@@ -20,7 +20,7 @@ abstract class VerificationRemoteDataSource {
   });
   Future<InstructorApplicationModel> updateInstructorApplication({
     required String applicationId,
-    Map<String, dynamic> updates,
+    required Map<String, dynamic> updates,
   });
   Future<void> withdrawInstructorApplication(String applicationId);
 
@@ -35,7 +35,7 @@ abstract class VerificationRemoteDataSource {
   });
   Future<CompanyVerificationModel> updateCompanyVerification({
     required String verificationId,
-    Map<String, dynamic> updates,
+    required Map<String, dynamic> updates,
   });
 
   // Documents
