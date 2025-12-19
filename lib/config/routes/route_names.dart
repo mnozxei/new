@@ -41,8 +41,18 @@ abstract final class RouteNames {
   static const String createCompany = 'createCompany';
   static const String companyDetails = 'companyDetails';
   static const String companyVerification = 'companyVerification';
+  static const String companyDashboard = 'dashboard';
+  static const String companyTeam = 'team';
+  static const String companyJobs = 'jobs';
+  static const String companyCourses = 'courses';
+  static const String companySettings = 'settings';
 
   static const String adminDashboard = '/admin';
+  static const String adminUsers = 'users';
+  static const String adminCourses = 'courses';
+  static const String adminCompanies = 'companies';
+  static const String adminReports = 'reports';
+  static const String adminSettings = 'settings';
 
   static const String savedItems = '/saved-items';
   static const String forgotPassword = '/forgot-password';

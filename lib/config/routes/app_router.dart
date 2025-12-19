@@ -12,10 +12,15 @@ import '../../features/auth/presentation/pages/register_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/chat/presentation/pages/chat_list_page.dart';
 import '../../features/chat/presentation/pages/chat_room_page.dart';
+import '../../features/companies/presentation/pages/company_dashboard_page.dart';
 import '../../features/companies/presentation/pages/company_details_page.dart';
+import '../../features/companies/presentation/pages/company_team_page.dart';
 import '../../features/companies/presentation/pages/company_verification_page.dart';
 import '../../features/companies/presentation/pages/create_company_page.dart';
 import '../../features/companies/presentation/pages/my_companies_page.dart';
+import '../../features/admin/presentation/pages/admin_users_page.dart';
+import '../../features/admin/presentation/pages/admin_courses_page.dart';
+import '../../features/admin/presentation/pages/admin_analytics_page.dart';
 import '../../features/courses/presentation/pages/course_details_page.dart';
 import '../../features/courses/presentation/pages/courses_page.dart';
 import '../../features/courses/presentation/pages/course_builder_page.dart';
@@ -324,6 +329,22 @@ abstract final class AppRouter {
                       return CompanyVerificationPage(companyId: companyId);
                     },
                   ),
+                  GoRoute(
+                    path: RouteNames.companyDashboard,
+                    name: RouteNames.companyDashboard,
+                    builder: (context, state) {
+                      final companyId = state.pathParameters['companyId']!;
+                      return CompanyDashboardPage(companyId: companyId);
+                    },
+                  ),
+                  GoRoute(
+                    path: RouteNames.companyTeam,
+                    name: RouteNames.companyTeam,
+                    builder: (context, state) {
+                      final companyId = state.pathParameters['companyId']!;
+                      return CompanyTeamPage(companyId: companyId);
+                    },
+                  ),
                 ],
               ),
             ],
@@ -332,6 +353,23 @@ abstract final class AppRouter {
             path: RouteNames.adminDashboard,
             name: RouteNames.adminDashboard,
             builder: (context, state) => const AdminDashboardPage(),
+            routes: [
+              GoRoute(
+                path: RouteNames.adminUsers,
+                name: RouteNames.adminUsers,
+                builder: (context, state) => const AdminUsersPage(),
+              ),
+              GoRoute(
+                path: RouteNames.adminCourses,
+                name: RouteNames.adminCourses,
+                builder: (context, state) => const AdminCoursesPage(),
+              ),
+              GoRoute(
+                path: RouteNames.adminReports,
+                name: RouteNames.adminReports,
+                builder: (context, state) => const AdminAnalyticsPage(),
+              ),
+            ],
           ),
           GoRoute(
             path: RouteNames.savedItems,
