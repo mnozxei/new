@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth.dart';
+import '../../features/admin/presentation/bloc/admin_bloc.dart';
 import '../../features/courses/presentation/bloc/instructor_bloc.dart';
 import '../../features/courses/presentation/bloc/student_bloc.dart';
+import '../../features/search/presentation/bloc/search_bloc.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -137,7 +139,10 @@ abstract final class AppRouter {
             name: RouteNames.search,
             builder: (context, state) {
               final query = state.uri.queryParameters['q'];
-              return GlobalSearchPage(initialQuery: query);
+              return BlocProvider(
+                create: (context) => getIt<SearchBloc>(),
+                child: GlobalSearchPage(initialQuery: query),
+              );
             },
           ),
           GoRoute(
@@ -393,22 +398,34 @@ abstract final class AppRouter {
           GoRoute(
             path: RouteNames.adminDashboard,
             name: RouteNames.adminDashboard,
-            builder: (context, state) => const AdminDashboardPage(),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<AdminBloc>()..add(const LoadAdminDashboard()),
+              child: const AdminDashboardPage(),
+            ),
             routes: [
               GoRoute(
                 path: RouteNames.adminUsers,
                 name: RouteNames.adminUsers,
-                builder: (context, state) => const AdminUsersPage(),
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<AdminBloc>(),
+                  child: const AdminUsersPage(),
+                ),
               ),
               GoRoute(
                 path: RouteNames.adminCourses,
                 name: RouteNames.adminCourses,
-                builder: (context, state) => const AdminCoursesPage(),
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<AdminBloc>()..add(const LoadPendingCourses()),
+                  child: const AdminCoursesPage(),
+                ),
               ),
               GoRoute(
                 path: RouteNames.adminReports,
                 name: RouteNames.adminReports,
-                builder: (context, state) => const AdminAnalyticsPage(),
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<AdminBloc>()..add(const LoadContentReports()),
+                  child: const AdminAnalyticsPage(),
+                ),
               ),
             ],
           ),
