@@ -1,4 +1,5 @@
 import '../entities/course_entity.dart';
+import '../entities/quiz_entity.dart';
 
 abstract class CourseRepository {
   /// Get published courses with filters
@@ -118,6 +119,64 @@ abstract class CourseRepository {
 
   /// Get course stats
   Future<CourseStats> getCourseStats(String courseId);
+
+  // ============================================
+  // QUIZ METHODS
+  // ============================================
+
+  /// Get quizzes for a course
+  Future<List<QuizEntity>> getCourseQuizzes(String courseId);
+
+  /// Get quiz by ID
+  Future<QuizEntity?> getQuizById(String quizId);
+
+  /// Get quiz for a lesson
+  Future<QuizEntity?> getLessonQuiz(String lessonId);
+
+  /// Create a quiz
+  Future<QuizEntity> createQuiz(CreateQuizParams params);
+
+  /// Update a quiz
+  Future<QuizEntity> updateQuiz(String quizId, UpdateQuizParams params);
+
+  /// Delete a quiz
+  Future<void> deleteQuiz(String quizId);
+
+  /// Add question to quiz
+  Future<QuizQuestionEntity> addQuestion(AddQuestionParams params);
+
+  /// Update question
+  Future<QuizQuestionEntity> updateQuestion(
+    String questionId,
+    UpdateQuestionParams params,
+  );
+
+  /// Delete question
+  Future<void> deleteQuestion(String questionId);
+
+  /// Reorder questions
+  Future<void> reorderQuestions(String quizId, List<String> questionIds);
+
+  /// Start a quiz attempt
+  Future<QuizAttemptEntity> startQuizAttempt(String quizId);
+
+  /// Submit quiz attempt
+  Future<QuizAttemptEntity> submitQuizAttempt(
+    String attemptId,
+    Map<String, dynamic> answers,
+  );
+
+  /// Get quiz attempts for a user
+  Future<List<QuizAttemptEntity>> getQuizAttempts(String quizId);
+
+  /// Get latest quiz attempt
+  Future<QuizAttemptEntity?> getLatestQuizAttempt(String quizId);
+
+  /// Check if quiz is passed
+  Future<bool> isQuizPassed(String quizId);
+
+  /// Check if lesson is unlocked (previous quiz passed if required)
+  Future<bool> isLessonUnlocked(String lessonId);
 }
 
 class CreateCourseParams {
@@ -328,4 +387,166 @@ class CourseStats {
   final double averageProgress;
   final double averageRating;
   final int totalReviews;
+}
+
+// ============================================
+// QUIZ PARAMS
+// ============================================
+
+class CreateQuizParams {
+  const CreateQuizParams({
+    required this.courseId,
+    this.lessonId,
+    required this.title,
+    this.description,
+    this.type = QuizType.lesson,
+    this.passingScore = 70,
+    this.timeLimitMinutes,
+    this.maxAttempts = 3,
+    this.shuffleQuestions = true,
+    this.shuffleAnswers = true,
+    this.showCorrectAnswers = false,
+    this.isRequired = true,
+  });
+
+  final String courseId;
+  final String? lessonId;
+  final String title;
+  final String? description;
+  final QuizType type;
+  final int passingScore;
+  final int? timeLimitMinutes;
+  final int maxAttempts;
+  final bool shuffleQuestions;
+  final bool shuffleAnswers;
+  final bool showCorrectAnswers;
+  final bool isRequired;
+
+  Map<String, dynamic> toJson() => {
+        'course_id': courseId,
+        if (lessonId != null) 'lesson_id': lessonId,
+        'title': title,
+        if (description != null) 'description': description,
+        'type': type.value,
+        'passing_score': passingScore,
+        if (timeLimitMinutes != null) 'time_limit_minutes': timeLimitMinutes,
+        'max_attempts': maxAttempts,
+        'shuffle_questions': shuffleQuestions,
+        'shuffle_answers': shuffleAnswers,
+        'show_correct_answers': showCorrectAnswers,
+        'is_required': isRequired,
+      };
+}
+
+class UpdateQuizParams {
+  const UpdateQuizParams({
+    this.title,
+    this.description,
+    this.type,
+    this.passingScore,
+    this.timeLimitMinutes,
+    this.maxAttempts,
+    this.shuffleQuestions,
+    this.shuffleAnswers,
+    this.showCorrectAnswers,
+    this.isRequired,
+  });
+
+  final String? title;
+  final String? description;
+  final QuizType? type;
+  final int? passingScore;
+  final int? timeLimitMinutes;
+  final int? maxAttempts;
+  final bool? shuffleQuestions;
+  final bool? shuffleAnswers;
+  final bool? showCorrectAnswers;
+  final bool? isRequired;
+
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{};
+    if (title != null) json['title'] = title;
+    if (description != null) json['description'] = description;
+    if (type != null) json['type'] = type!.value;
+    if (passingScore != null) json['passing_score'] = passingScore;
+    if (timeLimitMinutes != null) json['time_limit_minutes'] = timeLimitMinutes;
+    if (maxAttempts != null) json['max_attempts'] = maxAttempts;
+    if (shuffleQuestions != null) json['shuffle_questions'] = shuffleQuestions;
+    if (shuffleAnswers != null) json['shuffle_answers'] = shuffleAnswers;
+    if (showCorrectAnswers != null) {
+      json['show_correct_answers'] = showCorrectAnswers;
+    }
+    if (isRequired != null) json['is_required'] = isRequired;
+    return json;
+  }
+}
+
+class AddQuestionParams {
+  const AddQuestionParams({
+    required this.quizId,
+    required this.questionText,
+    this.questionType = QuestionType.single,
+    this.questionImageUrl,
+    this.explanation,
+    this.points = 1,
+    this.answers = const [],
+  });
+
+  final String quizId;
+  final String questionText;
+  final QuestionType questionType;
+  final String? questionImageUrl;
+  final String? explanation;
+  final int points;
+  final List<AnswerInput> answers;
+
+  Map<String, dynamic> toJson() => {
+        'quiz_id': quizId,
+        'question_text': questionText,
+        'question_type': questionType.value,
+        if (questionImageUrl != null) 'question_image_url': questionImageUrl,
+        if (explanation != null) 'explanation': explanation,
+        'points': points,
+      };
+}
+
+class UpdateQuestionParams {
+  const UpdateQuestionParams({
+    this.questionText,
+    this.questionType,
+    this.questionImageUrl,
+    this.explanation,
+    this.points,
+  });
+
+  final String? questionText;
+  final QuestionType? questionType;
+  final String? questionImageUrl;
+  final String? explanation;
+  final int? points;
+
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{};
+    if (questionText != null) json['question_text'] = questionText;
+    if (questionType != null) json['question_type'] = questionType!.value;
+    if (questionImageUrl != null) json['question_image_url'] = questionImageUrl;
+    if (explanation != null) json['explanation'] = explanation;
+    if (points != null) json['points'] = points;
+    return json;
+  }
+}
+
+class AnswerInput {
+  const AnswerInput({
+    required this.answerText,
+    this.isCorrect = false,
+  });
+
+  final String answerText;
+  final bool isCorrect;
+
+  Map<String, dynamic> toJson() => {
+        'answer_text': answerText,
+        'is_correct': isCorrect,
+      };
 }
