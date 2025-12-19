@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/services/notification_router.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../domain/entities/notification_entity.dart';
+import '../bloc/notification_bloc.dart';
 
-class NotificationsPage extends StatelessWidget {
+class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
+
+  @override
+  State<NotificationsPage> createState() => _NotificationsPageState();
+}
+
+class _NotificationsPageState extends State<NotificationsPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<NotificationBloc>().add(const LoadNotifications());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +51,7 @@ class _MobileNotificationsPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Iconsax.tick_circle),
             onPressed: () {
+              context.read<NotificationBloc>().add(const MarkAllNotificationsAsRead());
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('تم تحديد جميع الإشعارات كمقروءة')),
               );
@@ -43,10 +59,60 @@ class _MobileNotificationsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(AppConstants.spacingMedium),
-        itemCount: 15,
-        itemBuilder: (context, index) => _NotificationItem(index: index),
+      body: BlocBuilder<NotificationBloc, NotificationState>(
+        builder: (context, state) {
+          if (state is NotificationLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (state is NotificationError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Iconsax.warning_2, size: 48, color: AppColors.error),
+                  const SizedBox(height: AppConstants.spacingMedium),
+                  Text(state.message),
+                  const SizedBox(height: AppConstants.spacingMedium),
+                  ElevatedButton(
+                    onPressed: () => context.read<NotificationBloc>().add(const LoadNotifications()),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (state is NotificationsLoaded) {
+            if (state.notifications.isEmpty) {
+              return const _EmptyNotifications();
+            }
+
+            return RefreshIndicator(
+              onRefresh: () async {
+                context.read<NotificationBloc>().add(const LoadNotifications());
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.all(AppConstants.spacingMedium),
+                itemCount: state.notifications.length + (state.hasMore ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index >= state.notifications.length) {
+                    context.read<NotificationBloc>().add(const LoadMoreNotifications());
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppConstants.spacingMedium),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  return _NotificationItem(notification: state.notifications[index]);
+                },
+              ),
+            );
+          }
+
+          return const SizedBox.shrink();
+        },
       ),
     );
   }
@@ -78,6 +144,7 @@ class _DesktopNotificationsPage extends StatelessWidget {
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () {
+                      context.read<NotificationBloc>().add(const MarkAllNotificationsAsRead());
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('تم تحديد جميع الإشعارات كمقروءة')),
                       );
@@ -89,13 +156,61 @@ class _DesktopNotificationsPage extends StatelessWidget {
               ),
               const SizedBox(height: AppConstants.spacingLarge),
               Expanded(
-                child: GlassCard(
-                  intensity: GlassIntensity.light,
-                  child: ListView.separated(
-                    itemCount: 15,
-                    separatorBuilder: (context, index) => const Divider(height: 1),
-                    itemBuilder: (context, index) => _NotificationItem(index: index, isDesktop: true),
-                  ),
+                child: BlocBuilder<NotificationBloc, NotificationState>(
+                  builder: (context, state) {
+                    if (state is NotificationLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (state is NotificationError) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Iconsax.warning_2, size: 48, color: AppColors.error),
+                            const SizedBox(height: AppConstants.spacingMedium),
+                            Text(state.message),
+                            const SizedBox(height: AppConstants.spacingMedium),
+                            ElevatedButton(
+                              onPressed: () => context.read<NotificationBloc>().add(const LoadNotifications()),
+                              child: const Text('إعادة المحاولة'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    if (state is NotificationsLoaded) {
+                      if (state.notifications.isEmpty) {
+                        return const _EmptyNotifications();
+                      }
+
+                      return GlassCard(
+                        intensity: GlassIntensity.light,
+                        child: ListView.separated(
+                          itemCount: state.notifications.length + (state.hasMore ? 1 : 0),
+                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            if (index >= state.notifications.length) {
+                              context.read<NotificationBloc>().add(const LoadMoreNotifications());
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(AppConstants.spacingMedium),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+                            return _NotificationItem(
+                              notification: state.notifications[index],
+                              isDesktop: true,
+                            );
+                          },
+                        ),
+                      );
+                    }
+
+                    return const SizedBox.shrink();
+                  },
                 ),
               ),
             ],
@@ -106,151 +221,141 @@ class _DesktopNotificationsPage extends StatelessWidget {
   }
 }
 
+class _EmptyNotifications extends StatelessWidget {
+  const _EmptyNotifications();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconsax.notification, size: 64, color: AppColors.textTertiaryLight),
+          const SizedBox(height: AppConstants.spacingMedium),
+          Text(
+            'لا توجد إشعارات',
+            style: theme.textTheme.titleMedium?.copyWith(color: AppColors.textSecondaryLight),
+          ),
+          const SizedBox(height: AppConstants.spacingSmall),
+          Text(
+            'ستظهر الإشعارات هنا عند وصولها',
+            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textTertiaryLight),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _NotificationItem extends StatelessWidget {
   const _NotificationItem({
-    required this.index,
+    required this.notification,
     this.isDesktop = false,
   });
 
-  final int index;
+  final NotificationEntity notification;
   final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final notification = _getNotification(index);
-    final bool isUnread = index < 3;
+    final bool isUnread = !notification.isRead;
 
-    return Container(
-      margin: isDesktop ? null : const EdgeInsets.only(bottom: AppConstants.spacingSmall),
-      decoration: isDesktop
-          ? null
-          : BoxDecoration(
-              color: isUnread ? AppColors.primaryExtraLight : null,
-              borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
-            ),
-      child: Material(
-        color: isDesktop && isUnread ? AppColors.primaryExtraLight : Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('تم فتح: ${notification.title}')),
-            );
-          },
-          borderRadius: isDesktop ? null : BorderRadius.circular(AppConstants.borderRadiusMedium),
-          child: Padding(
-            padding: const EdgeInsets.all(AppConstants.spacingMedium),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _NotificationIcon(type: notification.type),
-                const SizedBox(width: AppConstants.spacingMedium),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        notification.title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+    return Dismissible(
+      key: Key(notification.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 20),
+        color: AppColors.error,
+        child: const Icon(Iconsax.trash, color: Colors.white),
+      ),
+      onDismissed: (_) {
+        context.read<NotificationBloc>().add(DeleteNotification(notificationId: notification.id));
+      },
+      child: Container(
+        margin: isDesktop ? null : const EdgeInsets.only(bottom: AppConstants.spacingSmall),
+        decoration: isDesktop
+            ? null
+            : BoxDecoration(
+                color: isUnread ? AppColors.primaryExtraLight : null,
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+              ),
+        child: Material(
+          color: isDesktop && isUnread ? AppColors.primaryExtraLight : Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              // Mark as read if not already
+              if (!notification.isRead) {
+                context.read<NotificationBloc>().add(MarkNotificationAsRead(notificationId: notification.id));
+              }
+              // Navigate to target
+              NotificationRouter.navigate(context, notification);
+            },
+            borderRadius: isDesktop ? null : BorderRadius.circular(AppConstants.borderRadiusMedium),
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.spacingMedium),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _NotificationIcon(type: notification.type),
+                  const SizedBox(width: AppConstants.spacingMedium),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          notification.title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppConstants.spacingExtraSmall),
-                      Text(
-                        notification.message,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondaryLight,
+                        if (notification.message != null) ...[
+                          const SizedBox(height: AppConstants.spacingExtraSmall),
+                          Text(
+                            notification.message!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: AppColors.textSecondaryLight,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                        const SizedBox(height: AppConstants.spacingSmall),
+                        Text(
+                          notification.timeAgo,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.textTertiaryLight,
+                            fontSize: 11,
+                          ),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: AppConstants.spacingSmall),
-                      Text(
-                        notification.time,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: AppColors.textTertiaryLight,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isUnread)
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
+                      ],
                     ),
                   ),
-              ],
+                  if (isUnread)
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-
-  _NotificationData _getNotification(int index) {
-    final notifications = [
-      _NotificationData(
-        type: _NotificationType.job,
-        title: 'تم قبول طلبك',
-        message: 'تهانينا! تم قبول طلبك لوظيفة مطور Flutter في شركة التقنية المتقدمة',
-        time: 'منذ 5 دقائق',
-      ),
-      _NotificationData(
-        type: _NotificationType.message,
-        title: 'رسالة جديدة',
-        message: 'لديك رسالة جديدة من أحمد محمد',
-        time: 'منذ 15 دقيقة',
-      ),
-      _NotificationData(
-        type: _NotificationType.course,
-        title: 'دورة جديدة متاحة',
-        message: 'تم إضافة دورة جديدة في تطوير تطبيقات الموبايل',
-        time: 'منذ ساعة',
-      ),
-      _NotificationData(
-        type: _NotificationType.company,
-        title: 'تم التحقق من شركتك',
-        message: 'تم التحقق من بيانات شركتك بنجاح',
-        time: 'منذ ساعتين',
-      ),
-      _NotificationData(
-        type: _NotificationType.like,
-        title: 'إعجاب بمنشورك',
-        message: 'أعجب 15 شخص بمنشورك الأخير',
-        time: 'منذ 3 ساعات',
-      ),
-      _NotificationData(
-        type: _NotificationType.comment,
-        title: 'تعليق جديد',
-        message: 'علق سعود على منشورك: "محتوى رائع!"',
-        time: 'منذ 4 ساعات',
-      ),
-      _NotificationData(
-        type: _NotificationType.follow,
-        title: 'متابع جديد',
-        message: 'بدأ خالد العتيبي بمتابعتك',
-        time: 'أمس',
-      ),
-      _NotificationData(
-        type: _NotificationType.system,
-        title: 'تحديث التطبيق',
-        message: 'تم إضافة ميزات جديدة للتطبيق',
-        time: 'منذ يومين',
-      ),
-    ];
-    return notifications[index % notifications.length];
-  }
 }
 
 class _NotificationIcon extends StatelessWidget {
   const _NotificationIcon({required this.type});
 
-  final _NotificationType type;
+  final NotificationType type;
 
   @override
   Widget build(BuildContext context) {
@@ -258,28 +363,28 @@ class _NotificationIcon extends StatelessWidget {
     final Color color;
 
     switch (type) {
-      case _NotificationType.job:
+      case NotificationType.job:
         icon = Iconsax.briefcase;
         color = AppColors.success;
-      case _NotificationType.message:
+      case NotificationType.message:
         icon = Iconsax.message;
         color = AppColors.info;
-      case _NotificationType.course:
+      case NotificationType.course:
         icon = Iconsax.book;
         color = AppColors.warning;
-      case _NotificationType.company:
+      case NotificationType.company:
         icon = Iconsax.building;
         color = AppColors.primary;
-      case _NotificationType.like:
+      case NotificationType.like:
         icon = Iconsax.heart;
         color = AppColors.error;
-      case _NotificationType.comment:
+      case NotificationType.comment:
         icon = Iconsax.message_text;
         color = AppColors.info;
-      case _NotificationType.follow:
+      case NotificationType.follow:
         icon = Iconsax.user_add;
         color = AppColors.primary;
-      case _NotificationType.system:
+      case NotificationType.system:
         icon = Iconsax.notification;
         color = AppColors.textSecondaryLight;
     }
@@ -294,29 +399,4 @@ class _NotificationIcon extends StatelessWidget {
       child: Icon(icon, color: color, size: 22),
     );
   }
-}
-
-enum _NotificationType {
-  job,
-  message,
-  course,
-  company,
-  like,
-  comment,
-  follow,
-  system,
-}
-
-class _NotificationData {
-  const _NotificationData({
-    required this.type,
-    required this.title,
-    required this.message,
-    required this.time,
-  });
-
-  final _NotificationType type;
-  final String title;
-  final String message;
-  final String time;
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -9,9 +10,23 @@ import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/glass_text_field.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../domain/entities/chat_entity.dart';
+import '../bloc/chat_bloc.dart';
+import 'new_conversation_page.dart';
 
-class ChatListPage extends StatelessWidget {
+class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
+
+  @override
+  State<ChatListPage> createState() => _ChatListPageState();
+}
+
+class _ChatListPageState extends State<ChatListPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ChatBloc>().add(const LoadConversations());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +40,15 @@ class ChatListPage extends StatelessWidget {
 class _MobileChatListPage extends StatelessWidget {
   const _MobileChatListPage();
 
+  void _showNewConversationSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const NewConversationPage(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,11 +57,7 @@ class _MobileChatListPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Iconsax.edit),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('بدء محادثة جديدة')),
-              );
-            },
+            onPressed: () => _showNewConversationSheet(context),
           ),
         ],
       ),
@@ -48,12 +68,65 @@ class _MobileChatListPage extends StatelessWidget {
             child: GlassTextField(
               hintText: 'بحث في المحادثات...',
               prefixIcon: const Icon(Iconsax.search_normal),
+              onChanged: (value) {
+                // Search functionality
+              },
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: 15,
-              itemBuilder: (context, index) => _ChatItem(index: index),
+            child: BlocBuilder<ChatBloc, ChatState>(
+              builder: (context, state) {
+                if (state is ChatLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (state is ChatError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Iconsax.warning_2, size: 48, color: AppColors.error),
+                        const SizedBox(height: AppConstants.spacingMedium),
+                        Text(state.message),
+                        const SizedBox(height: AppConstants.spacingMedium),
+                        ElevatedButton(
+                          onPressed: () => context.read<ChatBloc>().add(const LoadConversations()),
+                          child: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                if (state is ConversationsLoaded) {
+                  if (state.conversations.isEmpty) {
+                    return _EmptyConversations(onNewConversation: () => _showNewConversationSheet(context));
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<ChatBloc>().add(const LoadConversations());
+                    },
+                    child: ListView.builder(
+                      itemCount: state.conversations.length + (state.hasMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index >= state.conversations.length) {
+                          context.read<ChatBloc>().add(const LoadMoreConversations());
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(AppConstants.spacingMedium),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+                        return _ChatItem(conversation: state.conversations[index]);
+                      },
+                    ),
+                  );
+                }
+
+                return const SizedBox.shrink();
+              },
             ),
           ),
         ],
@@ -64,6 +137,19 @@ class _MobileChatListPage extends StatelessWidget {
 
 class _DesktopChatListPage extends StatelessWidget {
   const _DesktopChatListPage();
+
+  void _showNewConversationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: SizedBox(
+          width: 400,
+          height: 500,
+          child: const NewConversationPage(),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,11 +179,7 @@ class _DesktopChatListPage extends StatelessWidget {
                       const Spacer(),
                       GlassIconButton(
                         icon: Iconsax.edit,
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('بدء محادثة جديدة')),
-                          );
-                        },
+                        onPressed: () => _showNewConversationDialog(context),
                       ),
                     ],
                   ),
@@ -107,13 +189,64 @@ class _DesktopChatListPage extends StatelessWidget {
                   child: GlassTextField(
                     hintText: 'بحث...',
                     prefixIcon: const Icon(Iconsax.search_normal, size: 18),
+                    onChanged: (value) {
+                      // Search functionality
+                    },
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacingMedium),
                 Expanded(
-                  child: ListView.builder(
-                    itemCount: 15,
-                    itemBuilder: (context, index) => _ChatItem(index: index, isDesktop: true),
+                  child: BlocBuilder<ChatBloc, ChatState>(
+                    builder: (context, state) {
+                      if (state is ChatLoading) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (state is ChatError) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Iconsax.warning_2, size: 48, color: AppColors.error),
+                              const SizedBox(height: AppConstants.spacingMedium),
+                              Text(state.message, textAlign: TextAlign.center),
+                              const SizedBox(height: AppConstants.spacingMedium),
+                              ElevatedButton(
+                                onPressed: () => context.read<ChatBloc>().add(const LoadConversations()),
+                                child: const Text('إعادة المحاولة'),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+
+                      if (state is ConversationsLoaded) {
+                        if (state.conversations.isEmpty) {
+                          return _EmptyConversations(onNewConversation: () => _showNewConversationDialog(context));
+                        }
+
+                        return ListView.builder(
+                          itemCount: state.conversations.length + (state.hasMore ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            if (index >= state.conversations.length) {
+                              context.read<ChatBloc>().add(const LoadMoreConversations());
+                              return const Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(AppConstants.spacingMedium),
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+                            return _ChatItem(
+                              conversation: state.conversations[index],
+                              isDesktop: true,
+                            );
+                          },
+                        );
+                      }
+
+                      return const SizedBox.shrink();
+                    },
                   ),
                 ),
               ],
@@ -137,23 +270,57 @@ class _DesktopChatListPage extends StatelessWidget {
   }
 }
 
+class _EmptyConversations extends StatelessWidget {
+  const _EmptyConversations({required this.onNewConversation});
+
+  final VoidCallback onNewConversation;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Iconsax.message, size: 64, color: AppColors.textTertiaryLight),
+          const SizedBox(height: AppConstants.spacingMedium),
+          Text(
+            'لا توجد محادثات',
+            style: theme.textTheme.titleMedium?.copyWith(color: AppColors.textSecondaryLight),
+          ),
+          const SizedBox(height: AppConstants.spacingSmall),
+          Text(
+            'ابدأ محادثة جديدة مع أحد المستخدمين',
+            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textTertiaryLight),
+          ),
+          const SizedBox(height: AppConstants.spacingLarge),
+          ElevatedButton.icon(
+            onPressed: onNewConversation,
+            icon: const Icon(Iconsax.add),
+            label: const Text('بدء محادثة'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ChatItem extends StatelessWidget {
   const _ChatItem({
-    required this.index,
+    required this.conversation,
     this.isDesktop = false,
   });
 
-  final int index;
+  final ConversationEntity conversation;
   final bool isDesktop;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bool hasUnread = index % 3 == 0;
-    final bool isOnline = index % 2 == 0;
+    final bool hasUnread = conversation.unreadCount > 0;
 
     return InkWell(
-      onTap: () => context.pushNamed(RouteNames.chatRoom, pathParameters: {'id': '$index'}),
+      onTap: () => context.pushNamed(RouteNames.chatRoom, pathParameters: {'id': conversation.id}),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppConstants.spacingMedium,
@@ -177,12 +344,17 @@ class _ChatItem extends StatelessWidget {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: AppColors.primaryLighter,
-                  child: Text(
-                    _getInitials(index),
-                    style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
-                  ),
+                  backgroundImage: conversation.avatarUrl != null
+                      ? NetworkImage(conversation.avatarUrl!)
+                      : null,
+                  child: conversation.avatarUrl == null
+                      ? Text(
+                          _getInitials(conversation.name),
+                          style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
+                        )
+                      : null,
                 ),
-                if (isOnline)
+                if (conversation.isOnline)
                   Positioned(
                     bottom: 2,
                     right: 2,
@@ -207,7 +379,7 @@ class _ChatItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _getChatName(index),
+                          conversation.name,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -215,12 +387,13 @@ class _ChatItem extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      Text(
-                        _getTime(index),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: hasUnread ? AppColors.primary : AppColors.textTertiaryLight,
+                      if (conversation.lastMessageAt != null)
+                        Text(
+                          _formatTime(conversation.lastMessageAt!),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: hasUnread ? AppColors.primary : AppColors.textTertiaryLight,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: AppConstants.spacingExtraSmall),
@@ -228,7 +401,7 @@ class _ChatItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          _getLastMessage(index),
+                          conversation.lastMessagePreview ?? 'ابدأ المحادثة...',
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: hasUnread ? AppColors.textPrimaryLight : AppColors.textSecondaryLight,
                             fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
@@ -245,7 +418,7 @@ class _ChatItem extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            '${index + 1}',
+                            '${conversation.unreadCount}',
                             style: theme.textTheme.labelSmall?.copyWith(color: AppColors.white),
                           ),
                         ),
@@ -260,29 +433,28 @@ class _ChatItem extends StatelessWidget {
     );
   }
 
-  String _getInitials(int index) {
-    final names = ['أم', 'سع', 'خا', 'فا', 'نو'];
-    return names[index % names.length];
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}';
+    }
+    return name.substring(0, name.length >= 2 ? 2 : name.length);
   }
 
-  String _getChatName(int index) {
-    final names = ['أحمد محمد', 'سعاد الأحمدي', 'خالد العتيبي', 'فاطمة السعيد', 'نورة المالكي'];
-    return names[index % names.length];
-  }
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final diff = now.difference(dateTime);
 
-  String _getTime(int index) {
-    final times = ['الآن', '5 د', '30 د', '1 س', 'أمس'];
-    return times[index % times.length];
-  }
-
-  String _getLastMessage(int index) {
-    final messages = [
-      'شكراً جزيلاً لك!',
-      'هل يمكنك إرسال الملفات؟',
-      'موعدنا غداً إن شاء الله',
-      'تم استلام الطلب',
-      'مرحباً، كيف حالك؟',
-    ];
-    return messages[index % messages.length];
+    if (diff.inDays > 0) {
+      if (diff.inDays == 1) return 'أمس';
+      if (diff.inDays < 7) return 'منذ ${diff.inDays} أيام';
+      return '${dateTime.day}/${dateTime.month}';
+    } else if (diff.inHours > 0) {
+      return '${diff.inHours} س';
+    } else if (diff.inMinutes > 0) {
+      return '${diff.inMinutes} د';
+    } else {
+      return 'الآن';
+    }
   }
 }
