@@ -1,5 +1,53 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../../core/utils/youtube_helper.dart';
+
+/// Course publish state for instructor workflow
+enum CoursePublishState {
+  draft('draft', 'مسودة'),
+  pendingReview('pending_review', 'قيد المراجعة'),
+  published('published', 'منشور'),
+  unpublished('unpublished', 'غير منشور'),
+  rejected('rejected', 'مرفوض');
+
+  const CoursePublishState(this.value, this.label);
+  final String value;
+  final String label;
+
+  static CoursePublishState fromString(String value) {
+    return CoursePublishState.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => CoursePublishState.draft,
+    );
+  }
+
+  bool get isDraft => this == CoursePublishState.draft;
+  bool get isPendingReview => this == CoursePublishState.pendingReview;
+  bool get isPublished => this == CoursePublishState.published;
+  bool get isUnpublished => this == CoursePublishState.unpublished;
+  bool get isRejected => this == CoursePublishState.rejected;
+  bool get canEdit => isDraft || isRejected || isUnpublished;
+  bool get canPublish => isDraft || isRejected || isUnpublished;
+}
+
+/// Lesson content type enum
+enum LessonContentType {
+  video('video', 'فيديو'),
+  text('text', 'نص'),
+  quiz('quiz', 'اختبار');
+
+  const LessonContentType(this.value, this.label);
+  final String value;
+  final String label;
+
+  static LessonContentType fromString(String value) {
+    return LessonContentType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => LessonContentType.video,
+    );
+  }
+}
+
 enum CourseLevel {
   beginner('beginner', 'مبتدئ'),
   intermediate('intermediate', 'متوسط'),
@@ -56,6 +104,7 @@ class CourseEntity extends Equatable {
     this.currency = 'SAR',
     this.isFree = false,
     this.isPublished = false,
+    this.publishState = CoursePublishState.draft,
     this.isFeatured = false,
     this.durationMinutes = 0,
     this.lessonCount = 0,
@@ -65,8 +114,10 @@ class CourseEntity extends Equatable {
     this.requirements = const [],
     this.objectives = const [],
     this.tags = const [],
+    this.rejectionReason,
     required this.createdAt,
     required this.updatedAt,
+    this.publishedAt,
     this.instructor,
     this.sections,
   });
@@ -86,6 +137,7 @@ class CourseEntity extends Equatable {
   final String currency;
   final bool isFree;
   final bool isPublished;
+  final CoursePublishState publishState;
   final bool isFeatured;
   final int durationMinutes;
   final int lessonCount;
@@ -95,10 +147,27 @@ class CourseEntity extends Equatable {
   final List<String> requirements;
   final List<String> objectives;
   final List<String> tags;
+  final String? rejectionReason;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? publishedAt;
   final InstructorInfo? instructor;
   final List<CourseSectionEntity>? sections;
+
+  /// Check if course can be edited
+  bool get canEdit => publishState.canEdit;
+
+  /// Check if course can be published
+  bool get canPublish => publishState.canPublish && hasRequiredContent;
+
+  /// Check if course has minimum required content
+  bool get hasRequiredContent {
+    if (title.isEmpty) return false;
+    if (sections == null || sections!.isEmpty) return false;
+    // Must have at least one lesson
+    final totalLessons = sections!.fold<int>(0, (sum, s) => sum + s.lessons.length);
+    return totalLessons > 0;
+  }
 
   String get formattedDuration {
     final hours = durationMinutes ~/ 60;
@@ -135,6 +204,7 @@ class CourseEntity extends Equatable {
     String? currency,
     bool? isFree,
     bool? isPublished,
+    CoursePublishState? publishState,
     bool? isFeatured,
     int? durationMinutes,
     int? lessonCount,
@@ -144,8 +214,10 @@ class CourseEntity extends Equatable {
     List<String>? requirements,
     List<String>? objectives,
     List<String>? tags,
+    String? rejectionReason,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? publishedAt,
     InstructorInfo? instructor,
     List<CourseSectionEntity>? sections,
   }) {
@@ -165,6 +237,7 @@ class CourseEntity extends Equatable {
       currency: currency ?? this.currency,
       isFree: isFree ?? this.isFree,
       isPublished: isPublished ?? this.isPublished,
+      publishState: publishState ?? this.publishState,
       isFeatured: isFeatured ?? this.isFeatured,
       durationMinutes: durationMinutes ?? this.durationMinutes,
       lessonCount: lessonCount ?? this.lessonCount,
@@ -174,8 +247,10 @@ class CourseEntity extends Equatable {
       requirements: requirements ?? this.requirements,
       objectives: objectives ?? this.objectives,
       tags: tags ?? this.tags,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      publishedAt: publishedAt ?? this.publishedAt,
       instructor: instructor ?? this.instructor,
       sections: sections ?? this.sections,
     );
@@ -198,6 +273,7 @@ class CourseEntity extends Equatable {
         currency,
         isFree,
         isPublished,
+        publishState,
         isFeatured,
         durationMinutes,
         lessonCount,
@@ -207,8 +283,10 @@ class CourseEntity extends Equatable {
         requirements,
         objectives,
         tags,
+        rejectionReason,
         createdAt,
         updatedAt,
+        publishedAt,
         instructor,
         sections,
       ];
@@ -300,6 +378,9 @@ class LessonEntity extends Equatable {
     this.content,
     this.isFreePreview = false,
     this.orderIndex = 0,
+    this.isLocked = false,
+    this.unlockAfterLessonId,
+    this.requiresQuizPass = false,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -315,13 +396,73 @@ class LessonEntity extends Equatable {
   final String? content;
   final bool isFreePreview;
   final int orderIndex;
+  final bool isLocked;
+  final String? unlockAfterLessonId;
+  final bool requiresQuizPass;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  /// Check if this is a video lesson
+  bool get isVideo => contentType == 'video' || contentType == LessonContentType.video.value;
+
+  /// Check if video URL is a valid YouTube URL
+  bool get hasValidYouTubeUrl =>
+      videoUrl != null && YouTubeHelper.isValidYouTubeUrl(videoUrl!);
+
+  /// Get the YouTube video ID if URL is valid
+  String? get youTubeVideoId =>
+      videoUrl != null ? YouTubeHelper.extractVideoId(videoUrl!) : null;
+
+  /// Get the YouTube embed URL
+  String? get youTubeEmbedUrl =>
+      videoUrl != null ? YouTubeHelper.getEmbedUrl(videoUrl!) : null;
+
+  /// Get the YouTube thumbnail URL
+  String? get youTubeThumbnailUrl =>
+      videoUrl != null ? YouTubeHelper.getThumbnailUrl(videoUrl!) : null;
 
   String get formattedDuration {
     final minutes = durationSeconds ~/ 60;
     final seconds = durationSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  LessonEntity copyWith({
+    String? id,
+    String? sectionId,
+    String? courseId,
+    String? title,
+    String? description,
+    String? contentType,
+    String? videoUrl,
+    int? durationSeconds,
+    String? content,
+    bool? isFreePreview,
+    int? orderIndex,
+    bool? isLocked,
+    String? unlockAfterLessonId,
+    bool? requiresQuizPass,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return LessonEntity(
+      id: id ?? this.id,
+      sectionId: sectionId ?? this.sectionId,
+      courseId: courseId ?? this.courseId,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      contentType: contentType ?? this.contentType,
+      videoUrl: videoUrl ?? this.videoUrl,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      content: content ?? this.content,
+      isFreePreview: isFreePreview ?? this.isFreePreview,
+      orderIndex: orderIndex ?? this.orderIndex,
+      isLocked: isLocked ?? this.isLocked,
+      unlockAfterLessonId: unlockAfterLessonId ?? this.unlockAfterLessonId,
+      requiresQuizPass: requiresQuizPass ?? this.requiresQuizPass,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
   }
 
   @override
@@ -337,6 +478,9 @@ class LessonEntity extends Equatable {
         content,
         isFreePreview,
         orderIndex,
+        isLocked,
+        unlockAfterLessonId,
+        requiresQuizPass,
         createdAt,
         updatedAt,
       ];
