@@ -375,7 +375,7 @@ abstract final class AppRouter {
             builder: (context, state) => const NotificationsPage(),
             routes: [
               GoRoute(
-                path: RouteNames.notificationSettings,
+                path: 'settings',
                 name: RouteNames.notificationSettings,
                 builder: (context, state) => const NotificationSettingsPage(),
               ),
@@ -408,7 +408,7 @@ abstract final class AppRouter {
                     },
                   ),
                   GoRoute(
-                    path: RouteNames.companyDashboard,
+                    path: 'dashboard',
                     name: RouteNames.companyDashboard,
                     builder: (context, state) {
                       final companyId = state.pathParameters['companyId']!;
@@ -416,7 +416,7 @@ abstract final class AppRouter {
                     },
                   ),
                   GoRoute(
-                    path: RouteNames.companyTeam,
+                    path: 'team',
                     name: RouteNames.companyTeam,
                     builder: (context, state) {
                       final companyId = state.pathParameters['companyId']!;
@@ -424,7 +424,7 @@ abstract final class AppRouter {
                     },
                   ),
                   GoRoute(
-                    path: RouteNames.companyJobs,
+                    path: 'jobs',
                     name: RouteNames.companyJobs,
                     builder: (context, state) {
                       final companyId = state.pathParameters['companyId']!;
@@ -444,7 +444,7 @@ abstract final class AppRouter {
             ),
             routes: [
               GoRoute(
-                path: RouteNames.adminUsers,
+                path: 'users',
                 name: RouteNames.adminUsers,
                 builder: (context, state) => BlocProvider(
                   create: (context) => getIt<AdminBloc>(),
@@ -452,7 +452,7 @@ abstract final class AppRouter {
                 ),
               ),
               GoRoute(
-                path: RouteNames.adminCourses,
+                path: 'courses',
                 name: RouteNames.adminCourses,
                 builder: (context, state) => BlocProvider(
                   create: (context) => getIt<AdminBloc>()..add(const LoadPendingCourses()),
