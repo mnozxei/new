@@ -23,7 +23,14 @@ import '../../features/companies/presentation/pages/my_companies_page.dart';
 import '../../features/admin/presentation/pages/admin_users_page.dart';
 import '../../features/admin/presentation/pages/admin_courses_page.dart';
 import '../../features/admin/presentation/pages/admin_analytics_page.dart';
+import '../../features/admin/presentation/pages/admin_content_reports_page.dart';
 import '../../features/courses/presentation/pages/course_details_page.dart';
+import '../../features/courses/presentation/pages/quiz_builder_page.dart';
+import '../../features/courses/presentation/pages/certificate_verify_page.dart';
+import '../../features/courses/presentation/pages/admin_course_moderation_page.dart';
+import '../../features/verification/presentation/pages/admin_instructor_verifications_page.dart';
+import '../../features/verification/presentation/pages/admin_company_verifications_page.dart';
+import '../../features/verification/presentation/bloc/verification_bloc.dart';
 import '../../features/courses/presentation/pages/courses_page.dart';
 import '../../features/courses/presentation/pages/course_builder_page.dart';
 import '../../features/courses/presentation/pages/instructor_application_page.dart';
@@ -88,6 +95,15 @@ abstract final class AppRouter {
         path: RouteNames.forgotPassword,
         name: RouteNames.forgotPassword,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      // Public certificate verification route (no auth required)
+      GoRoute(
+        path: '/verify/:code',
+        name: RouteNames.certificateVerifyPublic,
+        builder: (context, state) {
+          final code = state.pathParameters['code'];
+          return CertificateVerifyPage(code: code);
+        },
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
@@ -257,6 +273,30 @@ abstract final class AppRouter {
                   );
                 },
               ),
+              GoRoute(
+                path: 'courses/:courseId/quizzes/:quizId/build',
+                name: RouteNames.quizBuilder,
+                builder: (context, state) {
+                  final courseId = state.pathParameters['courseId']!;
+                  final quizId = state.pathParameters['quizId']!;
+                  return BlocProvider(
+                    create: (context) => getIt<InstructorBloc>()
+                      ..add(LoadQuiz(quizId)),
+                    child: QuizBuilderPage(courseId: courseId, quizId: quizId),
+                  );
+                },
+              ),
+              GoRoute(
+                path: 'courses/:courseId/quiz/new',
+                name: RouteNames.createQuiz,
+                builder: (context, state) {
+                  final courseId = state.pathParameters['courseId']!;
+                  return BlocProvider(
+                    create: (context) => getIt<InstructorBloc>(),
+                    child: QuizBuilderPage(courseId: courseId),
+                  );
+                },
+              ),
             ],
           ),
           GoRoute(
@@ -420,11 +460,37 @@ abstract final class AppRouter {
                 ),
               ),
               GoRoute(
-                path: RouteNames.adminReports,
+                path: 'reports',
                 name: RouteNames.adminReports,
                 builder: (context, state) => BlocProvider(
                   create: (context) => getIt<AdminBloc>()..add(const LoadContentReports()),
+                  child: const AdminContentReportsPage(),
+                ),
+              ),
+              GoRoute(
+                path: 'analytics',
+                name: RouteNames.adminAuditLog,
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<AdminBloc>(),
                   child: const AdminAnalyticsPage(),
+                ),
+              ),
+              GoRoute(
+                path: 'verifications/instructors',
+                name: RouteNames.adminInstructorVerifications,
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<VerificationBloc>()
+                    ..add(const LoadPendingVerifications()),
+                  child: const AdminInstructorVerificationsPage(),
+                ),
+              ),
+              GoRoute(
+                path: 'verifications/companies',
+                name: RouteNames.adminCompanyVerifications,
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<VerificationBloc>()
+                    ..add(const LoadPendingVerifications(type: VerificationType.company)),
+                  child: const AdminCompanyVerificationsPage(),
                 ),
               ),
             ],

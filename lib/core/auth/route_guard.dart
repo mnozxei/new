@@ -87,6 +87,9 @@ class RouteGuards {
     RouteNames.courseDetail,
     RouteNames.companyDetail,
     RouteNames.publicProfile,
+    // Public certificate verification (anyone can verify)
+    RouteNames.certificateVerifyPublic,
+    RouteNames.verifyCertificate,
   };
 
   /// Routes that require authentication (any logged-in user)
@@ -113,6 +116,7 @@ class RouteGuards {
     RouteNames.courseAnalytics,
     RouteNames.createQuiz,
     RouteNames.editQuiz,
+    RouteNames.quizBuilder,
     RouteNames.issueCertificate,
   };
 
@@ -138,6 +142,8 @@ class RouteGuards {
     RouteNames.adminCompanies,
     RouteNames.adminCourses,
     RouteNames.adminVerifications,
+    RouteNames.adminInstructorVerifications,
+    RouteNames.adminCompanyVerifications,
     RouteNames.adminReports,
     RouteNames.adminAuditLog,
   };
@@ -211,6 +217,15 @@ class RouteGuards {
       path: RouteNames.publicProfile,
       visitorAllowed: true,
       requiredPermissions: [Permission.viewPublicProfiles],
+    ),
+    // Public certificate verification (anyone can verify)
+    const RouteGuard(
+      path: RouteNames.certificateVerifyPublic,
+      visitorAllowed: true,
+    ),
+    const RouteGuard(
+      path: RouteNames.verifyCertificate,
+      visitorAllowed: true,
     ),
 
     // ===== AUTHENTICATED ROUTES =====
@@ -296,6 +311,10 @@ class RouteGuards {
       path: RouteNames.issueCertificate,
       requiredPermissions: [Permission.issueCertificate],
     ),
+    const RouteGuard(
+      path: RouteNames.quizBuilder,
+      requiredPermissions: [Permission.editQuiz],
+    ),
 
     // ===== COMPANY ROUTES =====
     const RouteGuard(
@@ -348,6 +367,14 @@ class RouteGuards {
     ),
     const RouteGuard(
       path: RouteNames.adminVerifications,
+      requiredPermissions: [Permission.reviewVerifications],
+    ),
+    const RouteGuard(
+      path: RouteNames.adminInstructorVerifications,
+      requiredPermissions: [Permission.reviewVerifications],
+    ),
+    const RouteGuard(
+      path: RouteNames.adminCompanyVerifications,
       requiredPermissions: [Permission.reviewVerifications],
     ),
     const RouteGuard(
