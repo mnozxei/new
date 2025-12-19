@@ -230,7 +230,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       icon: Iconsax.shield_tick,
                       title: 'الخصوصية',
                       subtitle: 'التحكم في من يمكنه رؤية ملفك الشخصي',
-                      onTap: () => _showSnackBar('إعدادات الخصوصية قيد التطوير'),
+                      onTap: () => context.push(RouteNames.privacySettings),
                     ),
                   ],
                 ),

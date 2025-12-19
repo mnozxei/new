@@ -61,7 +61,11 @@ import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/saved_items_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
+import '../../features/profile/presentation/pages/privacy_settings_page.dart';
+import '../../features/profile/presentation/pages/blocked_users_page.dart';
 import '../../features/profile/presentation/pages/user_profile_page.dart';
+import '../../core/presentation/pages/unauthorized_page.dart';
+import '../../core/presentation/pages/network_error_page.dart';
 import '../injection/injection.dart' show getIt, AuthService;
 import 'main_shell.dart';
 import 'route_names.dart';
@@ -362,6 +366,17 @@ abstract final class AppRouter {
               ),
             ],
           ),
+          // Settings routes (top-level)
+          GoRoute(
+            path: '/settings/privacy',
+            name: RouteNames.privacySettings,
+            builder: (context, state) => const PrivacySettingsPage(),
+          ),
+          GoRoute(
+            path: '/settings/blocked',
+            name: RouteNames.blockedUsers,
+            builder: (context, state) => const BlockedUsersPage(),
+          ),
           GoRoute(
             path: '${RouteNames.userProfile}/:userId',
             name: RouteNames.userProfile,
@@ -502,6 +517,23 @@ abstract final class AppRouter {
             builder: (context, state) => const SavedItemsPage(),
           ),
         ],
+      ),
+      // Error pages (outside shell for full screen)
+      GoRoute(
+        path: RouteNames.unauthorized,
+        name: RouteNames.unauthorized,
+        builder: (context, state) {
+          final role = state.uri.queryParameters['role'];
+          return UnauthorizedPage(requiredRole: role);
+        },
+      ),
+      GoRoute(
+        path: RouteNames.networkError,
+        name: RouteNames.networkError,
+        builder: (context, state) {
+          final message = state.uri.queryParameters['message'];
+          return NetworkErrorPage(errorMessage: message);
+        },
       ),
     ],
     errorBuilder: (context, state) => NotFoundPage(
