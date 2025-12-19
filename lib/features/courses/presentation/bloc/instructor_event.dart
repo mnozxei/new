@@ -185,3 +185,99 @@ class ReorderLessons extends InstructorEvent {
   @override
   List<Object?> get props => [sectionId, lessonIds];
 }
+
+// ============================================
+// QUIZ EVENTS
+// ============================================
+
+/// Load quizzes for a course
+class LoadCourseQuizzes extends InstructorEvent {
+  const LoadCourseQuizzes(this.courseId);
+
+  final String courseId;
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+/// Create a new quiz
+class CreateQuiz extends InstructorEvent {
+  const CreateQuiz(this.params);
+
+  final CreateQuizParams params;
+
+  @override
+  List<Object?> get props => [params];
+}
+
+/// Update an existing quiz
+class UpdateQuiz extends InstructorEvent {
+  const UpdateQuiz({
+    required this.quizId,
+    required this.params,
+  });
+
+  final String quizId;
+  final UpdateQuizParams params;
+
+  @override
+  List<Object?> get props => [quizId, params];
+}
+
+/// Delete a quiz
+class DeleteQuiz extends InstructorEvent {
+  const DeleteQuiz(this.quizId);
+
+  final String quizId;
+
+  @override
+  List<Object?> get props => [quizId];
+}
+
+/// Add a question to a quiz
+class AddQuestion extends InstructorEvent {
+  const AddQuestion(this.params);
+
+  final AddQuestionParams params;
+
+  @override
+  List<Object?> get props => [params];
+}
+
+/// Update a question
+class UpdateQuestion extends InstructorEvent {
+  const UpdateQuestion({
+    required this.questionId,
+    required this.params,
+  });
+
+  final String questionId;
+  final UpdateQuestionParams params;
+
+  @override
+  List<Object?> get props => [questionId, params];
+}
+
+/// Delete a question
+class DeleteQuestion extends InstructorEvent {
+  const DeleteQuestion(this.questionId);
+
+  final String questionId;
+
+  @override
+  List<Object?> get props => [questionId];
+}
+
+/// Reorder questions in a quiz
+class ReorderQuestions extends InstructorEvent {
+  const ReorderQuestions({
+    required this.quizId,
+    required this.questionIds,
+  });
+
+  final String quizId;
+  final List<String> questionIds;
+
+  @override
+  List<Object?> get props => [quizId, questionIds];
+}

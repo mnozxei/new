@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../domain/entities/course_entity.dart';
+import '../../domain/entities/quiz_entity.dart';
 import '../../domain/repositories/course_repository.dart';
 
 abstract class CourseRemoteDataSource {
@@ -54,6 +55,24 @@ abstract class CourseRemoteDataSource {
   Future<void> deleteReview(String reviewId);
   Future<InstructorStats> getInstructorStats();
   Future<CourseStats> getCourseStats(String courseId);
+
+  // Quiz methods
+  Future<List<QuizEntity>> getCourseQuizzes(String courseId);
+  Future<QuizEntity?> getQuizById(String quizId);
+  Future<QuizEntity?> getLessonQuiz(String lessonId);
+  Future<QuizEntity> createQuiz(CreateQuizParams params);
+  Future<QuizEntity> updateQuiz(String quizId, UpdateQuizParams params);
+  Future<void> deleteQuiz(String quizId);
+  Future<QuizQuestionEntity> addQuestion(AddQuestionParams params);
+  Future<QuizQuestionEntity> updateQuestion(String questionId, UpdateQuestionParams params);
+  Future<void> deleteQuestion(String questionId);
+  Future<void> reorderQuestions(String quizId, List<String> questionIds);
+  Future<QuizAttemptEntity> startQuizAttempt(String quizId);
+  Future<QuizAttemptEntity> submitQuizAttempt(String attemptId, Map<String, dynamic> answers);
+  Future<List<QuizAttemptEntity>> getQuizAttempts(String quizId);
+  Future<QuizAttemptEntity?> getLatestQuizAttempt(String quizId);
+  Future<bool> isQuizPassed(String quizId);
+  Future<bool> isLessonUnlocked(String lessonId);
 }
 
 class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
@@ -874,6 +893,507 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
       user: user,
+    );
+  }
+
+  // ============================================
+  // QUIZ METHODS IMPLEMENTATION
+  // ============================================
+
+  @override
+  Future<List<QuizEntity>> getCourseQuizzes(String courseId) async {
+    final response = await _supabase
+        .from('quizzes')
+        .select('''
+          *,
+          questions:quiz_questions(
+            *,
+            answers:quiz_answers(*)
+          )
+        ''')
+        .eq('course_id', courseId)
+        .order('sort_order', ascending: true);
+
+    return (response as List).map((json) => _mapQuizFromJson(json)).toList();
+  }
+
+  @override
+  Future<QuizEntity?> getQuizById(String quizId) async {
+    final response = await _supabase
+        .from('quizzes')
+        .select('''
+          *,
+          questions:quiz_questions(
+            *,
+            answers:quiz_answers(*)
+          )
+        ''')
+        .eq('id', quizId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapQuizFromJson(response);
+  }
+
+  @override
+  Future<QuizEntity?> getLessonQuiz(String lessonId) async {
+    final response = await _supabase
+        .from('quizzes')
+        .select('''
+          *,
+          questions:quiz_questions(
+            *,
+            answers:quiz_answers(*)
+          )
+        ''')
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapQuizFromJson(response);
+  }
+
+  @override
+  Future<QuizEntity> createQuiz(CreateQuizParams params) async {
+    final now = DateTime.now();
+    final sortOrder = await _getNextQuizOrder(params.courseId);
+
+    final response = await _supabase
+        .from('quizzes')
+        .insert({
+          ...params.toJson(),
+          'sort_order': sortOrder,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+        })
+        .select()
+        .single();
+
+    return _mapQuizFromJson(response);
+  }
+
+  @override
+  Future<QuizEntity> updateQuiz(String quizId, UpdateQuizParams params) async {
+    final data = params.toJson();
+    data['updated_at'] = DateTime.now().toIso8601String();
+
+    final response = await _supabase
+        .from('quizzes')
+        .update(data)
+        .eq('id', quizId)
+        .select('''
+          *,
+          questions:quiz_questions(
+            *,
+            answers:quiz_answers(*)
+          )
+        ''')
+        .single();
+
+    return _mapQuizFromJson(response);
+  }
+
+  @override
+  Future<void> deleteQuiz(String quizId) async {
+    await _supabase.from('quizzes').delete().eq('id', quizId);
+  }
+
+  @override
+  Future<QuizQuestionEntity> addQuestion(AddQuestionParams params) async {
+    final now = DateTime.now();
+    final sortOrder = await _getNextQuestionOrder(params.quizId);
+
+    // Insert question
+    final questionResponse = await _supabase
+        .from('quiz_questions')
+        .insert({
+          ...params.toJson(),
+          'sort_order': sortOrder,
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+        })
+        .select()
+        .single();
+
+    final questionId = questionResponse['id'] as String;
+
+    // Insert answers if provided
+    if (params.answers.isNotEmpty) {
+      final answersData = params.answers.asMap().entries.map((entry) => {
+        ...entry.value.toJson(),
+        'question_id': questionId,
+        'sort_order': entry.key,
+        'created_at': now.toIso8601String(),
+      }).toList();
+
+      await _supabase.from('quiz_answers').insert(answersData);
+    }
+
+    // Re-fetch with answers
+    final response = await _supabase
+        .from('quiz_questions')
+        .select('''
+          *,
+          answers:quiz_answers(*)
+        ''')
+        .eq('id', questionId)
+        .single();
+
+    return _mapQuestionFromJson(response);
+  }
+
+  @override
+  Future<QuizQuestionEntity> updateQuestion(
+    String questionId,
+    UpdateQuestionParams params,
+  ) async {
+    final data = params.toJson();
+    data['updated_at'] = DateTime.now().toIso8601String();
+
+    final response = await _supabase
+        .from('quiz_questions')
+        .update(data)
+        .eq('id', questionId)
+        .select('''
+          *,
+          answers:quiz_answers(*)
+        ''')
+        .single();
+
+    return _mapQuestionFromJson(response);
+  }
+
+  @override
+  Future<void> deleteQuestion(String questionId) async {
+    await _supabase.from('quiz_questions').delete().eq('id', questionId);
+  }
+
+  @override
+  Future<void> reorderQuestions(String quizId, List<String> questionIds) async {
+    for (int i = 0; i < questionIds.length; i++) {
+      await _supabase
+          .from('quiz_questions')
+          .update({'sort_order': i})
+          .eq('id', questionIds[i]);
+    }
+  }
+
+  @override
+  Future<QuizAttemptEntity> startQuizAttempt(String quizId) async {
+    final quiz = await getQuizById(quizId);
+    if (quiz == null) {
+      throw Exception('Quiz not found');
+    }
+
+    // Get attempt count for this user
+    final attemptCount = await _supabase
+        .from('quiz_attempts')
+        .select('id')
+        .eq('quiz_id', quizId)
+        .eq('user_id', _currentUserId)
+        .count();
+
+    final attemptNumber = (attemptCount.count ?? 0) + 1;
+
+    // Check if max attempts exceeded
+    if (quiz.maxAttempts > 0 && attemptNumber > quiz.maxAttempts) {
+      throw Exception('Maximum attempts exceeded');
+    }
+
+    final now = DateTime.now();
+    final response = await _supabase
+        .from('quiz_attempts')
+        .insert({
+          'quiz_id': quizId,
+          'course_id': quiz.courseId,
+          'user_id': _currentUserId,
+          'attempt_number': attemptNumber,
+          'score': 0,
+          'passed': false,
+          'answers': {},
+          'started_at': now.toIso8601String(),
+          'created_at': now.toIso8601String(),
+        })
+        .select()
+        .single();
+
+    return _mapAttemptFromJson(response);
+  }
+
+  @override
+  Future<QuizAttemptEntity> submitQuizAttempt(
+    String attemptId,
+    Map<String, dynamic> answers,
+  ) async {
+    // Get the attempt
+    final attemptResponse = await _supabase
+        .from('quiz_attempts')
+        .select()
+        .eq('id', attemptId)
+        .single();
+
+    final quizId = attemptResponse['quiz_id'] as String;
+    final startedAt = DateTime.parse(attemptResponse['started_at'] as String);
+
+    // Get quiz with questions
+    final quiz = await getQuizById(quizId);
+    if (quiz == null) {
+      throw Exception('Quiz not found');
+    }
+
+    // Calculate score
+    double earnedPoints = 0;
+    double totalPoints = 0;
+
+    for (final question in quiz.questions) {
+      totalPoints += question.points;
+
+      final userAnswer = answers[question.id];
+      if (userAnswer != null) {
+        final correctAnswerIds = question.correctAnswers.map((a) => a.id).toSet();
+
+        if (question.questionType == QuestionType.single) {
+          if (correctAnswerIds.contains(userAnswer)) {
+            earnedPoints += question.points;
+          }
+        } else if (question.questionType == QuestionType.multiple) {
+          final userAnswers = (userAnswer as List).toSet();
+          if (userAnswers.containsAll(correctAnswerIds) &&
+              correctAnswerIds.containsAll(userAnswers)) {
+            earnedPoints += question.points;
+          }
+        } else if (question.questionType == QuestionType.trueFalse) {
+          if (correctAnswerIds.contains(userAnswer)) {
+            earnedPoints += question.points;
+          }
+        }
+      }
+    }
+
+    final score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
+    final passed = score >= quiz.passingScore;
+    final now = DateTime.now();
+    final timeTaken = now.difference(startedAt).inSeconds;
+
+    final response = await _supabase
+        .from('quiz_attempts')
+        .update({
+          'score': score,
+          'passed': passed,
+          'answers': answers,
+          'time_taken_seconds': timeTaken,
+          'completed_at': now.toIso8601String(),
+        })
+        .eq('id', attemptId)
+        .select()
+        .single();
+
+    return _mapAttemptFromJson(response);
+  }
+
+  @override
+  Future<List<QuizAttemptEntity>> getQuizAttempts(String quizId) async {
+    final response = await _supabase
+        .from('quiz_attempts')
+        .select()
+        .eq('quiz_id', quizId)
+        .eq('user_id', _currentUserId)
+        .order('created_at', ascending: false);
+
+    return (response as List).map((json) => _mapAttemptFromJson(json)).toList();
+  }
+
+  @override
+  Future<QuizAttemptEntity?> getLatestQuizAttempt(String quizId) async {
+    final response = await _supabase
+        .from('quiz_attempts')
+        .select()
+        .eq('quiz_id', quizId)
+        .eq('user_id', _currentUserId)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapAttemptFromJson(response);
+  }
+
+  @override
+  Future<bool> isQuizPassed(String quizId) async {
+    final response = await _supabase
+        .from('quiz_attempts')
+        .select('passed')
+        .eq('quiz_id', quizId)
+        .eq('user_id', _currentUserId)
+        .eq('passed', true)
+        .limit(1)
+        .maybeSingle();
+
+    return response != null;
+  }
+
+  @override
+  Future<bool> isLessonUnlocked(String lessonId) async {
+    // Get the lesson
+    final lessonResponse = await _supabase
+        .from('lessons')
+        .select('course_id, section_id, order_index, requires_quiz_pass, unlock_after_lesson_id')
+        .eq('id', lessonId)
+        .maybeSingle();
+
+    if (lessonResponse == null) return false;
+
+    final requiresQuizPass = lessonResponse['requires_quiz_pass'] as bool? ?? false;
+    final unlockAfterLessonId = lessonResponse['unlock_after_lesson_id'] as String?;
+
+    // If no requirements, lesson is unlocked
+    if (!requiresQuizPass && unlockAfterLessonId == null) {
+      return true;
+    }
+
+    // If there's a specific lesson to complete first
+    if (unlockAfterLessonId != null) {
+      // Check if the previous lesson's quiz is passed
+      final previousLessonQuiz = await getLessonQuiz(unlockAfterLessonId);
+      if (previousLessonQuiz != null && previousLessonQuiz.isRequired) {
+        final isPassed = await isQuizPassed(previousLessonQuiz.id);
+        if (!isPassed) return false;
+      }
+    }
+
+    return true;
+  }
+
+  Future<int> _getNextQuizOrder(String courseId) async {
+    final response = await _supabase
+        .from('quizzes')
+        .select('sort_order')
+        .eq('course_id', courseId)
+        .order('sort_order', ascending: false)
+        .limit(1);
+
+    if ((response as List).isEmpty) return 0;
+    return (response.first['sort_order'] as int) + 1;
+  }
+
+  Future<int> _getNextQuestionOrder(String quizId) async {
+    final response = await _supabase
+        .from('quiz_questions')
+        .select('sort_order')
+        .eq('quiz_id', quizId)
+        .order('sort_order', ascending: false)
+        .limit(1);
+
+    if ((response as List).isEmpty) return 0;
+    return (response.first['sort_order'] as int) + 1;
+  }
+
+  QuizEntity _mapQuizFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    List<QuizQuestionEntity> questions = [];
+    if (json['questions'] != null) {
+      final questionsData = json['questions'] as List;
+      questions = questionsData
+          .map((q) => _mapQuestionFromJson(q as Map<String, dynamic>))
+          .toList();
+      questions.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
+
+    return QuizEntity(
+      id: json['id'] as String,
+      courseId: json['course_id'] as String,
+      lessonId: json['lesson_id'] as String?,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      type: QuizType.fromString(json['type'] as String? ?? 'lesson'),
+      passingScore: json['passing_score'] as int? ?? 70,
+      timeLimitMinutes: json['time_limit_minutes'] as int?,
+      maxAttempts: json['max_attempts'] as int? ?? 3,
+      shuffleQuestions: json['shuffle_questions'] as bool? ?? true,
+      shuffleAnswers: json['shuffle_answers'] as bool? ?? true,
+      showCorrectAnswers: json['show_correct_answers'] as bool? ?? false,
+      isRequired: json['is_required'] as bool? ?? true,
+      sortOrder: json['sort_order'] as int? ?? 0,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : now,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : now,
+      questions: questions,
+    );
+  }
+
+  QuizQuestionEntity _mapQuestionFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    List<QuizAnswerEntity> answers = [];
+    if (json['answers'] != null) {
+      final answersData = json['answers'] as List;
+      answers = answersData
+          .map((a) => _mapAnswerFromJson(a as Map<String, dynamic>))
+          .toList();
+      answers.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    }
+
+    return QuizQuestionEntity(
+      id: json['id'] as String,
+      quizId: json['quiz_id'] as String,
+      questionType: QuestionType.fromString(
+          json['question_type'] as String? ?? 'single'),
+      questionText: json['question_text'] as String,
+      questionImageUrl: json['question_image_url'] as String?,
+      explanation: json['explanation'] as String?,
+      points: json['points'] as int? ?? 1,
+      sortOrder: json['sort_order'] as int? ?? 0,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : now,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : now,
+      answers: answers,
+    );
+  }
+
+  QuizAnswerEntity _mapAnswerFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    return QuizAnswerEntity(
+      id: json['id'] as String,
+      questionId: json['question_id'] as String,
+      answerText: json['answer_text'] as String,
+      isCorrect: json['is_correct'] as bool? ?? false,
+      sortOrder: json['sort_order'] as int? ?? 0,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : now,
+    );
+  }
+
+  QuizAttemptEntity _mapAttemptFromJson(Map<String, dynamic> json) {
+    final now = DateTime.now();
+
+    return QuizAttemptEntity(
+      id: json['id'] as String,
+      userId: json['user_id'] as String,
+      quizId: json['quiz_id'] as String,
+      courseId: json['course_id'] as String,
+      attemptNumber: json['attempt_number'] as int? ?? 1,
+      score: (json['score'] as num?)?.toDouble() ?? 0,
+      passed: json['passed'] as bool? ?? false,
+      timeTakenSeconds: json['time_taken_seconds'] as int?,
+      answers: Map<String, dynamic>.from(json['answers'] ?? {}),
+      startedAt: json['started_at'] != null
+          ? DateTime.parse(json['started_at'] as String)
+          : now,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
+          : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : now,
     );
   }
 }

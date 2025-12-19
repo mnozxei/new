@@ -215,37 +215,37 @@ class CourseRepositoryImpl implements CourseRepository {
 
   @override
   Future<List<QuizEntity>> getCourseQuizzes(String courseId) async {
-    return [];
+    return _remoteDataSource.getCourseQuizzes(courseId);
   }
 
   @override
   Future<QuizEntity?> getQuizById(String quizId) async {
-    return null;
+    return _remoteDataSource.getQuizById(quizId);
   }
 
   @override
   Future<QuizEntity?> getLessonQuiz(String lessonId) async {
-    return null;
+    return _remoteDataSource.getLessonQuiz(lessonId);
   }
 
   @override
   Future<QuizEntity> createQuiz(CreateQuizParams params) async {
-    throw UnimplementedError('createQuiz not implemented');
+    return _remoteDataSource.createQuiz(params);
   }
 
   @override
   Future<QuizEntity> updateQuiz(String quizId, UpdateQuizParams params) async {
-    throw UnimplementedError('updateQuiz not implemented');
+    return _remoteDataSource.updateQuiz(quizId, params);
   }
 
   @override
   Future<void> deleteQuiz(String quizId) async {
-    throw UnimplementedError('deleteQuiz not implemented');
+    await _remoteDataSource.deleteQuiz(quizId);
   }
 
   @override
   Future<QuizQuestionEntity> addQuestion(AddQuestionParams params) async {
-    throw UnimplementedError('addQuestion not implemented');
+    return _remoteDataSource.addQuestion(params);
   }
 
   @override
@@ -253,22 +253,22 @@ class CourseRepositoryImpl implements CourseRepository {
     String questionId,
     UpdateQuestionParams params,
   ) async {
-    throw UnimplementedError('updateQuestion not implemented');
+    return _remoteDataSource.updateQuestion(questionId, params);
   }
 
   @override
   Future<void> deleteQuestion(String questionId) async {
-    throw UnimplementedError('deleteQuestion not implemented');
+    await _remoteDataSource.deleteQuestion(questionId);
   }
 
   @override
   Future<void> reorderQuestions(String quizId, List<String> questionIds) async {
-    // TODO: Implement
+    await _remoteDataSource.reorderQuestions(quizId, questionIds);
   }
 
   @override
   Future<QuizAttemptEntity> startQuizAttempt(String quizId) async {
-    throw UnimplementedError('startQuizAttempt not implemented');
+    return _remoteDataSource.startQuizAttempt(quizId);
   }
 
   @override
@@ -276,26 +276,26 @@ class CourseRepositoryImpl implements CourseRepository {
     String attemptId,
     Map<String, dynamic> answers,
   ) async {
-    throw UnimplementedError('submitQuizAttempt not implemented');
+    return _remoteDataSource.submitQuizAttempt(attemptId, answers);
   }
 
   @override
   Future<List<QuizAttemptEntity>> getQuizAttempts(String quizId) async {
-    return [];
+    return _remoteDataSource.getQuizAttempts(quizId);
   }
 
   @override
   Future<QuizAttemptEntity?> getLatestQuizAttempt(String quizId) async {
-    return null;
+    return _remoteDataSource.getLatestQuizAttempt(quizId);
   }
 
   @override
   Future<bool> isQuizPassed(String quizId) async {
-    return true;
+    return _remoteDataSource.isQuizPassed(quizId);
   }
 
   @override
   Future<bool> isLessonUnlocked(String lessonId) async {
-    return true;
+    return _remoteDataSource.isLessonUnlocked(lessonId);
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/instructor_entity.dart';
+import '../../domain/entities/quiz_entity.dart';
 import '../../domain/repositories/course_repository.dart';
 
 part 'instructor_event.dart';
@@ -29,6 +30,15 @@ class InstructorBloc extends Bloc<InstructorEvent, InstructorState> {
     on<UpdateLesson>(_onUpdateLesson);
     on<DeleteLesson>(_onDeleteLesson);
     on<ReorderLessons>(_onReorderLessons);
+    // Quiz events
+    on<LoadCourseQuizzes>(_onLoadCourseQuizzes);
+    on<CreateQuiz>(_onCreateQuiz);
+    on<UpdateQuiz>(_onUpdateQuiz);
+    on<DeleteQuiz>(_onDeleteQuiz);
+    on<AddQuestion>(_onAddQuestion);
+    on<UpdateQuestion>(_onUpdateQuestion);
+    on<DeleteQuestion>(_onDeleteQuestion);
+    on<ReorderQuestions>(_onReorderQuestions);
   }
 
   final CourseRepository _repository;
@@ -261,6 +271,116 @@ class InstructorBloc extends Bloc<InstructorEvent, InstructorState> {
     try {
       await _repository.reorderLessons(event.sectionId, event.lessonIds);
       emit(LessonsReordered(event.sectionId));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  // ============================================
+  // QUIZ HANDLERS
+  // ============================================
+
+  Future<void> _onLoadCourseQuizzes(
+    LoadCourseQuizzes event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const InstructorLoading());
+    try {
+      final quizzes = await _repository.getCourseQuizzes(event.courseId);
+      emit(CourseQuizzesLoaded(event.courseId, quizzes));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onCreateQuiz(
+    CreateQuiz event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const CourseOperationLoading());
+    try {
+      final quiz = await _repository.createQuiz(event.params);
+      emit(QuizCreated(quiz));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateQuiz(
+    UpdateQuiz event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const CourseOperationLoading());
+    try {
+      final quiz = await _repository.updateQuiz(event.quizId, event.params);
+      emit(QuizUpdated(quiz));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteQuiz(
+    DeleteQuiz event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const CourseOperationLoading());
+    try {
+      await _repository.deleteQuiz(event.quizId);
+      emit(QuizDeleted(event.quizId));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onAddQuestion(
+    AddQuestion event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const CourseOperationLoading());
+    try {
+      final question = await _repository.addQuestion(event.params);
+      emit(QuestionAdded(question));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onUpdateQuestion(
+    UpdateQuestion event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const CourseOperationLoading());
+    try {
+      final question = await _repository.updateQuestion(
+        event.questionId,
+        event.params,
+      );
+      emit(QuestionUpdated(question));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onDeleteQuestion(
+    DeleteQuestion event,
+    Emitter<InstructorState> emit,
+  ) async {
+    emit(const CourseOperationLoading());
+    try {
+      await _repository.deleteQuestion(event.questionId);
+      emit(QuestionDeleted(event.questionId));
+    } catch (e) {
+      emit(InstructorError(e.toString()));
+    }
+  }
+
+  Future<void> _onReorderQuestions(
+    ReorderQuestions event,
+    Emitter<InstructorState> emit,
+  ) async {
+    try {
+      await _repository.reorderQuestions(event.quizId, event.questionIds);
+      emit(QuestionsReordered(event.quizId));
     } catch (e) {
       emit(InstructorError(e.toString()));
     }

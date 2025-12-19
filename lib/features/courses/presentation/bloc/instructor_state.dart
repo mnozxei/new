@@ -201,6 +201,91 @@ class LessonsReordered extends InstructorState {
   List<Object?> get props => [sectionId];
 }
 
+// ============================================
+// QUIZ STATES
+// ============================================
+
+/// Course quizzes loaded
+class CourseQuizzesLoaded extends InstructorState {
+  const CourseQuizzesLoaded(this.courseId, this.quizzes);
+
+  final String courseId;
+  final List<QuizEntity> quizzes;
+
+  @override
+  List<Object?> get props => [courseId, quizzes];
+}
+
+/// Quiz created successfully
+class QuizCreated extends InstructorState {
+  const QuizCreated(this.quiz);
+
+  final QuizEntity quiz;
+
+  @override
+  List<Object?> get props => [quiz];
+}
+
+/// Quiz updated successfully
+class QuizUpdated extends InstructorState {
+  const QuizUpdated(this.quiz);
+
+  final QuizEntity quiz;
+
+  @override
+  List<Object?> get props => [quiz];
+}
+
+/// Quiz deleted successfully
+class QuizDeleted extends InstructorState {
+  const QuizDeleted(this.quizId);
+
+  final String quizId;
+
+  @override
+  List<Object?> get props => [quizId];
+}
+
+/// Question added successfully
+class QuestionAdded extends InstructorState {
+  const QuestionAdded(this.question);
+
+  final QuizQuestionEntity question;
+
+  @override
+  List<Object?> get props => [question];
+}
+
+/// Question updated successfully
+class QuestionUpdated extends InstructorState {
+  const QuestionUpdated(this.question);
+
+  final QuizQuestionEntity question;
+
+  @override
+  List<Object?> get props => [question];
+}
+
+/// Question deleted successfully
+class QuestionDeleted extends InstructorState {
+  const QuestionDeleted(this.questionId);
+
+  final String questionId;
+
+  @override
+  List<Object?> get props => [questionId];
+}
+
+/// Questions reordered successfully
+class QuestionsReordered extends InstructorState {
+  const QuestionsReordered(this.quizId);
+
+  final String quizId;
+
+  @override
+  List<Object?> get props => [quizId];
+}
+
 /// Error state
 class InstructorError extends InstructorState {
   const InstructorError(this.message);
