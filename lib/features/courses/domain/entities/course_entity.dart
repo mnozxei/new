@@ -3,7 +3,8 @@ import 'package:equatable/equatable.dart';
 enum CourseLevel {
   beginner('beginner', 'مبتدئ'),
   intermediate('intermediate', 'متوسط'),
-  advanced('advanced', 'متقدم');
+  advanced('advanced', 'متقدم'),
+  allLevels('all', 'جميع المستويات');
 
   const CourseLevel(this.value, this.label);
   final String value;
@@ -16,8 +17,8 @@ enum CourseLevel {
     );
   }
 
-  /// Get all course levels
-  static List<CourseLevel> get allLevels => CourseLevel.values;
+  /// Get selectable course levels (excluding allLevels for course creation)
+  static List<CourseLevel> get selectableLevels => [beginner, intermediate, advanced];
 }
 
 enum EnrollmentStatus {
