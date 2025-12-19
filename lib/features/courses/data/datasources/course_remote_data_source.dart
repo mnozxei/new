@@ -49,6 +49,8 @@ abstract class CourseRemoteDataSource {
   });
   Future<LessonProgressEntity?> getLessonProgress(String lessonId);
   Future<void> markLessonComplete(String lessonId);
+  Future<EnrollmentEntity> updateEnrollmentProgress(String courseId);
+  Future<EnrollmentEntity?> checkAndCompleteCourse(String courseId);
   Future<List<CourseReviewEntity>> getCourseReviews(String courseId, {int limit = 20, int offset = 0});
   Future<CourseReviewEntity> addReview(AddReviewParams params);
   Future<CourseReviewEntity> updateReview(String reviewId, int rating, {String? comment});
@@ -567,6 +569,144 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
   @override
   Future<void> markLessonComplete(String lessonId) async {
     await updateLessonProgress(lessonId, isCompleted: true);
+
+    // Get the course ID for this lesson
+    final lesson = await _supabase
+        .from('lessons')
+        .select('course_id')
+        .eq('id', lessonId)
+        .single();
+
+    final courseId = lesson['course_id'] as String;
+
+    // Update enrollment progress
+    await updateEnrollmentProgress(courseId);
+
+    // Check if course should be completed
+    await checkAndCompleteCourse(courseId);
+  }
+
+  @override
+  Future<EnrollmentEntity> updateEnrollmentProgress(String courseId) async {
+    // Get enrollment
+    final enrollmentResponse = await _supabase
+        .from('enrollments')
+        .select('id, completed_lessons')
+        .eq('course_id', courseId)
+        .eq('user_id', _currentUserId)
+        .single();
+
+    final enrollmentId = enrollmentResponse['id'] as String;
+
+    // Get all lessons for this course
+    final lessonsResponse = await _supabase
+        .from('lessons')
+        .select('id')
+        .eq('course_id', courseId);
+
+    final allLessonIds = (lessonsResponse as List)
+        .map((l) => l['id'] as String)
+        .toList();
+
+    // Get completed lesson progress for this user
+    final progressResponse = await _supabase
+        .from('lesson_progress')
+        .select('lesson_id')
+        .eq('user_id', _currentUserId)
+        .eq('is_completed', true)
+        .inFilter('lesson_id', allLessonIds);
+
+    final completedLessonIds = (progressResponse as List)
+        .map((p) => p['lesson_id'] as String)
+        .toList();
+
+    // Calculate progress percentage
+    final progressPercent = allLessonIds.isEmpty
+        ? 0
+        : ((completedLessonIds.length / allLessonIds.length) * 100).round();
+
+    // Determine current lesson (next uncompleted)
+    String? currentLessonId;
+    for (final lessonId in allLessonIds) {
+      if (!completedLessonIds.contains(lessonId)) {
+        currentLessonId = lessonId;
+        break;
+      }
+    }
+
+    // Update enrollment
+    final response = await _supabase
+        .from('enrollments')
+        .update({
+          'completed_lessons': completedLessonIds,
+          'progress_percent': progressPercent,
+          'current_lesson_id': currentLessonId,
+        })
+        .eq('id', enrollmentId)
+        .select('''
+          *,
+          course:courses(
+            *,
+            instructor:profiles!instructor_id(*)
+          )
+        ''')
+        .single();
+
+    return _mapEnrollmentFromJson(response);
+  }
+
+  @override
+  Future<EnrollmentEntity?> checkAndCompleteCourse(String courseId) async {
+    // Get enrollment
+    final enrollmentResponse = await _supabase
+        .from('enrollments')
+        .select()
+        .eq('course_id', courseId)
+        .eq('user_id', _currentUserId)
+        .single();
+
+    final progressPercent = enrollmentResponse['progress_percent'] as int? ?? 0;
+
+    // Check if all lessons completed (100%)
+    if (progressPercent < 100) {
+      return null;
+    }
+
+    // Check if final quiz exists and is passed
+    final finalQuizResponse = await _supabase
+        .from('quizzes')
+        .select('id')
+        .eq('course_id', courseId)
+        .eq('type', 'final')
+        .maybeSingle();
+
+    if (finalQuizResponse != null) {
+      final finalQuizId = finalQuizResponse['id'] as String;
+      final isPassed = await isQuizPassed(finalQuizId);
+      if (!isPassed) {
+        return null; // Final quiz not passed
+      }
+    }
+
+    // All requirements met - mark course as complete
+    final now = DateTime.now();
+    final response = await _supabase
+        .from('enrollments')
+        .update({
+          'status': 'completed',
+          'completed_at': now.toIso8601String(),
+        })
+        .eq('id', enrollmentResponse['id'])
+        .select('''
+          *,
+          course:courses(
+            *,
+            instructor:profiles!instructor_id(*)
+          )
+        ''')
+        .single();
+
+    return _mapEnrollmentFromJson(response);
   }
 
   @override

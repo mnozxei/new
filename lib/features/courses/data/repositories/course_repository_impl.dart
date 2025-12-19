@@ -172,6 +172,16 @@ class CourseRepositoryImpl implements CourseRepository {
   }
 
   @override
+  Future<EnrollmentEntity> updateEnrollmentProgress(String courseId) async {
+    return _remoteDataSource.updateEnrollmentProgress(courseId);
+  }
+
+  @override
+  Future<EnrollmentEntity?> checkAndCompleteCourse(String courseId) async {
+    return _remoteDataSource.checkAndCompleteCourse(courseId);
+  }
+
+  @override
   Future<List<CourseReviewEntity>> getCourseReviews(
     String courseId, {
     int limit = 20,

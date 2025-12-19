@@ -97,6 +97,12 @@ abstract class CourseRepository {
   /// Mark lesson as complete
   Future<void> markLessonComplete(String lessonId);
 
+  /// Update enrollment progress (recalculate based on completed lessons)
+  Future<EnrollmentEntity> updateEnrollmentProgress(String courseId);
+
+  /// Check if course can be completed and complete it if requirements met
+  Future<EnrollmentEntity?> checkAndCompleteCourse(String courseId);
+
   /// Get course reviews
   Future<List<CourseReviewEntity>> getCourseReviews(
     String courseId, {
