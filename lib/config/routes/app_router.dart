@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth.dart';
+import '../../core/presentation/pages/not_found_page.dart';
 import '../../features/admin/presentation/bloc/admin_bloc.dart';
 import '../../features/courses/presentation/bloc/instructor_bloc.dart' as instructor;
 import '../../features/courses/presentation/bloc/student_bloc.dart' as student;
@@ -41,6 +42,7 @@ import '../../features/courses/presentation/pages/course_enrollment_page.dart';
 import '../../features/courses/presentation/pages/quiz_page.dart';
 import '../../features/courses/presentation/pages/certificate_page.dart';
 import '../../features/courses/presentation/pages/my_learning_page.dart';
+import '../../features/courses/presentation/pages/course_analytics_page.dart';
 import '../../features/jobs/presentation/pages/job_applications_page.dart';
 import '../../features/jobs/presentation/pages/job_apply_page.dart';
 import '../../features/jobs/presentation/pages/job_details_page.dart';
@@ -266,10 +268,9 @@ abstract final class AppRouter {
                 name: RouteNames.courseAnalytics,
                 builder: (context, state) {
                   final courseId = state.pathParameters['courseId']!;
-                  // TODO: Create CourseAnalyticsPage
-                  return Scaffold(
-                    appBar: AppBar(title: const Text('Course Analytics')),
-                    body: Center(child: Text('Analytics for $courseId')),
+                  return BlocProvider(
+                    create: (context) => getIt<instructor.InstructorBloc>(),
+                    child: CourseAnalyticsPage(courseId: courseId),
                   );
                 },
               ),
@@ -503,7 +504,9 @@ abstract final class AppRouter {
         ],
       ),
     ],
-    errorBuilder: (context, state) => ErrorPage(error: state.error),
+    errorBuilder: (context, state) => NotFoundPage(
+      path: state.matchedLocation,
+    ),
   );
 
   static Future<String?> _handleRedirect(
@@ -593,48 +596,5 @@ abstract final class AppRouter {
     }
 
     return null;
-  }
-}
-
-class ErrorPage extends StatelessWidget {
-  const ErrorPage({
-    required this.error,
-    super.key,
-  });
-
-  final Exception? error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'الصفحة غير موجودة',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error?.toString() ?? 'Unknown error',
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => context.go(RouteNames.posts),
-              child: const Text('الرئيسية'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/glass_app_bar.dart';
@@ -428,11 +429,11 @@ class _QuickActionsSection extends StatelessWidget {
       intensity: GlassIntensity.light,
       child: Column(
         children: [
-          _QuickActionItem(icon: Iconsax.user_add, label: 'إضافة مستخدم', onTap: () {}),
-          _QuickActionItem(icon: Iconsax.building_4, label: 'إضافة شركة', onTap: () {}),
-          _QuickActionItem(icon: Iconsax.message_question, label: 'البلاغات', badge: '5', onTap: () {}),
-          _QuickActionItem(icon: Iconsax.chart_2, label: 'التقارير', onTap: () {}),
-          _QuickActionItem(icon: Iconsax.setting_2, label: 'الإعدادات', onTap: () {}),
+          _QuickActionItem(icon: Iconsax.user_add, label: 'إدارة المستخدمين', onTap: () => context.push(RouteNames.adminUsers)),
+          _QuickActionItem(icon: Iconsax.building_4, label: 'توثيق الشركات', onTap: () => context.push(RouteNames.adminCompanyVerifications)),
+          _QuickActionItem(icon: Iconsax.message_question, label: 'البلاغات', badge: '5', onTap: () => context.push(RouteNames.adminReports)),
+          _QuickActionItem(icon: Iconsax.chart_2, label: 'التحليلات', onTap: () => context.push(RouteNames.adminAuditLog)),
+          _QuickActionItem(icon: Iconsax.verify, label: 'توثيق المدربين', onTap: () => context.push(RouteNames.adminInstructorVerifications)),
         ],
       ),
     );

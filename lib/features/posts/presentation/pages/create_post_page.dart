@@ -272,6 +272,49 @@ class _DesktopCreatePostPage extends StatelessWidget {
   }
 }
 
+void _showComingSoon(BuildContext context, String feature) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('$feature - قريباً'),
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
+
+void _showHashtagDialog(BuildContext context) {
+  final controller = TextEditingController();
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('إضافة وسم'),
+      content: TextField(
+        controller: controller,
+        decoration: const InputDecoration(
+          hintText: 'أدخل الوسم',
+          prefixText: '#',
+        ),
+        autofocus: true,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final hashtag = controller.text.trim();
+            if (hashtag.isNotEmpty) {
+              Navigator.pop(context, hashtag);
+            }
+          },
+          child: const Text('إضافة'),
+        ),
+      ],
+    ),
+  );
+}
+
 class _AttachmentOptions extends StatelessWidget {
   const _AttachmentOptions({
     required this.onImageToggle,
@@ -297,22 +340,22 @@ class _AttachmentOptions extends StatelessWidget {
         _AttachmentButton(
           icon: Iconsax.video,
           label: 'فيديو',
-          color: AppColors.info,
-          onTap: () {},
+          color: AppColors.info.withValues(alpha: 0.5),
+          onTap: () => _showComingSoon(context, 'إرفاق الفيديو'),
         ),
         const SizedBox(width: AppConstants.spacingMedium),
         _AttachmentButton(
           icon: Iconsax.document,
           label: 'ملف',
-          color: AppColors.warning,
-          onTap: () {},
+          color: AppColors.warning.withValues(alpha: 0.5),
+          onTap: () => _showComingSoon(context, 'إرفاق الملفات'),
         ),
         const SizedBox(width: AppConstants.spacingMedium),
         _AttachmentButton(
           icon: Iconsax.hashtag,
           label: 'وسم',
           color: AppColors.primary,
-          onTap: () {},
+          onTap: () => _showHashtagDialog(context),
         ),
       ],
     );

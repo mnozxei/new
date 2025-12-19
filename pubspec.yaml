@@ -54,8 +54,12 @@ dependencies:
   uuid: ^4.2.2
   path_provider: ^2.1.1
   image_picker: ^1.0.5
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
   url_launcher: ^6.2.2
+  share_plus: ^10.0.0
+  pdf: ^3.10.8
+  printing: ^5.12.0
+  qr_flutter: ^4.1.0
 
   # Realtime
   web_socket_channel: ^2.4.0

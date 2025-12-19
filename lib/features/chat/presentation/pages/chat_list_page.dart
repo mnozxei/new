@@ -320,7 +320,7 @@ class _ChatItem extends StatelessWidget {
     final bool hasUnread = conversation.unreadCount > 0;
 
     return InkWell(
-      onTap: () => context.pushNamed(RouteNames.chatRoom, pathParameters: {'id': conversation.id}),
+      onTap: () => context.pushNamed(RouteNames.chatRoom, pathParameters: {'chatId': conversation.id}),
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppConstants.spacingMedium,

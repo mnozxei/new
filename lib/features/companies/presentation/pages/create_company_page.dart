@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -24,8 +25,32 @@ class _CreateCompanyPageState extends State<CreateCompanyPage> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+  final _imagePicker = ImagePicker();
   String? _selectedIndustry;
   String? _selectedSize;
+  String? _logoPath;
+
+  Future<void> _pickLogo() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _logoPath = image.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فشل في اختيار الصورة')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -258,7 +283,39 @@ class _DesktopCreateCompanyPage extends StatelessWidget {
   }
 }
 
-class _LogoUpload extends StatelessWidget {
+class _LogoUpload extends StatefulWidget {
+  const _LogoUpload();
+
+  @override
+  State<_LogoUpload> createState() => _LogoUploadState();
+}
+
+class _LogoUploadState extends State<_LogoUpload> {
+  final _imagePicker = ImagePicker();
+  String? _logoPath;
+
+  Future<void> _pickLogo() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      if (image != null) {
+        setState(() {
+          _logoPath = image.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فشل في اختيار الصورة')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -270,25 +327,42 @@ class _LogoUpload extends StatelessWidget {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primaryExtraLight,
+              color: _logoPath != null ? AppColors.white : AppColors.primaryExtraLight,
               borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
               border: Border.all(color: AppColors.primaryLighter, width: 2, style: BorderStyle.solid),
+              image: _logoPath != null
+                  ? DecorationImage(
+                      image: AssetImage(_logoPath!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
             child: InkWell(
-              onTap: () {},
+              onTap: _pickLogo,
               borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Iconsax.camera, size: 32, color: AppColors.primaryLighter),
-                  const SizedBox(height: AppConstants.spacingSmall),
-                  Text('شعار الشركة', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.primaryLighter)),
-                ],
-              ),
+              child: _logoPath == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Iconsax.camera, size: 32, color: AppColors.primaryLighter),
+                        const SizedBox(height: AppConstants.spacingSmall),
+                        Text('شعار الشركة', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.primaryLighter)),
+                      ],
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
+                      ),
+                      child: const Icon(Iconsax.edit, size: 24, color: AppColors.white),
+                    ),
             ),
           ),
           const SizedBox(height: AppConstants.spacingSmall),
-          Text('اضغط لرفع الشعار', style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight)),
+          Text(
+            _logoPath != null ? 'اضغط لتغيير الشعار' : 'اضغط لرفع الشعار',
+            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight),
+          ),
         ],
       ),
     );

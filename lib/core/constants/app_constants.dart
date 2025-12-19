@@ -1,9 +1,15 @@
 abstract final class AppConstants {
   static const String appName = 'TAMAD HUB';
   static const String appNameArabic = 'تماد هب';
+  static const String appVersion = '1.0.0';
+  static const String appWebUrl = 'https://tamadhub.com';
+  static const String appBundleId = 'com.tamadhub.app';
+  static const String appPlayStoreUrl = 'https://play.google.com/store/apps/details?id=com.tamadhub.app';
+  static const String appAppStoreUrl = 'https://apps.apple.com/app/tamad-hub/id000000000';
 
   static const String supabaseUrl = 'https://xvbabumutaihzqwnlnzt.supabase.co';
   static const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2YmFidW11dGFpaHpxd25sbnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjYwMTY5NzMsImV4cCI6MjA4MTU5Mjk3M30.cd5dI8G5_hmeWtgp_KQbAampxGHzmwfTTVfnnx2-jR8';
+  static const String supabaseStorageUrl = '$supabaseUrl/storage/v1/object/public';
 
   static const Duration animationDuration = Duration(milliseconds: 300);
   static const Duration animationDurationFast = Duration(milliseconds: 150);
