@@ -216,6 +216,26 @@ class CourseQuizzesLoaded extends InstructorState {
   List<Object?> get props => [courseId, quizzes];
 }
 
+/// Single quiz loaded
+class QuizLoaded extends InstructorState {
+  const QuizLoaded(this.quiz);
+
+  final QuizEntity quiz;
+
+  @override
+  List<Object?> get props => [quiz];
+}
+
+/// Quiz saved successfully (created or updated with questions)
+class QuizSaved extends InstructorState {
+  const QuizSaved(this.quiz);
+
+  final QuizEntity quiz;
+
+  @override
+  List<Object?> get props => [quiz];
+}
+
 /// Quiz created successfully
 class QuizCreated extends InstructorState {
   const QuizCreated(this.quiz);

@@ -258,3 +258,51 @@ class CourseRated extends CourseState {
   @override
   List<Object?> get props => [courseId, rating];
 }
+
+// ============================================
+// ADMIN MODERATION STATES
+// ============================================
+
+class CoursesLoading extends CourseState {
+  const CoursesLoading();
+}
+
+class CourseActionSuccess extends CourseState {
+  const CourseActionSuccess({required this.message});
+
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
+// ============================================
+// CERTIFICATE STATES
+// ============================================
+
+class CertificateVerified extends CourseState {
+  const CertificateVerified({required this.result});
+
+  final CertificateVerificationResult result;
+
+  @override
+  List<Object?> get props => [result];
+}
+
+class CertificatesLoaded extends CourseState {
+  const CertificatesLoaded({required this.certificates});
+
+  final List<CertificateEntity> certificates;
+
+  @override
+  List<Object?> get props => [certificates];
+}
+
+class CertificateIssued extends CourseState {
+  const CertificateIssued({required this.certificate});
+
+  final CertificateEntity certificate;
+
+  @override
+  List<Object?> get props => [certificate];
+}

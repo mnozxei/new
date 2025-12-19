@@ -281,3 +281,13 @@ class ReorderQuestions extends InstructorEvent {
   @override
   List<Object?> get props => [quizId, questionIds];
 }
+
+/// Load a specific quiz
+class LoadQuiz extends InstructorEvent {
+  const LoadQuiz(this.quizId);
+
+  final String quizId;
+
+  @override
+  List<Object?> get props => [quizId];
+}

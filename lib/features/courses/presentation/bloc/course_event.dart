@@ -214,3 +214,65 @@ class RateCourse extends CourseEvent {
   @override
   List<Object?> get props => [courseId, rating, review];
 }
+
+// ============================================
+// ADMIN COURSE MODERATION EVENTS
+// ============================================
+
+class LoadPendingCourses extends CourseEvent {
+  const LoadPendingCourses();
+}
+
+class ApproveCourse extends CourseEvent {
+  const ApproveCourse(this.courseId);
+
+  final String courseId;
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+class RejectCourse extends CourseEvent {
+  const RejectCourse(this.courseId, this.reason);
+
+  final String courseId;
+  final String reason;
+
+  @override
+  List<Object?> get props => [courseId, reason];
+}
+
+class UnpublishCourse extends CourseEvent {
+  const UnpublishCourse(this.courseId);
+
+  final String courseId;
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+// ============================================
+// CERTIFICATE EVENTS
+// ============================================
+
+class VerifyCertificate extends CourseEvent {
+  const VerifyCertificate(this.serialNumber);
+
+  final String serialNumber;
+
+  @override
+  List<Object?> get props => [serialNumber];
+}
+
+class LoadMyCertificates extends CourseEvent {
+  const LoadMyCertificates();
+}
+
+class IssueCertificate extends CourseEvent {
+  const IssueCertificate(this.enrollmentId);
+
+  final String enrollmentId;
+
+  @override
+  List<Object?> get props => [enrollmentId];
+}

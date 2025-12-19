@@ -19,3 +19,19 @@ export 'presentation/bloc/student_bloc.dart';
 // Presentation layer - Pages
 export 'presentation/pages/course_details_page.dart';
 export 'presentation/pages/courses_page.dart';
+export 'presentation/pages/course_builder_page.dart';
+export 'presentation/pages/instructor_dashboard_page.dart';
+export 'presentation/pages/quiz_builder_page.dart';
+export 'presentation/pages/quiz_page.dart';
+export 'presentation/pages/lesson_page.dart';
+export 'presentation/pages/my_learning_page.dart';
+export 'presentation/pages/certificate_page.dart';
+export 'presentation/pages/certificate_verify_page.dart';
+export 'presentation/pages/course_enrollment_page.dart';
+export 'presentation/pages/admin_course_moderation_page.dart';
+export 'presentation/pages/instructor_application_page.dart';
+export 'presentation/pages/instructor_verification_page.dart';
+
+// Presentation layer - Widgets
+export 'presentation/widgets/instructor_stats_card.dart';
+export 'presentation/widgets/instructor_course_card.dart';
