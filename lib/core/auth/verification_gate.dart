@@ -193,7 +193,7 @@ class VerificationGate {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                action.call();
+                action?.call();
               },
               child: Text(actionText),
             ),
