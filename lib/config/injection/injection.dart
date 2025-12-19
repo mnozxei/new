@@ -58,6 +58,7 @@ import '../../features/search/data/datasources/search_remote_data_source.dart';
 import '../../features/search/data/repositories/search_repository_impl.dart';
 import '../../features/search/domain/repositories/search_repository.dart';
 import '../../features/search/presentation/bloc/search_bloc.dart';
+import '../../features/verification/di/verification_injection.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -68,6 +69,9 @@ Future<void> configureDependencies() async {
   _registerRepositories();
   _registerUseCases();
   _registerBlocs();
+
+  // Feature-specific DI modules
+  registerVerificationDependencies(getIt);
 }
 
 void _registerExternalDependencies() {
