@@ -543,8 +543,8 @@ class _QuizBuilderPageState extends State<QuizBuilderPage> {
 
     context.read<InstructorBloc>().add(
           _isEditing
-              ? UpdateQuiz(widget.quizId!, params as UpdateQuizParams, _questions)
-              : CreateQuiz(params as CreateQuizParams, _questions),
+              ? UpdateQuiz(quizId: widget.quizId!, params: params as UpdateQuizParams)
+              : CreateQuiz(params as CreateQuizParams),
         );
 
     setState(() => _isSaving = false);

@@ -141,7 +141,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
   @override
   Future<InstructorApplicationModel> updateInstructorApplication({
     required String applicationId,
-    Map<String, dynamic> updates,
+    required Map<String, dynamic> updates,
   }) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 
@@ -218,7 +218,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
   @override
   Future<CompanyVerificationModel> updateCompanyVerification({
     required String verificationId,
-    Map<String, dynamic> updates,
+    required Map<String, dynamic> updates,
   }) async {
     updates['updated_at'] = DateTime.now().toIso8601String();
 

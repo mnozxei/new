@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth.dart';
 import '../../features/admin/presentation/bloc/admin_bloc.dart';
-import '../../features/courses/presentation/bloc/instructor_bloc.dart';
-import '../../features/courses/presentation/bloc/student_bloc.dart';
+import '../../features/courses/presentation/bloc/instructor_bloc.dart' as instructor;
+import '../../features/courses/presentation/bloc/student_bloc.dart' as student;
 import '../../features/search/presentation/bloc/search_bloc.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
@@ -202,7 +202,7 @@ abstract final class AppRouter {
                     builder: (context, state) {
                       final courseId = state.pathParameters['courseId']!;
                       return BlocProvider(
-                        create: (context) => getIt<StudentBloc>(),
+                        create: (context) => getIt<student.StudentBloc>(),
                         child: CourseEnrollmentPage(courseId: courseId),
                       );
                     },
@@ -214,7 +214,7 @@ abstract final class AppRouter {
                       final courseId = state.pathParameters['courseId']!;
                       final quizId = state.pathParameters['quizId']!;
                       return BlocProvider(
-                        create: (context) => getIt<StudentBloc>(),
+                        create: (context) => getIt<student.StudentBloc>(),
                         child: QuizPage(courseId: courseId, quizId: quizId),
                       );
                     },
@@ -225,7 +225,7 @@ abstract final class AppRouter {
                     builder: (context, state) {
                       final courseId = state.pathParameters['courseId']!;
                       return BlocProvider(
-                        create: (context) => getIt<StudentBloc>(),
+                        create: (context) => getIt<student.StudentBloc>(),
                         child: CertificatePage(courseId: courseId),
                       );
                     },
@@ -238,7 +238,7 @@ abstract final class AppRouter {
             path: RouteNames.myLearning,
             name: RouteNames.myLearning,
             builder: (context, state) => BlocProvider(
-              create: (context) => getIt<StudentBloc>(),
+              create: (context) => getIt<student.StudentBloc>(),
               child: const MyLearningPage(),
             ),
           ),
@@ -246,7 +246,7 @@ abstract final class AppRouter {
             path: RouteNames.instructorDashboard,
             name: RouteNames.instructorDashboard,
             builder: (context, state) => BlocProvider(
-              create: (context) => getIt<InstructorBloc>(),
+              create: (context) => getIt<instructor.InstructorBloc>(),
               child: const InstructorDashboardPage(),
             ),
             routes: [
@@ -256,7 +256,7 @@ abstract final class AppRouter {
                 builder: (context, state) {
                   final courseId = state.uri.queryParameters['courseId'];
                   return BlocProvider(
-                    create: (context) => getIt<InstructorBloc>(),
+                    create: (context) => getIt<instructor.InstructorBloc>(),
                     child: CourseBuilderPage(courseId: courseId),
                   );
                 },
@@ -280,8 +280,8 @@ abstract final class AppRouter {
                   final courseId = state.pathParameters['courseId']!;
                   final quizId = state.pathParameters['quizId']!;
                   return BlocProvider(
-                    create: (context) => getIt<InstructorBloc>()
-                      ..add(LoadQuiz(quizId)),
+                    create: (context) => getIt<instructor.InstructorBloc>()
+                      ..add(instructor.LoadQuiz(quizId)),
                     child: QuizBuilderPage(courseId: courseId, quizId: quizId),
                   );
                 },
@@ -292,7 +292,7 @@ abstract final class AppRouter {
                 builder: (context, state) {
                   final courseId = state.pathParameters['courseId']!;
                   return BlocProvider(
-                    create: (context) => getIt<InstructorBloc>(),
+                    create: (context) => getIt<instructor.InstructorBloc>(),
                     child: QuizBuilderPage(courseId: courseId),
                   );
                 },

@@ -189,14 +189,18 @@ class VerificationGate {
             },
             child: const Text('إغلاق'),
           ),
-          if (actionText != null && action != null)
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                action();
-              },
-              child: Text(actionText),
-            ),
+          if (actionText != null && action != null) ...[
+            Builder(builder: (context) {
+              final onAction = action;
+              return ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onAction();
+                },
+                child: Text(actionText!),
+              );
+            }),
+          ],
         ],
       ),
     );

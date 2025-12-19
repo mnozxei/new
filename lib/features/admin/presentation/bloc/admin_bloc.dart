@@ -117,7 +117,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     emit(const AdminOperationLoading());
     try {
       await _repository.approveCourse(event.courseId);
-      emit(CourseApproved(event.courseId));
+      emit(CourseApprovedState(event.courseId));
     } catch (e) {
       emit(AdminError(e.toString()));
     }
@@ -130,7 +130,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     emit(const AdminOperationLoading());
     try {
       await _repository.rejectCourse(event.courseId, event.reason);
-      emit(CourseRejected(event.courseId));
+      emit(CourseRejectedState(event.courseId));
     } catch (e) {
       emit(AdminError(e.toString()));
     }
@@ -213,7 +213,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     emit(const AdminOperationLoading());
     try {
       await _repository.deleteUser(event.userId);
-      emit(UserDeleted(event.userId));
+      emit(UserDeletedState(event.userId));
     } catch (e) {
       emit(AdminError(e.toString()));
     }
@@ -252,7 +252,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     emit(const AdminOperationLoading());
     try {
       await _repository.unpublishCourse(event.courseId, event.reason);
-      emit(CourseUnpublished(event.courseId));
+      emit(CourseUnpublishedState(event.courseId));
     } catch (e) {
       emit(AdminError(e.toString()));
     }
@@ -265,7 +265,7 @@ class AdminBloc extends Bloc<AdminEvent, AdminState> {
     emit(const AdminOperationLoading());
     try {
       await _repository.deleteCourse(event.courseId);
-      emit(CourseDeleted(event.courseId));
+      emit(CourseDeletedState(event.courseId));
     } catch (e) {
       emit(AdminError(e.toString()));
     }
