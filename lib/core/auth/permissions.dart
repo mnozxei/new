@@ -2,7 +2,7 @@ import 'user_role.dart';
 
 /// Permission types available in the platform
 enum Permission {
-  // Content viewing
+  // Content viewing (visitor allowed)
   viewPublicPosts,
   viewPublicJobs,
   viewPublicCourses,
@@ -16,6 +16,8 @@ enum Permission {
   commentOnPost,
   likePost,
   sharePost,
+  followUser,
+  followCompany,
 
   // Job actions
   applyForJob,
@@ -23,14 +25,23 @@ enum Permission {
   manageOwnJobs,
   viewJobApplications,
 
-  // Course actions
+  // Course actions - Student
   enrollInCourse,
   viewEnrolledCourses,
+  takeQuiz,
+  earnCertificate,
+  reviewCourse,
+
+  // Course actions - Instructor (requires verification)
+  accessInstructorDashboard,
   createCourse,
   editOwnCourse,
   deleteCourse,
+  publishCourse,
   viewCourseAnalytics,
   createQuiz,
+  editQuiz,
+  issueCertificate,
 
   // Company actions
   createCompany,
@@ -38,6 +49,16 @@ enum Permission {
   manageCompanyMembers,
   postAsCompany,
   viewCompanyAnalytics,
+  submitCompanyVerification,
+
+  // Company training (requires company verification)
+  accessCompanyTrainingDashboard,
+  createCompanyCourse,
+  manageCompanyTraining,
+
+  // Verification actions
+  applyForInstructor,
+  submitVerificationDocs,
 
   // Chat actions
   sendMessages,
@@ -50,6 +71,7 @@ enum Permission {
 
   // Notification actions
   viewNotifications,
+  manageNotificationSettings,
 
   // Admin actions
   adminDashboard,
@@ -59,6 +81,8 @@ enum Permission {
   manageAllJobs,
   viewPlatformAnalytics,
   moderateContent,
+  reviewVerifications,
+  viewAuditLogs,
 }
 
 /// Permission checker for role-based access control
@@ -88,11 +112,19 @@ class PermissionChecker {
       Permission.commentOnPost,
       Permission.likePost,
       Permission.sharePost,
+      Permission.followUser,
+      Permission.followCompany,
       // Job permissions
       Permission.applyForJob,
-      // Course permissions
+      // Course permissions - Student
       Permission.enrollInCourse,
       Permission.viewEnrolledCourses,
+      Permission.takeQuiz,
+      Permission.earnCertificate,
+      Permission.reviewCourse,
+      // Verification - can apply to become instructor
+      Permission.applyForInstructor,
+      Permission.submitVerificationDocs,
       // Chat permissions
       Permission.sendMessages,
       Permission.viewChats,
@@ -102,6 +134,7 @@ class PermissionChecker {
       Permission.viewSavedItems,
       // Notification permissions
       Permission.viewNotifications,
+      Permission.manageNotificationSettings,
     },
     UserRole.userInstructor: {
       // All user permissions
@@ -116,21 +149,31 @@ class PermissionChecker {
       Permission.commentOnPost,
       Permission.likePost,
       Permission.sharePost,
+      Permission.followUser,
+      Permission.followCompany,
       Permission.applyForJob,
       Permission.enrollInCourse,
       Permission.viewEnrolledCourses,
+      Permission.takeQuiz,
+      Permission.earnCertificate,
+      Permission.reviewCourse,
       Permission.sendMessages,
       Permission.viewChats,
       Permission.editOwnProfile,
       Permission.saveItems,
       Permission.viewSavedItems,
       Permission.viewNotifications,
-      // Instructor permissions
+      Permission.manageNotificationSettings,
+      // Instructor permissions (requires approved verification)
+      Permission.accessInstructorDashboard,
       Permission.createCourse,
       Permission.editOwnCourse,
       Permission.deleteCourse,
+      Permission.publishCourse,
       Permission.viewCourseAnalytics,
       Permission.createQuiz,
+      Permission.editQuiz,
+      Permission.issueCertificate,
     },
     UserRole.companyMember: {
       // All user permissions
@@ -145,21 +188,33 @@ class PermissionChecker {
       Permission.commentOnPost,
       Permission.likePost,
       Permission.sharePost,
+      Permission.followUser,
+      Permission.followCompany,
       Permission.applyForJob,
       Permission.enrollInCourse,
       Permission.viewEnrolledCourses,
+      Permission.takeQuiz,
+      Permission.earnCertificate,
+      Permission.reviewCourse,
       Permission.sendMessages,
       Permission.viewChats,
       Permission.editOwnProfile,
       Permission.saveItems,
       Permission.viewSavedItems,
       Permission.viewNotifications,
+      Permission.manageNotificationSettings,
       // Company member permissions
+      Permission.createCompany,
+      Permission.editOwnCompany,
+      Permission.manageCompanyMembers,
       Permission.postJob,
       Permission.manageOwnJobs,
       Permission.viewJobApplications,
       Permission.postAsCompany,
       Permission.viewCompanyAnalytics,
+      Permission.submitCompanyVerification,
+      // Company training dashboard access
+      Permission.accessCompanyTrainingDashboard,
     },
     UserRole.companyInstructor: {
       // All user permissions
@@ -174,27 +229,45 @@ class PermissionChecker {
       Permission.commentOnPost,
       Permission.likePost,
       Permission.sharePost,
+      Permission.followUser,
+      Permission.followCompany,
       Permission.applyForJob,
       Permission.enrollInCourse,
       Permission.viewEnrolledCourses,
+      Permission.takeQuiz,
+      Permission.earnCertificate,
+      Permission.reviewCourse,
       Permission.sendMessages,
       Permission.viewChats,
       Permission.editOwnProfile,
       Permission.saveItems,
       Permission.viewSavedItems,
       Permission.viewNotifications,
+      Permission.manageNotificationSettings,
       // Company member permissions
+      Permission.createCompany,
+      Permission.editOwnCompany,
+      Permission.manageCompanyMembers,
       Permission.postJob,
       Permission.manageOwnJobs,
       Permission.viewJobApplications,
       Permission.postAsCompany,
       Permission.viewCompanyAnalytics,
-      // Instructor permissions
+      Permission.submitCompanyVerification,
+      // Instructor permissions (requires approved verification)
+      Permission.accessInstructorDashboard,
       Permission.createCourse,
       Permission.editOwnCourse,
       Permission.deleteCourse,
+      Permission.publishCourse,
       Permission.viewCourseAnalytics,
       Permission.createQuiz,
+      Permission.editQuiz,
+      Permission.issueCertificate,
+      // Company training permissions (requires company verification)
+      Permission.accessCompanyTrainingDashboard,
+      Permission.createCompanyCourse,
+      Permission.manageCompanyTraining,
     },
     UserRole.admin: {
       // All permissions

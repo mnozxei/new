@@ -26,6 +26,7 @@ import '../../features/courses/presentation/pages/courses_page.dart';
 import '../../features/courses/presentation/pages/course_builder_page.dart';
 import '../../features/courses/presentation/pages/instructor_application_page.dart';
 import '../../features/courses/presentation/pages/instructor_dashboard_page.dart';
+import '../../features/courses/presentation/pages/instructor_verification_page.dart';
 import '../../features/courses/presentation/pages/lesson_page.dart';
 import '../../features/courses/presentation/pages/course_enrollment_page.dart';
 import '../../features/courses/presentation/pages/quiz_page.dart';
@@ -259,6 +260,11 @@ abstract final class AppRouter {
             builder: (context, state) => const InstructorApplicationPage(),
           ),
           GoRoute(
+            path: RouteNames.instructorVerification,
+            name: RouteNames.instructorVerification,
+            builder: (context, state) => const InstructorVerificationPage(),
+          ),
+          GoRoute(
             path: RouteNames.posts,
             name: RouteNames.posts,
             builder: (context, state) => const PostsPage(),
@@ -462,11 +468,44 @@ abstract final class AppRouter {
       }
     }
 
-    // If authenticated, check role-based access
+    // If authenticated, check role-based access and verification status
     if (isAuthenticated) {
       final userRole = await authService.getCurrentUserRole();
+
+      // Check role-based access first
       if (!RouteGuards.canAccess(userRole, currentPath)) {
         return RouteGuards.getRedirectPath(userRole, currentPath);
+      }
+
+      // Check if route requires instructor verification
+      if (RouteGuards.requiresInstructorVerification(currentPath)) {
+        final instructorStatus = await authService.getInstructorVerificationStatus();
+        if (!VerificationGate.isInstructorVerified(
+          role: userRole,
+          instructorStatus: instructorStatus,
+        )) {
+          // Redirect to instructor verification page
+          return RouteNames.instructorVerification;
+        }
+      }
+
+      // Check if route requires company verification
+      if (RouteGuards.requiresCompanyVerification(currentPath)) {
+        // Extract company ID from path if available
+        final companyIdMatch = RegExp(r'/companies/([^/]+)').firstMatch(currentPath);
+        final companyId = companyIdMatch?.group(1);
+
+        final companyStatus = await authService.getCompanyVerificationStatus(companyId);
+        if (!VerificationGate.isCompanyVerified(
+          role: userRole,
+          companyStatus: companyStatus,
+        )) {
+          // Redirect to company verification page
+          if (companyId != null) {
+            return '/companies/$companyId/verification';
+          }
+          return RouteNames.companies;
+        }
       }
     }
 

@@ -248,6 +248,9 @@ abstract class AuthService {
   Future<bool> isVisitorMode();
   Future<void> setVisitorMode(bool enabled);
   Future<UserRole> getCurrentUserRole();
+  Future<VerificationStatus?> getInstructorVerificationStatus();
+  Future<VerificationStatus?> getCompanyVerificationStatus(String? companyId);
+  Future<String?> getCurrentUserId();
 }
 
 class AuthServiceImpl implements AuthService {
@@ -309,6 +312,71 @@ class AuthServiceImpl implements AuthService {
       return UserRole.user;
     } catch (_) {
       return UserRole.visitor;
+    }
+  }
+
+  @override
+  Future<String?> getCurrentUserId() async {
+    try {
+      return _client.auth.currentSession?.user.id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<VerificationStatus?> getInstructorVerificationStatus() async {
+    try {
+      final userId = await getCurrentUserId();
+      if (userId == null) return null;
+
+      final response = await _client
+          .from('instructor_verifications')
+          .select('status')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+      if (response != null && response['status'] != null) {
+        return VerificationStatus.fromString(response['status'] as String);
+      }
+
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<VerificationStatus?> getCompanyVerificationStatus(String? companyId) async {
+    try {
+      if (companyId == null) {
+        // Get the first company the user belongs to
+        final userId = await getCurrentUserId();
+        if (userId == null) return null;
+
+        final memberResponse = await _client
+            .from('company_members')
+            .select('company_id')
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (memberResponse == null) return null;
+        companyId = memberResponse['company_id'] as String;
+      }
+
+      final response = await _client
+          .from('companies')
+          .select('verification_status')
+          .eq('id', companyId)
+          .maybeSingle();
+
+      if (response != null && response['verification_status'] != null) {
+        return VerificationStatus.fromString(response['verification_status'] as String);
+      }
+
+      return null;
+    } catch (_) {
+      return null;
     }
   }
 }
