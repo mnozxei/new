@@ -53,3 +53,13 @@ class AuthUserUpdated extends AuthEvent {
   @override
   List<Object?> get props => [user];
 }
+
+/// Event to enter visitor mode (browse without authentication)
+class AuthVisitorModeRequested extends AuthEvent {
+  const AuthVisitorModeRequested();
+}
+
+/// Event to upgrade from visitor to authenticated user
+class AuthUpgradeFromVisitorRequested extends AuthEvent {
+  const AuthUpgradeFromVisitorRequested();
+}

@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/auth/auth.dart';
+import '../../data/models/user_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/check_auth_status.dart';
 import '../../domain/usecases/get_current_user.dart';
@@ -29,6 +31,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterRequested>(_onRegisterRequested);
     on<AuthLogoutRequested>(_onLogoutRequested);
     on<AuthUserUpdated>(_onUserUpdated);
+    on<AuthVisitorModeRequested>(_onVisitorModeRequested);
+    on<AuthUpgradeFromVisitorRequested>(_onUpgradeFromVisitorRequested);
   }
 
   final LoginUser _loginUser;
@@ -118,5 +122,46 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) {
     emit(AuthAuthenticated(event.user));
+  }
+
+  /// Handle visitor mode request - allows browsing without authentication
+  void _onVisitorModeRequested(
+    AuthVisitorModeRequested event,
+    Emitter<AuthState> emit,
+  ) {
+    final visitorUser = UserModel.visitor();
+    emit(AuthVisitor(visitorUser));
+  }
+
+  /// Handle upgrade from visitor - redirect to login
+  void _onUpgradeFromVisitorRequested(
+    AuthUpgradeFromVisitorRequested event,
+    Emitter<AuthState> emit,
+  ) {
+    emit(const AuthUnauthenticated());
+  }
+
+  /// Check if current user has a specific permission
+  bool hasPermission(Permission permission) {
+    final currentState = state;
+    if (currentState is AuthAuthenticated) {
+      return currentState.user.hasPermission(permission);
+    }
+    if (currentState is AuthVisitor) {
+      return currentState.user.hasPermission(permission);
+    }
+    return UserRole.visitor.hasPermission(permission);
+  }
+
+  /// Get current user's role
+  UserRole get currentRole {
+    final currentState = state;
+    if (currentState is AuthAuthenticated) {
+      return currentState.user.role;
+    }
+    if (currentState is AuthVisitor) {
+      return currentState.user.role;
+    }
+    return UserRole.visitor;
   }
 }

@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/auth/auth.dart';
 import '../../core/services/storage_service.dart';
 import '../../features/ads/data/datasources/ad_remote_data_source.dart';
 import '../../features/ads/data/repositories/ad_repository_impl.dart';
@@ -233,12 +235,16 @@ void _registerBlocs() {
 
 abstract class AuthService {
   Future<bool> isAuthenticated();
+  Future<bool> isVisitorMode();
+  Future<void> setVisitorMode(bool enabled);
+  Future<UserRole> getCurrentUserRole();
 }
 
 class AuthServiceImpl implements AuthService {
   AuthServiceImpl(this._client);
 
   final SupabaseClient _client;
+  static const String _visitorModeKey = 'visitor_mode';
 
   @override
   Future<bool> isAuthenticated() async {
@@ -246,6 +252,53 @@ class AuthServiceImpl implements AuthService {
       return _client.auth.currentSession != null;
     } catch (_) {
       return false;
+    }
+  }
+
+  @override
+  Future<bool> isVisitorMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool(_visitorModeKey) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> setVisitorMode(bool enabled) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_visitorModeKey, enabled);
+    } catch (_) {
+      // Ignore errors
+    }
+  }
+
+  @override
+  Future<UserRole> getCurrentUserRole() async {
+    try {
+      final session = _client.auth.currentSession;
+      if (session == null) {
+        final isVisitor = await isVisitorMode();
+        return isVisitor ? UserRole.visitor : UserRole.visitor;
+      }
+
+      // Fetch user profile to get role
+      final userId = session.user.id;
+      final response = await _client
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (response != null && response['role'] != null) {
+        return UserRole.fromString(response['role'] as String);
+      }
+
+      return UserRole.user;
+    } catch (_) {
+      return UserRole.visitor;
     }
   }
 }

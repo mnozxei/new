@@ -1,3 +1,4 @@
+import '../../../../core/auth/auth.dart';
 import '../../domain/entities/user_entity.dart';
 
 class UserModel extends UserEntity {
@@ -16,6 +17,8 @@ class UserModel extends UserEntity {
     super.twitterUrl,
     super.isEmailVerified,
     super.isProfileComplete,
+    super.companyId,
+    super.isInstructorVerified,
     super.createdAt,
     super.updatedAt,
   });
@@ -36,6 +39,8 @@ class UserModel extends UserEntity {
       twitterUrl: json['twitter_url'] as String?,
       isEmailVerified: json['is_email_verified'] as bool? ?? false,
       isProfileComplete: json['is_profile_complete'] as bool? ?? false,
+      companyId: json['company_id'] as String?,
+      isInstructorVerified: json['is_instructor_verified'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -61,8 +66,19 @@ class UserModel extends UserEntity {
       twitterUrl: entity.twitterUrl,
       isEmailVerified: entity.isEmailVerified,
       isProfileComplete: entity.isProfileComplete,
+      companyId: entity.companyId,
+      isInstructorVerified: entity.isInstructorVerified,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
+    );
+  }
+
+  /// Create a visitor user model (for unauthenticated browsing)
+  factory UserModel.visitor() {
+    return const UserModel(
+      id: 'visitor',
+      email: 'visitor@tamad.hub',
+      role: UserRole.visitor,
     );
   }
 
@@ -70,7 +86,7 @@ class UserModel extends UserEntity {
     return {
       'id': id,
       'email': email,
-      'role': role.name,
+      'role': role.value,
       'full_name': fullName,
       'avatar_url': avatarUrl,
       'phone': phone,
@@ -82,6 +98,8 @@ class UserModel extends UserEntity {
       'twitter_url': twitterUrl,
       'is_email_verified': isEmailVerified,
       'is_profile_complete': isProfileComplete,
+      'company_id': companyId,
+      'is_instructor_verified': isInstructorVerified,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
@@ -103,6 +121,8 @@ class UserModel extends UserEntity {
     String? twitterUrl,
     bool? isEmailVerified,
     bool? isProfileComplete,
+    String? companyId,
+    bool? isInstructorVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -121,6 +141,8 @@ class UserModel extends UserEntity {
       twitterUrl: twitterUrl ?? this.twitterUrl,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isProfileComplete: isProfileComplete ?? this.isProfileComplete,
+      companyId: companyId ?? this.companyId,
+      isInstructorVerified: isInstructorVerified ?? this.isInstructorVerified,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

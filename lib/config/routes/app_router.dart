@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/auth/auth.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -265,17 +266,51 @@ abstract final class AppRouter {
   ) async {
     final authService = getIt<AuthService>();
     final isAuthenticated = await authService.isAuthenticated();
-    final isAuthRoute = state.matchedLocation == RouteNames.login ||
-        state.matchedLocation == RouteNames.register ||
-        state.matchedLocation == RouteNames.forgotPassword ||
-        state.matchedLocation == RouteNames.splash;
+    final isVisitorMode = await authService.isVisitorMode();
+    final currentPath = state.matchedLocation;
 
-    if (!isAuthenticated && !isAuthRoute) {
+    // Auth routes - splash, login, register, forgot password
+    final isAuthRoute = currentPath == RouteNames.login ||
+        currentPath == RouteNames.register ||
+        currentPath == RouteNames.forgotPassword ||
+        currentPath == RouteNames.splash;
+
+    // Check if current route is visitor-accessible
+    final isVisitorAccessible = RouteGuards.isVisitorAccessible(currentPath);
+
+    // If authenticated and trying to access auth routes (except splash), redirect to posts
+    if (isAuthenticated && isAuthRoute && currentPath != RouteNames.splash) {
+      return RouteNames.posts;
+    }
+
+    // If not authenticated and not in visitor mode
+    if (!isAuthenticated && !isVisitorMode) {
+      // Allow auth routes
+      if (isAuthRoute) {
+        return null;
+      }
+      // Allow visitor-accessible routes
+      if (isVisitorAccessible) {
+        return null;
+      }
+      // Redirect to login for protected routes
       return RouteNames.login;
     }
 
-    if (isAuthenticated && isAuthRoute && state.matchedLocation != RouteNames.splash) {
-      return RouteNames.posts;
+    // In visitor mode, check if route is accessible
+    if (isVisitorMode && !isAuthenticated) {
+      if (!isVisitorAccessible && !isAuthRoute) {
+        // Redirect to login for protected routes when in visitor mode
+        return RouteNames.login;
+      }
+    }
+
+    // If authenticated, check role-based access
+    if (isAuthenticated) {
+      final userRole = await authService.getCurrentUserRole();
+      if (!RouteGuards.canAccess(userRole, currentPath)) {
+        return RouteGuards.getRedirectPath(userRole, currentPath);
+      }
     }
 
     return null;

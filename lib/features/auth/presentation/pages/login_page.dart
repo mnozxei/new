@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
+import '../../../../config/injection/injection.dart' show getIt, AuthService;
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -42,11 +43,20 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _onContinueAsVisitor() async {
+    // Enable visitor mode and navigate
+    final authService = getIt<AuthService>();
+    await authService.setVisitorMode(true);
+    context.read<AuthBloc>().add(const AuthVisitorModeRequested());
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthAuthenticated) {
+          context.go(RouteNames.posts);
+        } else if (state is AuthVisitor) {
           context.go(RouteNames.posts);
         } else if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -64,12 +74,14 @@ class _LoginPageState extends State<LoginPage> {
             emailController: _emailController,
             passwordController: _passwordController,
             onLogin: _onLogin,
+            onContinueAsVisitor: _onContinueAsVisitor,
           ),
           desktop: _DesktopLoginLayout(
             formKey: _formKey,
             emailController: _emailController,
             passwordController: _passwordController,
             onLogin: _onLogin,
+            onContinueAsVisitor: _onContinueAsVisitor,
           ),
         ),
       ),
@@ -83,12 +95,14 @@ class _MobileLoginLayout extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.onLogin,
+    required this.onContinueAsVisitor,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final VoidCallback onLogin;
+  final VoidCallback onContinueAsVisitor;
 
   @override
   Widget build(BuildContext context) {
@@ -135,6 +149,7 @@ class _MobileLoginLayout extends StatelessWidget {
                 emailController: emailController,
                 passwordController: passwordController,
                 onLogin: onLogin,
+                onContinueAsVisitor: onContinueAsVisitor,
               ),
               const SizedBox(height: AppConstants.spacingLarge),
               _buildRegisterLink(context),
@@ -196,12 +211,14 @@ class _DesktopLoginLayout extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.onLogin,
+    required this.onContinueAsVisitor,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final VoidCallback onLogin;
+  final VoidCallback onContinueAsVisitor;
 
   @override
   Widget build(BuildContext context) {
@@ -300,6 +317,7 @@ class _DesktopLoginLayout extends StatelessWidget {
                         emailController: emailController,
                         passwordController: passwordController,
                         onLogin: onLogin,
+                        onContinueAsVisitor: onContinueAsVisitor,
                       ),
                       const SizedBox(height: AppConstants.spacingLarge),
                       Row(
@@ -339,12 +357,14 @@ class _LoginForm extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.onLogin,
+    required this.onContinueAsVisitor,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final VoidCallback onLogin;
+  final VoidCallback onContinueAsVisitor;
 
   @override
   Widget build(BuildContext context) {
@@ -423,6 +443,21 @@ class _LoginForm extends StatelessWidget {
                             ),
                           )
                         : const Text('تسجيل الدخول'),
+                  ),
+                ),
+                const SizedBox(height: AppConstants.spacingMedium),
+                SizedBox(
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: isLoading ? null : onContinueAsVisitor,
+                    icon: const Icon(Iconsax.eye),
+                    label: const Text('تصفح كزائر'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.textSecondaryLight,
+                      side: const BorderSide(
+                        color: AppColors.borderLight,
+                      ),
+                    ),
                   ),
                 ),
               ],
