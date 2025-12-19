@@ -3,9 +3,12 @@ abstract final class RouteNames {
   static const String login = '/login';
   static const String register = '/register';
 
+  static const String search = '/search';
+
   static const String jobs = '/jobs';
   static const String jobDetails = 'jobDetails';
   static const String jobApplications = 'jobApplications';
+  static const String jobApply = 'apply';
   static const String manageJob = 'manageJob';
   static const String postJob = '/post-job';
   static const String myApplications = '/my-applications';
@@ -36,6 +39,7 @@ abstract final class RouteNames {
   static const String userProfile = '/user';
 
   static const String notifications = '/notifications';
+  static const String notificationSettings = 'settings';
 
   static const String companies = '/companies';
   static const String createCompany = 'createCompany';

@@ -32,12 +32,16 @@ import '../../features/courses/presentation/pages/quiz_page.dart';
 import '../../features/courses/presentation/pages/certificate_page.dart';
 import '../../features/courses/presentation/pages/my_learning_page.dart';
 import '../../features/jobs/presentation/pages/job_applications_page.dart';
+import '../../features/jobs/presentation/pages/job_apply_page.dart';
 import '../../features/jobs/presentation/pages/job_details_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
 import '../../features/jobs/presentation/pages/manage_job_page.dart';
 import '../../features/jobs/presentation/pages/my_applications_page.dart';
 import '../../features/jobs/presentation/pages/post_job_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/notifications/presentation/pages/notification_settings_page.dart';
+import '../../features/search/presentation/pages/global_search_page.dart';
+import '../../features/companies/presentation/pages/company_jobs_page.dart';
 import '../../features/posts/presentation/pages/create_post_page.dart';
 import '../../features/posts/presentation/pages/post_details_page.dart';
 import '../../features/posts/presentation/pages/posts_page.dart';
@@ -115,9 +119,25 @@ abstract final class AppRouter {
                       return ManageJobPage(jobId: jobId);
                     },
                   ),
+                  GoRoute(
+                    path: RouteNames.jobApply,
+                    name: RouteNames.jobApply,
+                    builder: (context, state) {
+                      final jobId = state.pathParameters['jobId']!;
+                      return JobApplyPage(jobId: jobId);
+                    },
+                  ),
                 ],
               ),
             ],
+          ),
+          GoRoute(
+            path: RouteNames.search,
+            name: RouteNames.search,
+            builder: (context, state) {
+              final query = state.uri.queryParameters['q'];
+              return GlobalSearchPage(initialQuery: query);
+            },
           ),
           GoRoute(
             path: RouteNames.postJob,
@@ -302,6 +322,13 @@ abstract final class AppRouter {
             path: RouteNames.notifications,
             name: RouteNames.notifications,
             builder: (context, state) => const NotificationsPage(),
+            routes: [
+              GoRoute(
+                path: RouteNames.notificationSettings,
+                name: RouteNames.notificationSettings,
+                builder: (context, state) => const NotificationSettingsPage(),
+              ),
+            ],
           ),
           GoRoute(
             path: RouteNames.companies,
@@ -343,6 +370,14 @@ abstract final class AppRouter {
                     builder: (context, state) {
                       final companyId = state.pathParameters['companyId']!;
                       return CompanyTeamPage(companyId: companyId);
+                    },
+                  ),
+                  GoRoute(
+                    path: RouteNames.companyJobs,
+                    name: RouteNames.companyJobs,
+                    builder: (context, state) {
+                      final companyId = state.pathParameters['companyId']!;
+                      return CompanyJobsPage(companyId: companyId);
                     },
                   ),
                 ],
