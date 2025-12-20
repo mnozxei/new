@@ -7,6 +7,8 @@ import '../../features/admin/presentation/bloc/admin_bloc.dart';
 import '../../features/courses/presentation/bloc/instructor_bloc.dart' as instructor;
 import '../../features/courses/presentation/bloc/student_bloc.dart' as student;
 import '../../features/search/presentation/bloc/search_bloc.dart';
+import '../../features/chat/presentation/bloc/chat_bloc.dart';
+import '../../features/notifications/presentation/bloc/notification_bloc.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -332,14 +334,20 @@ abstract final class AppRouter {
           GoRoute(
             path: RouteNames.chat,
             name: RouteNames.chat,
-            builder: (context, state) => const ChatListPage(),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<ChatBloc>()..add(const LoadConversations()),
+              child: const ChatListPage(),
+            ),
             routes: [
               GoRoute(
                 path: ':chatId',
                 name: RouteNames.chatRoom,
                 builder: (context, state) {
                   final chatId = state.pathParameters['chatId']!;
-                  return ChatRoomPage(chatId: chatId);
+                  return BlocProvider(
+                    create: (context) => getIt<ChatBloc>()..add(LoadMessages(conversationId: chatId)),
+                    child: ChatRoomPage(chatId: chatId),
+                  );
                 },
               ),
             ],
@@ -372,12 +380,18 @@ abstract final class AppRouter {
           GoRoute(
             path: RouteNames.notifications,
             name: RouteNames.notifications,
-            builder: (context, state) => const NotificationsPage(),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<NotificationBloc>()..add(const LoadNotifications()),
+              child: const NotificationsPage(),
+            ),
             routes: [
               GoRoute(
                 path: 'settings',
                 name: RouteNames.notificationSettings,
-                builder: (context, state) => const NotificationSettingsPage(),
+                builder: (context, state) => BlocProvider(
+                  create: (context) => getIt<NotificationBloc>()..add(const LoadNotificationSettings()),
+                  child: const NotificationSettingsPage(),
+                ),
               ),
             ],
           ),
