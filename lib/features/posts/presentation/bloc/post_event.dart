@@ -175,3 +175,36 @@ class LoadPostsByHashtag extends PostEvent {
   @override
   List<Object?> get props => [hashtag];
 }
+
+class ToggleBookmark extends PostEvent {
+  const ToggleBookmark({required this.postId});
+
+  final String postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
+
+class LoadSavedPosts extends PostEvent {
+  const LoadSavedPosts({this.offset = 0});
+
+  final int offset;
+
+  @override
+  List<Object?> get props => [offset];
+}
+
+class ReportPost extends PostEvent {
+  const ReportPost({
+    required this.postId,
+    required this.reason,
+    this.details,
+  });
+
+  final String postId;
+  final String reason;
+  final String? details;
+
+  @override
+  List<Object?> get props => [postId, reason, details];
+}

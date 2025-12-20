@@ -1,10 +1,10 @@
 import '../entities/post_entity.dart';
 
 abstract class PostRepository {
-  /// Get feed posts
+  /// Get personalized feed using the enterprise algorithm
   Future<List<PostEntity>> getFeed({
     int limit = 20,
-    int offset = 0,
+    DateTime? cursor,
   });
 
   /// Get posts by user
@@ -24,7 +24,7 @@ abstract class PostRepository {
   /// Get post by ID
   Future<PostEntity?> getPostById(String postId);
 
-  /// Create a post
+  /// Create a post (validates no-links policy)
   Future<PostEntity> createPost({
     required String content,
     List<String>? mediaUrls,
@@ -33,7 +33,7 @@ abstract class PostRepository {
     String visibility = 'public',
   });
 
-  /// Update a post
+  /// Update a post (validates no-links policy)
   Future<PostEntity> updatePost({
     required String postId,
     required String content,
@@ -89,4 +89,16 @@ abstract class PostRepository {
     int limit = 20,
     int offset = 0,
   });
+
+  /// Toggle bookmark on a post
+  Future<bool> toggleBookmark(String postId);
+
+  /// Get saved/bookmarked posts
+  Future<List<PostEntity>> getSavedPosts({int limit = 20, int offset = 0});
+
+  /// Report a post
+  Future<void> reportPost({required String postId, required String reason, String? details});
+
+  /// Record post impression
+  Future<void> recordImpression(String postId, {String interactionType = 'view'});
 }

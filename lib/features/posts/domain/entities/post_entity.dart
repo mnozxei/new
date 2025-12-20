@@ -18,6 +18,8 @@ class PostEntity extends Equatable {
     this.author,
     this.company,
     this.isLiked = false,
+    this.isSaved = false,
+    this.feedSource,
   });
 
   final String id;
@@ -36,6 +38,8 @@ class PostEntity extends Equatable {
   final PostAuthorInfo? author;
   final PostCompanyInfo? company;
   final bool isLiked;
+  final bool isSaved;
+  final String? feedSource;
 
   bool get isUserPost => authorId != null;
   bool get isCompanyPost => companyId != null;
@@ -77,6 +81,8 @@ class PostEntity extends Equatable {
     PostAuthorInfo? author,
     PostCompanyInfo? company,
     bool? isLiked,
+    bool? isSaved,
+    String? feedSource,
   }) {
     return PostEntity(
       id: id ?? this.id,
@@ -95,6 +101,8 @@ class PostEntity extends Equatable {
       author: author ?? this.author,
       company: company ?? this.company,
       isLiked: isLiked ?? this.isLiked,
+      isSaved: isSaved ?? this.isSaved,
+      feedSource: feedSource ?? this.feedSource,
     );
   }
 
@@ -116,6 +124,8 @@ class PostEntity extends Equatable {
         author,
         company,
         isLiked,
+        isSaved,
+        feedSource,
       ];
 }
 

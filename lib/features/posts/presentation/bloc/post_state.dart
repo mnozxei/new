@@ -205,3 +205,35 @@ class HashtagPostsLoaded extends PostState {
   @override
   List<Object?> get props => [hashtag, posts, hasMore];
 }
+
+class BookmarkToggled extends PostState {
+  const BookmarkToggled({required this.postId, required this.isSaved});
+
+  final String postId;
+  final bool isSaved;
+
+  @override
+  List<Object?> get props => [postId, isSaved];
+}
+
+class SavedPostsLoaded extends PostState {
+  const SavedPostsLoaded({
+    required this.posts,
+    this.hasMore = false,
+  });
+
+  final List<PostEntity> posts;
+  final bool hasMore;
+
+  @override
+  List<Object?> get props => [posts, hasMore];
+}
+
+class PostReported extends PostState {
+  const PostReported({required this.postId});
+
+  final String postId;
+
+  @override
+  List<Object?> get props => [postId];
+}

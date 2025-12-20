@@ -11,9 +11,9 @@ class PostRepositoryImpl implements PostRepository {
   @override
   Future<List<PostEntity>> getFeed({
     int limit = 20,
-    int offset = 0,
+    DateTime? cursor,
   }) async {
-    return _remoteDataSource.getFeed(limit: limit, offset: offset);
+    return _remoteDataSource.getFeed(limit: limit, cursor: cursor);
   }
 
   @override
@@ -165,5 +165,25 @@ class PostRepositoryImpl implements PostRepository {
       limit: limit,
       offset: offset,
     );
+  }
+
+  @override
+  Future<bool> toggleBookmark(String postId) async {
+    return _remoteDataSource.toggleBookmark(postId);
+  }
+
+  @override
+  Future<List<PostEntity>> getSavedPosts({int limit = 20, int offset = 0}) async {
+    return _remoteDataSource.getSavedPosts(limit: limit, offset: offset);
+  }
+
+  @override
+  Future<void> reportPost({required String postId, required String reason, String? details}) async {
+    await _remoteDataSource.reportPost(postId: postId, reason: reason, details: details);
+  }
+
+  @override
+  Future<void> recordImpression(String postId, {String interactionType = 'view'}) async {
+    await _remoteDataSource.recordImpression(postId, interactionType: interactionType);
   }
 }

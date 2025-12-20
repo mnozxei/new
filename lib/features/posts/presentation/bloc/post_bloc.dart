@@ -26,18 +26,24 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<SharePost>(_onSharePost);
     on<SearchPosts>(_onSearchPosts);
     on<LoadPostsByHashtag>(_onLoadPostsByHashtag);
+    on<ToggleBookmark>(_onToggleBookmark);
+    on<LoadSavedPosts>(_onLoadSavedPosts);
+    on<ReportPost>(_onReportPost);
   }
 
   final PostRepository repository;
-  int _currentOffset = 0;
+  DateTime? _feedCursor;
   static const int _pageSize = 20;
 
   Future<void> _onLoadFeed(LoadFeed event, Emitter<PostState> emit) async {
     emit(const PostLoading());
-    _currentOffset = 0;
+    _feedCursor = null;
 
     try {
-      final posts = await repository.getFeed(limit: _pageSize, offset: _currentOffset);
+      final posts = await repository.getFeed(limit: _pageSize);
+      if (posts.isNotEmpty) {
+        _feedCursor = posts.last.createdAt;
+      }
       emit(FeedLoaded(
         posts: posts,
         hasMore: posts.length >= _pageSize,
@@ -51,15 +57,16 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     final currentState = state;
     if (currentState is! FeedLoaded || !currentState.hasMore) return;
 
-    _currentOffset += _pageSize;
     try {
-      final posts = await repository.getFeed(limit: _pageSize, offset: _currentOffset);
+      final posts = await repository.getFeed(limit: _pageSize, cursor: _feedCursor);
+      if (posts.isNotEmpty) {
+        _feedCursor = posts.last.createdAt;
+      }
       emit(FeedLoaded(
         posts: [...currentState.posts, ...posts],
         hasMore: posts.length >= _pageSize,
       ));
     } catch (e) {
-      _currentOffset -= _pageSize;
       emit(PostError(message: e.toString()));
     }
   }
@@ -267,6 +274,45 @@ class PostBloc extends Bloc<PostEvent, PostState> {
         posts: posts,
         hasMore: posts.length >= _pageSize,
       ));
+    } catch (e) {
+      emit(PostError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onToggleBookmark(ToggleBookmark event, Emitter<PostState> emit) async {
+    try {
+      final isSaved = await repository.toggleBookmark(event.postId);
+      emit(BookmarkToggled(postId: event.postId, isSaved: isSaved));
+    } catch (e) {
+      emit(PostError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadSavedPosts(LoadSavedPosts event, Emitter<PostState> emit) async {
+    emit(const PostLoading());
+
+    try {
+      final posts = await repository.getSavedPosts(
+        limit: _pageSize,
+        offset: event.offset,
+      );
+      emit(SavedPostsLoaded(
+        posts: posts,
+        hasMore: posts.length >= _pageSize,
+      ));
+    } catch (e) {
+      emit(PostError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onReportPost(ReportPost event, Emitter<PostState> emit) async {
+    try {
+      await repository.reportPost(
+        postId: event.postId,
+        reason: event.reason,
+        details: event.details,
+      );
+      emit(PostReported(postId: event.postId));
     } catch (e) {
       emit(PostError(message: e.toString()));
     }
