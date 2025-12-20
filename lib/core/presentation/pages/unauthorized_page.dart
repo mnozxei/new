@@ -25,7 +25,7 @@ class UnauthorizedPage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(AppConstants.spacingXLarge),
+            padding: const EdgeInsets.all(AppConstants.spacingExtraLarge),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -43,7 +43,7 @@ class UnauthorizedPage extends StatelessWidget {
                     color: AppColors.error,
                   ),
                 ),
-                const SizedBox(height: AppConstants.spacingXLarge),
+                const SizedBox(height: AppConstants.spacingExtraLarge),
 
                 // Error code
                 Text(
@@ -126,7 +126,7 @@ class UnauthorizedPage extends StatelessWidget {
                   ),
                 ],
 
-                const SizedBox(height: AppConstants.spacingXLarge),
+                const SizedBox(height: AppConstants.spacingExtraLarge),
 
                 // Actions
                 Row(

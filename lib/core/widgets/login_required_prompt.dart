@@ -144,7 +144,7 @@ class LoginRequiredPrompt extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
         borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppConstants.borderRadiusXLarge),
+          top: Radius.circular(AppConstants.borderRadiusExtraLarge),
         ),
       ),
       padding: EdgeInsets.only(
@@ -201,7 +201,7 @@ class LoginRequiredPrompt extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: AppConstants.spacingXLarge),
+          const SizedBox(height: AppConstants.spacingExtraLarge),
 
           // Login button
           SizedBox(
