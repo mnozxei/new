@@ -53,7 +53,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapPostFromJson(json)).toList();
+    return (response as List).map((json) => _mapPostFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -72,7 +72,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapPostFromJson(json)).toList();
+    return (response as List).map((json) => _mapPostFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -90,7 +90,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapPostFromJson(json)).toList();
+    return (response as List).map((json) => _mapPostFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -234,7 +234,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .order('created_at', ascending: true)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapCommentFromJson(json)).toList();
+    return (response as List).map((json) => _mapCommentFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -347,7 +347,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapPostFromJson(json)).toList();
+    return (response as List).map((json) => _mapPostFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -369,7 +369,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapPostFromJson(json)).toList();
+    return (response as List).map((json) => _mapPostFromJson(json as Map<String, dynamic>)).toList();
   }
 
   List<String> _extractHashtags(String content) {
@@ -412,8 +412,8 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       authorId: json['author_id'] as String?,
       companyId: json['company_id'] as String?,
       content: json['content'] as String,
-      mediaUrls: List<String>.from(json['media_urls'] ?? []),
-      mediaTypes: List<String>.from(json['media_types'] ?? []),
+      mediaUrls: List<String>.from((json['media_urls'] ?? []) as List),
+      mediaTypes: List<String>.from((json['media_types'] ?? []) as List),
       visibility: json['visibility'] as String? ?? 'public',
       isPinned: json['is_pinned'] as bool? ?? false,
       likeCount: likes.length,

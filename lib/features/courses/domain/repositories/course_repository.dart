@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../entities/certificate_entity.dart';
 import '../entities/course_entity.dart';
 import '../entities/quiz_entity.dart';
@@ -41,7 +43,7 @@ abstract class CourseRepository {
   Future<CourseEntity> togglePublish(String id);
 
   /// Upload course thumbnail
-  Future<String> uploadThumbnail(String courseId, dynamic file);
+  Future<String> uploadThumbnail(String courseId, File file);
 
   /// Create section
   Future<CourseSectionEntity> createSection(CreateSectionParams params);

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../../domain/entities/certificate_entity.dart';
 import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/quiz_entity.dart';
@@ -75,7 +77,7 @@ class CourseRepositoryImpl implements CourseRepository {
   }
 
   @override
-  Future<String> uploadThumbnail(String courseId, dynamic file) async {
+  Future<String> uploadThumbnail(String courseId, File file) async {
     return _remoteDataSource.uploadThumbnail(courseId, file);
   }
 

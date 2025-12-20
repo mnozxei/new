@@ -100,7 +100,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
         .order('created_at', ascending: false)
         .limit(limit);
 
-    return (response as List).map((json) => _mapActivityLogFromJson(json)).toList();
+    return (response as List).map((json) => _mapActivityLogFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -132,7 +132,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
           status: json['status'] as String,
           userName: user?['full_name'] as String?,
           userEmail: user?['email'] as String?,
-          documentUrls: List<String>.from(json['document_urls'] ?? []),
+          documentUrls: List<String>.from((json['document_urls'] ?? []) as List),
           notes: json['notes'] as String?,
           rejectionReason: json['rejection_reason'] as String?,
           createdAt: DateTime.parse(json['created_at'] as String),
@@ -163,7 +163,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
           companyName: json['name'] as String?,
           userName: owner?['full_name'] as String?,
           userEmail: owner?['email'] as String?,
-          documentUrls: List<String>.from(json['verification_documents'] ?? []),
+          documentUrls: List<String>.from((json['verification_documents'] ?? []) as List),
           createdAt: DateTime.parse(json['created_at'] as String),
         );
       }));
@@ -224,7 +224,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
         companyName: response['name'] as String?,
         userName: owner?['full_name'] as String?,
         userEmail: owner?['email'] as String?,
-        documentUrls: List<String>.from(response['verification_documents'] ?? []),
+        documentUrls: List<String>.from((response['verification_documents'] ?? []) as List),
         createdAt: DateTime.parse(response['created_at'] as String),
       );
     }
@@ -258,7 +258,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       await _supabase
           .from('profiles')
           .update({'role': 'userInstructor'})
-          .eq('id', instructorResponse['user_id']);
+          .eq('id', instructorResponse['user_id'] as Object);
 
       await _logActivity('approve_instructor_verification', 'verification', id);
       return;
@@ -411,7 +411,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapContentReportFromJson(json)).toList();
+    return (response as List).map((json) => _mapContentReportFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override

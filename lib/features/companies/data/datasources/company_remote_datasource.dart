@@ -56,7 +56,7 @@ class CompanyRemoteDataSourceImpl implements CompanyRemoteDataSource {
         .order('created_at', ascending: false);
 
     return (response as List)
-        .map((json) => CompanyModel.fromJson(json))
+        .map((json) => CompanyModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -96,7 +96,7 @@ class CompanyRemoteDataSourceImpl implements CompanyRemoteDataSource {
         .range(offset, offset + limit - 1);
 
     return (response as List)
-        .map((json) => CompanyModel.fromJson(json))
+        .map((json) => CompanyModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -110,7 +110,7 @@ class CompanyRemoteDataSourceImpl implements CompanyRemoteDataSource {
         .limit(20);
 
     return (response as List)
-        .map((json) => CompanyModel.fromJson(json))
+        .map((json) => CompanyModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -322,7 +322,7 @@ class CompanyRemoteDataSourceImpl implements CompanyRemoteDataSource {
         .order('verification_submitted_at', ascending: true);
 
     return (response as List)
-        .map((json) => CompanyModel.fromJson(json))
+        .map((json) => CompanyModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 

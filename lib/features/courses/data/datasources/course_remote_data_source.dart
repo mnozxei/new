@@ -128,7 +128,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+    return (response as List).map((json) => _mapCourseFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -144,7 +144,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .order('created_at', ascending: false)
         .limit(limit);
 
-    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+    return (response as List).map((json) => _mapCourseFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -193,7 +193,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .eq('is_published', true)
         .order('created_at', ascending: false);
 
-    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+    return (response as List).map((json) => _mapCourseFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -207,7 +207,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .eq('instructor_id', _currentUserId)
         .order('created_at', ascending: false);
 
-    return (response as List).map((json) => _mapCourseFromJson(json)).toList();
+    return (response as List).map((json) => _mapCourseFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -468,7 +468,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .order('enrolled_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapEnrollmentFromJson(json)).toList();
+    return (response as List).map((json) => _mapEnrollmentFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -741,7 +741,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapReviewFromJson(json)).toList();
+    return (response as List).map((json) => _mapReviewFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -938,9 +938,9 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
       enrollmentCount: json['enrollment_count'] as int? ?? 0,
       ratingAverage: (json['rating_average'] as num?)?.toDouble() ?? 0,
       ratingCount: json['rating_count'] as int? ?? 0,
-      requirements: List<String>.from(json['requirements'] ?? []),
-      objectives: List<String>.from(json['objectives'] ?? []),
-      tags: List<String>.from(json['tags'] ?? []),
+      requirements: List<String>.from((json['requirements'] ?? []) as List),
+      objectives: List<String>.from((json['objectives'] ?? []) as List),
+      tags: List<String>.from((json['tags'] ?? []) as List),
       createdAt: json['created_at'] != null ? DateTime.parse(json['created_at'] as String) : now,
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
       instructor: instructor,
@@ -1001,7 +1001,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
       userId: json['user_id'] as String,
       status: EnrollmentStatus.fromString(json['status'] as String? ?? 'active'),
       progressPercent: json['progress_percent'] as int? ?? 0,
-      completedLessons: List<String>.from(json['completed_lessons'] ?? []),
+      completedLessons: List<String>.from((json['completed_lessons'] ?? []) as List),
       currentLessonId: json['current_lesson_id'] as String?,
       enrolledAt: DateTime.parse(json['enrolled_at'] as String),
       completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
@@ -1073,7 +1073,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .eq('course_id', courseId)
         .order('sort_order', ascending: true);
 
-    return (response as List).map((json) => _mapQuizFromJson(json)).toList();
+    return (response as List).map((json) => _mapQuizFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -1359,7 +1359,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .eq('user_id', _currentUserId)
         .order('created_at', ascending: false);
 
-    return (response as List).map((json) => _mapAttemptFromJson(json)).toList();
+    return (response as List).map((json) => _mapAttemptFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -1543,7 +1543,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
       score: (json['score'] as num?)?.toDouble() ?? 0,
       passed: json['passed'] as bool? ?? false,
       timeTakenSeconds: json['time_taken_seconds'] as int?,
-      answers: Map<String, dynamic>.from(json['answers'] ?? {}),
+      answers: Map<String, dynamic>.from((json['answers'] ?? {}) as Map),
       startedAt: json['started_at'] != null
           ? DateTime.parse(json['started_at'] as String)
           : now,
@@ -1695,7 +1695,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
         .eq('status', 'issued')
         .order('issued_at', ascending: false);
 
-    return (response as List).map((json) => _mapCertificateFromJson(json)).toList();
+    return (response as List).map((json) => _mapCertificateFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override

@@ -166,7 +166,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         .limit(limit);
 
     return (response as List)
-        .map((json) => _mapMessageFromJson(json))
+        .map((json) => _mapMessageFromJson(json as Map<String, dynamic>))
         .toList()
         .reversed
         .toList();
@@ -359,7 +359,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapMessageFromJson(json)).toList();
+    return (response as List).map((json) => _mapMessageFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -455,7 +455,7 @@ class ChatRemoteDataSourceImpl implements ChatRemoteDataSource {
       updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at'] as String) : now,
       sender: sender,
       isRead: json['is_read'] as bool? ?? false,
-      readBy: List<String>.from(json['read_by'] ?? []),
+      readBy: List<String>.from((json['read_by'] ?? []) as List),
     );
   }
 }

@@ -292,7 +292,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
         .order('created_at');
 
     return (response as List)
-        .map((doc) => VerificationDocumentModel.fromJson(doc))
+        .map((doc) => VerificationDocumentModel.fromJson(doc as Map<String, dynamic>))
         .toList();
   }
 
@@ -305,7 +305,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
         .order('created_at');
 
     return (response as List)
-        .map((doc) => VerificationDocumentModel.fromJson(doc))
+        .map((doc) => VerificationDocumentModel.fromJson(doc as Map<String, dynamic>))
         .toList();
   }
 
@@ -410,7 +410,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
         .range(offset, offset + limit - 1);
 
     return (response as List)
-        .map((app) => InstructorApplicationModel.fromJson(app))
+        .map((app) => InstructorApplicationModel.fromJson(app as Map<String, dynamic>))
         .toList();
   }
 
@@ -427,7 +427,7 @@ class VerificationRemoteDataSourceImpl implements VerificationRemoteDataSource {
         .range(offset, offset + limit - 1);
 
     return (response as List)
-        .map((ver) => CompanyVerificationModel.fromJson(ver))
+        .map((ver) => CompanyVerificationModel.fromJson(ver as Map<String, dynamic>))
         .toList();
   }
 

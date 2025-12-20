@@ -45,7 +45,7 @@ class AdRemoteDataSourceImpl implements AdRemoteDataSource {
         .order('created_at', ascending: false)
         .limit(limit);
 
-    return (response as List).map((json) => _mapAdFromJson(json)).toList();
+    return (response as List).map((json) => _mapAdFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -218,7 +218,7 @@ class AdRemoteDataSourceImpl implements AdRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapAdFromJson(json)).toList();
+    return (response as List).map((json) => _mapAdFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -358,7 +358,7 @@ class AdRemoteDataSourceImpl implements AdRemoteDataSource {
       spent: (json['spent'] as num?)?.toDouble() ?? 0,
       costPerClick: (json['cost_per_click'] as num?)?.toDouble() ?? 0,
       costPerImpression: (json['cost_per_impression'] as num?)?.toDouble() ?? 0,
-      targetAudience: Map<String, dynamic>.from(json['target_audience'] ?? {}),
+      targetAudience: Map<String, dynamic>.from((json['target_audience'] ?? {}) as Map),
       priority: json['priority'] as int? ?? 0,
       advertiserName: json['advertiser']?['full_name'] as String?,
       advertiserLogo: json['advertiser']?['avatar_url'] as String?,

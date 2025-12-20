@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/profile_model.dart';
@@ -78,7 +80,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
     await _client.storage.from('profiles').upload(
           fileName,
-          filePath as dynamic,
+          File(filePath),
           fileOptions: const FileOptions(upsert: true),
         );
 
@@ -97,7 +99,7 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
 
     await _client.storage.from('profiles').upload(
           fileName,
-          filePath as dynamic,
+          File(filePath),
           fileOptions: const FileOptions(upsert: true),
         );
 

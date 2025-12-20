@@ -144,7 +144,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => JobModel.fromJson(json)).toList();
+    return (response as List).map((json) => JobModel.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -157,7 +157,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         .order('created_at', ascending: false)
         .limit(limit);
 
-    return (response as List).map((json) => JobModel.fromJson(json)).toList();
+    return (response as List).map((json) => JobModel.fromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -317,7 +317,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         .range(offset, offset + limit - 1);
 
     return (response as List)
-        .map((json) => JobApplicationModel.fromJson(json))
+        .map((json) => JobApplicationModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -342,7 +342,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
         .range(offset, offset + limit - 1);
 
     return (response as List)
-        .map((json) => JobApplicationModel.fromJson(json))
+        .map((json) => JobApplicationModel.fromJson(json as Map<String, dynamic>))
         .toList();
   }
 

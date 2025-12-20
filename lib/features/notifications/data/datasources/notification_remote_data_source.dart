@@ -45,7 +45,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-    return (response as List).map((json) => _mapNotificationFromJson(json)).toList();
+    return (response as List).map((json) => _mapNotificationFromJson(json as Map<String, dynamic>)).toList();
   }
 
   @override
@@ -167,7 +167,7 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
       type: NotificationType.fromString(json['type'] as String),
       title: json['title'] as String,
       message: json['message'] as String?,
-      data: Map<String, dynamic>.from(json['data'] ?? {}),
+      data: Map<String, dynamic>.from((json['data'] ?? {}) as Map),
       isRead: json['is_read'] as bool? ?? false,
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at'] as String) : null,
       createdAt: DateTime.parse(json['created_at'] as String),

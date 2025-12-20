@@ -143,8 +143,8 @@ class LoginRequiredPrompt extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppConstants.borderRadiusXLarge),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppConstants.borderRadiusExtraLarge),
         ),
       ),
       padding: EdgeInsets.only(
