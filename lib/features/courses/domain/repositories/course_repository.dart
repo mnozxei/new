@@ -140,6 +140,9 @@ abstract class CourseRepository {
   /// Get quiz for a lesson
   Future<QuizEntity?> getLessonQuiz(String lessonId);
 
+  /// Get final quiz for a course
+  Future<QuizEntity?> getFinalQuiz(String courseId);
+
   /// Create a quiz
   Future<QuizEntity> createQuiz(CreateQuizParams params);
 

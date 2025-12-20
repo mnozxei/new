@@ -154,6 +154,58 @@ class CertificateLoaded extends StudentState {
   List<Object?> get props => [certificateUrl, enrollment];
 }
 
+/// Lesson loaded with course context
+class LessonLoaded extends StudentState {
+  const LessonLoaded({
+    required this.lesson,
+    required this.course,
+    this.nextLesson,
+    this.previousLesson,
+    this.isLocked = false,
+  });
+
+  final LessonEntity lesson;
+  final CourseEntity course;
+  final LessonEntity? nextLesson;
+  final LessonEntity? previousLesson;
+  final bool isLocked;
+
+  @override
+  List<Object?> get props => [lesson, course, nextLesson, previousLesson, isLocked];
+}
+
+/// Final quiz loaded
+class FinalQuizLoaded extends StudentState {
+  const FinalQuizLoaded({
+    required this.quiz,
+    required this.course,
+    this.previousAttempt,
+  });
+
+  final QuizEntity quiz;
+  final CourseEntity course;
+  final QuizAttemptEntity? previousAttempt;
+
+  bool get canTake => previousAttempt == null || !previousAttempt!.passed;
+
+  @override
+  List<Object?> get props => [quiz, course, previousAttempt];
+}
+
+/// Certificate issued
+class CertificateIssued extends StudentState {
+  const CertificateIssued({
+    required this.certificate,
+    required this.pdfUrl,
+  });
+
+  final CertificateEntity certificate;
+  final String pdfUrl;
+
+  @override
+  List<Object?> get props => [certificate, pdfUrl];
+}
+
 /// Review being submitted
 class ReviewSubmitting extends StudentState {
   const ReviewSubmitting();

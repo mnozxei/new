@@ -138,6 +138,54 @@ class LoadCertificate extends StudentEvent {
   List<Object?> get props => [courseId];
 }
 
+/// Load a specific lesson with course context
+class LoadLesson extends StudentEvent {
+  const LoadLesson({
+    required this.courseId,
+    required this.lessonId,
+  });
+
+  final String courseId;
+  final String lessonId;
+
+  @override
+  List<Object?> get props => [courseId, lessonId];
+}
+
+/// Complete a lesson
+class CompleteLesson extends StudentEvent {
+  const CompleteLesson({
+    required this.courseId,
+    required this.lessonId,
+  });
+
+  final String courseId;
+  final String lessonId;
+
+  @override
+  List<Object?> get props => [courseId, lessonId];
+}
+
+/// Load final quiz for a course
+class LoadFinalQuiz extends StudentEvent {
+  const LoadFinalQuiz(this.courseId);
+
+  final String courseId;
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
+/// Issue certificate after course completion
+class IssueCertificate extends StudentEvent {
+  const IssueCertificate(this.courseId);
+
+  final String courseId;
+
+  @override
+  List<Object?> get props => [courseId];
+}
+
 /// Add a review for a course
 class AddCourseReview extends StudentEvent {
   const AddCourseReview({

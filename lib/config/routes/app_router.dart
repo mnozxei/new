@@ -230,6 +230,18 @@ abstract final class AppRouter {
                       );
                     },
                   ),
+                  GoRoute(
+                    path: 'final-quiz',
+                    name: RouteNames.finalQuizGate,
+                    builder: (context, state) {
+                      final courseId = state.pathParameters['courseId']!;
+                      return BlocProvider(
+                        create: (context) => getIt<student.StudentBloc>()
+                          ..add(student.LoadFinalQuiz(courseId)),
+                        child: QuizPage(courseId: courseId, isFinalQuiz: true),
+                      );
+                    },
+                  ),
                 ],
               ),
             ],

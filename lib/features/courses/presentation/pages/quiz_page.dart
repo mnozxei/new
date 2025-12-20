@@ -15,12 +15,14 @@ import '../bloc/student_bloc.dart';
 class QuizPage extends StatefulWidget {
   const QuizPage({
     super.key,
-    required this.quizId,
+    this.quizId,
     required this.courseId,
+    this.isFinalQuiz = false,
   });
 
-  final String quizId;
+  final String? quizId;
   final String courseId;
+  final bool isFinalQuiz;
 
   @override
   State<QuizPage> createState() => _QuizPageState();
@@ -38,7 +40,11 @@ class _QuizPageState extends State<QuizPage> {
   @override
   void initState() {
     super.initState();
-    context.read<StudentBloc>().add(StartQuiz(widget.quizId));
+    // For final quiz, the quiz is loaded via LoadFinalQuiz event from the router
+    // For lesson quizzes, we use the quizId
+    if (widget.quizId != null && !widget.isFinalQuiz) {
+      context.read<StudentBloc>().add(StartQuiz(widget.quizId!));
+    }
   }
 
   @override
@@ -172,6 +178,9 @@ class _QuizPageState extends State<QuizPage> {
           if (state.quiz.timeLimitMinutes != null) {
             _startTimer(state.quiz.timeLimitMinutes!);
           }
+        } else if (state is FinalQuizLoaded) {
+          // Start the final quiz attempt
+          context.read<StudentBloc>().add(StartQuiz(state.quiz.id));
         } else if (state is QuizCompleted) {
           setState(() => _isSubmitting = false);
           _showResultDialog(state.result);
@@ -538,10 +547,12 @@ class _QuizPageState extends State<QuizPage> {
   void _showResultDialog(QuizAttemptEntity result) {
     _timer?.cancel();
 
+    final isFinalQuiz = widget.isFinalQuiz;
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.borderRadiusLarge),
         ),
@@ -564,7 +575,11 @@ class _QuizPageState extends State<QuizPage> {
             ),
             const SizedBox(height: AppConstants.spacingMedium),
             Text(
-              result.passed ? 'أحسنت! نجحت في الاختبار' : 'للأسف، لم تجتز الاختبار',
+              result.passed
+                  ? isFinalQuiz
+                      ? 'مبروك! أكملت الدورة بنجاح'
+                      : 'أحسنت! نجحت في الاختبار'
+                  : 'للأسف، لم تجتز الاختبار',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -580,7 +595,7 @@ class _QuizPageState extends State<QuizPage> {
               child: Column(
                 children: [
                   Text(
-                    '${result.score}%',
+                    '${result.score.toInt()}%',
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: result.passed ? AppColors.success : AppColors.error,
@@ -602,6 +617,16 @@ class _QuizPageState extends State<QuizPage> {
                     color: AppColors.textSecondaryLight,
                   ),
             ),
+            if (isFinalQuiz && result.passed) ...[
+              const SizedBox(height: AppConstants.spacingMedium),
+              const Text(
+                'يمكنك الآن الحصول على شهادتك',
+                style: TextStyle(
+                  color: AppColors.success,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -609,10 +634,21 @@ class _QuizPageState extends State<QuizPage> {
             width: double.infinity,
             child: FilledButton(
               onPressed: () {
-                Navigator.pop(context);
-                context.pop();
+                Navigator.pop(dialogContext);
+                if (isFinalQuiz && result.passed) {
+                  // Navigate to certificate page
+                  context.go('/courses/${widget.courseId}/certificate');
+                } else {
+                  context.pop();
+                }
               },
-              child: Text(result.passed ? 'متابعة' : 'العودة للدورة'),
+              child: Text(
+                isFinalQuiz && result.passed
+                    ? 'عرض الشهادة'
+                    : result.passed
+                        ? 'متابعة'
+                        : 'إعادة المحاولة',
+              ),
             ),
           ),
         ],
