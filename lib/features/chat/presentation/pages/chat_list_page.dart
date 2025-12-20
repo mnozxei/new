@@ -349,7 +349,7 @@ class _ChatItem extends StatelessWidget {
                       : null,
                   child: conversation.avatarUrl == null
                       ? Text(
-                          _getInitials(conversation.name),
+                          _getInitials(conversation.displayName),
                           style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
                         )
                       : null,
@@ -379,7 +379,7 @@ class _ChatItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.name,
+                          conversation.displayName,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
                           ),

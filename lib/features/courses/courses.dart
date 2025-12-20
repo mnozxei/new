@@ -13,8 +13,8 @@ export 'domain/repositories/course_repository.dart';
 
 // Presentation layer - BLoCs
 export 'presentation/bloc/course_bloc.dart';
-export 'presentation/bloc/instructor_bloc.dart';
-export 'presentation/bloc/student_bloc.dart';
+export 'presentation/bloc/instructor_bloc.dart' hide UpdateCourse;
+export 'presentation/bloc/student_bloc.dart' hide EnrollInCourse;
 
 // Presentation layer - Pages
 export 'presentation/pages/course_details_page.dart';

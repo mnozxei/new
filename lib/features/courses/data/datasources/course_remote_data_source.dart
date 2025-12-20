@@ -516,7 +516,7 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
     final enrollment = await _supabase
         .from('enrollments')
         .select('id')
-        .eq('course_id', lesson['course_id'])
+        .eq('course_id', lesson['course_id'] as String)
         .eq('user_id', _currentUserId)
         .single();
 
