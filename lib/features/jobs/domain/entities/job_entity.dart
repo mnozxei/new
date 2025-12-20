@@ -19,6 +19,69 @@ enum JobType {
   }
 }
 
+enum JobStatus {
+  draft('draft', 'مسودة'),
+  published('published', 'منشور'),
+  closed('closed', 'مغلق'),
+  archived('archived', 'مؤرشف'),
+  hidden('hidden', 'مخفي');
+
+  const JobStatus(this.value, this.label);
+  final String value;
+  final String label;
+
+  static JobStatus fromString(String value) {
+    return JobStatus.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => JobStatus.draft,
+    );
+  }
+
+  bool get isVisible => this == JobStatus.published;
+  bool get canEdit => this == JobStatus.draft || this == JobStatus.published;
+  bool get canPublish => this == JobStatus.draft;
+  bool get canClose => this == JobStatus.published;
+}
+
+enum ExperienceLevel {
+  entry('entry', 'مبتدئ'),
+  junior('junior', 'خبرة بسيطة'),
+  mid('mid', 'متوسط'),
+  senior('senior', 'خبير'),
+  lead('lead', 'قائد فريق'),
+  manager('manager', 'مدير'),
+  director('director', 'مدير تنفيذي'),
+  executive('executive', 'تنفيذي أعلى');
+
+  const ExperienceLevel(this.value, this.label);
+  final String value;
+  final String label;
+
+  static ExperienceLevel fromString(String value) {
+    return ExperienceLevel.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => ExperienceLevel.mid,
+    );
+  }
+}
+
+enum LocationType {
+  onsite('onsite', 'حضوري'),
+  remote('remote', 'عن بعد'),
+  hybrid('hybrid', 'هجين');
+
+  const LocationType(this.value, this.label);
+  final String value;
+  final String label;
+
+  static LocationType fromString(String value) {
+    return LocationType.values.firstWhere(
+      (e) => e.value == value,
+      orElse: () => LocationType.onsite,
+    );
+  }
+}
+
 enum ApplicationStatus {
   pending('pending', 'قيد المراجعة'),
   reviewing('reviewing', 'تحت المراجعة'),
@@ -65,7 +128,11 @@ class JobEntity extends Equatable {
     this.requirements,
     this.responsibilities,
     required this.jobType,
+    this.status = JobStatus.draft,
+    this.experienceLevel = ExperienceLevel.mid,
+    this.locationType = LocationType.onsite,
     this.location,
+    this.city,
     this.isRemote = false,
     this.salaryMin,
     this.salaryMax,
@@ -76,6 +143,7 @@ class JobEntity extends Equatable {
     this.educationLevel,
     this.skillsRequired = const [],
     this.benefits = const [],
+    this.tags = const [],
     required this.vacancyCount,
     this.acceptedCount = 0,
     this.applicationDeadline,
@@ -83,9 +151,12 @@ class JobEntity extends Equatable {
     this.isFeatured = false,
     this.viewCount = 0,
     this.applicationCount = 0,
+    this.publishedAt,
+    this.closedAt,
     required this.createdAt,
     required this.updatedAt,
     this.company,
+    this.isSaved = false,
   });
 
   final String id;
@@ -96,7 +167,11 @@ class JobEntity extends Equatable {
   final String? requirements;
   final String? responsibilities;
   final JobType jobType;
+  final JobStatus status;
+  final ExperienceLevel experienceLevel;
+  final LocationType locationType;
   final String? location;
+  final String? city;
   final bool isRemote;
   final double? salaryMin;
   final double? salaryMax;
@@ -107,6 +182,7 @@ class JobEntity extends Equatable {
   final String? educationLevel;
   final List<String> skillsRequired;
   final List<String> benefits;
+  final List<String> tags;
   final int vacancyCount;
   final int acceptedCount;
   final DateTime? applicationDeadline;
@@ -114,9 +190,12 @@ class JobEntity extends Equatable {
   final bool isFeatured;
   final int viewCount;
   final int applicationCount;
+  final DateTime? publishedAt;
+  final DateTime? closedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
   final CompanyInfo? company;
+  final bool isSaved;
 
   int get remainingVacancies => vacancyCount - acceptedCount;
   bool get hasAvailableVacancies => remainingVacancies > 0;
@@ -156,7 +235,11 @@ class JobEntity extends Equatable {
     String? requirements,
     String? responsibilities,
     JobType? jobType,
+    JobStatus? status,
+    ExperienceLevel? experienceLevel,
+    LocationType? locationType,
     String? location,
+    String? city,
     bool? isRemote,
     double? salaryMin,
     double? salaryMax,
@@ -167,6 +250,7 @@ class JobEntity extends Equatable {
     String? educationLevel,
     List<String>? skillsRequired,
     List<String>? benefits,
+    List<String>? tags,
     int? vacancyCount,
     int? acceptedCount,
     DateTime? applicationDeadline,
@@ -174,9 +258,12 @@ class JobEntity extends Equatable {
     bool? isFeatured,
     int? viewCount,
     int? applicationCount,
+    DateTime? publishedAt,
+    DateTime? closedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
     CompanyInfo? company,
+    bool? isSaved,
   }) {
     return JobEntity(
       id: id ?? this.id,
@@ -187,7 +274,11 @@ class JobEntity extends Equatable {
       requirements: requirements ?? this.requirements,
       responsibilities: responsibilities ?? this.responsibilities,
       jobType: jobType ?? this.jobType,
+      status: status ?? this.status,
+      experienceLevel: experienceLevel ?? this.experienceLevel,
+      locationType: locationType ?? this.locationType,
       location: location ?? this.location,
+      city: city ?? this.city,
       isRemote: isRemote ?? this.isRemote,
       salaryMin: salaryMin ?? this.salaryMin,
       salaryMax: salaryMax ?? this.salaryMax,
@@ -198,6 +289,7 @@ class JobEntity extends Equatable {
       educationLevel: educationLevel ?? this.educationLevel,
       skillsRequired: skillsRequired ?? this.skillsRequired,
       benefits: benefits ?? this.benefits,
+      tags: tags ?? this.tags,
       vacancyCount: vacancyCount ?? this.vacancyCount,
       acceptedCount: acceptedCount ?? this.acceptedCount,
       applicationDeadline: applicationDeadline ?? this.applicationDeadline,
@@ -205,9 +297,12 @@ class JobEntity extends Equatable {
       isFeatured: isFeatured ?? this.isFeatured,
       viewCount: viewCount ?? this.viewCount,
       applicationCount: applicationCount ?? this.applicationCount,
+      publishedAt: publishedAt ?? this.publishedAt,
+      closedAt: closedAt ?? this.closedAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       company: company ?? this.company,
+      isSaved: isSaved ?? this.isSaved,
     );
   }
 
@@ -221,7 +316,11 @@ class JobEntity extends Equatable {
         requirements,
         responsibilities,
         jobType,
+        status,
+        experienceLevel,
+        locationType,
         location,
+        city,
         isRemote,
         salaryMin,
         salaryMax,
@@ -232,6 +331,7 @@ class JobEntity extends Equatable {
         educationLevel,
         skillsRequired,
         benefits,
+        tags,
         vacancyCount,
         acceptedCount,
         applicationDeadline,
@@ -239,9 +339,12 @@ class JobEntity extends Equatable {
         isFeatured,
         viewCount,
         applicationCount,
+        publishedAt,
+        closedAt,
         createdAt,
         updatedAt,
         company,
+        isSaved,
       ];
 }
 

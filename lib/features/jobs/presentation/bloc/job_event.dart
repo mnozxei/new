@@ -240,3 +240,56 @@ class SearchJobs extends JobEvent {
   @override
   List<Object?> get props => [query, jobType, location, isRemote, limit];
 }
+
+class PublishJob extends JobEvent {
+  const PublishJob({required this.jobId});
+
+  final String jobId;
+
+  @override
+  List<Object?> get props => [jobId];
+}
+
+class CloseJob extends JobEvent {
+  const CloseJob({required this.jobId});
+
+  final String jobId;
+
+  @override
+  List<Object?> get props => [jobId];
+}
+
+class ArchiveJob extends JobEvent {
+  const ArchiveJob({required this.jobId});
+
+  final String jobId;
+
+  @override
+  List<Object?> get props => [jobId];
+}
+
+class LoadCompanyJobs extends JobEvent {
+  const LoadCompanyJobs({
+    required this.companyId,
+    this.status,
+    this.limit = 20,
+    this.offset = 0,
+  });
+
+  final String companyId;
+  final JobStatus? status;
+  final int limit;
+  final int offset;
+
+  @override
+  List<Object?> get props => [companyId, status, limit, offset];
+}
+
+class LoadApplicationDetails extends JobEvent {
+  const LoadApplicationDetails({required this.applicationId});
+
+  final String applicationId;
+
+  @override
+  List<Object?> get props => [applicationId];
+}

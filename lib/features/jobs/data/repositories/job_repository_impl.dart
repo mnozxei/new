@@ -11,22 +11,47 @@ class JobRepositoryImpl implements JobRepository {
   Future<List<JobEntity>> getJobs({
     String? companyId,
     JobType? jobType,
+    JobStatus? status,
+    ExperienceLevel? experienceLevel,
+    LocationType? locationType,
+    String? city,
     String? location,
     bool? isRemote,
     int? minExperience,
     int? maxExperience,
     String? searchQuery,
+    List<String>? tags,
     int limit = 20,
     int offset = 0,
   }) {
     return remoteDataSource.getJobs(
       companyId: companyId,
       jobType: jobType,
+      status: status,
+      experienceLevel: experienceLevel,
+      locationType: locationType,
+      city: city,
       location: location,
       isRemote: isRemote,
       minExperience: minExperience,
       maxExperience: maxExperience,
       searchQuery: searchQuery,
+      tags: tags,
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  @override
+  Future<List<JobEntity>> getCompanyJobs({
+    required String companyId,
+    JobStatus? status,
+    int limit = 20,
+    int offset = 0,
+  }) {
+    return remoteDataSource.getCompanyJobs(
+      companyId: companyId,
+      status: status,
       limit: limit,
       offset: offset,
     );
@@ -63,6 +88,21 @@ class JobRepositoryImpl implements JobRepository {
   }
 
   @override
+  Future<JobEntity> publishJob(String id) {
+    return remoteDataSource.publishJob(id);
+  }
+
+  @override
+  Future<JobEntity> closeJob(String id) {
+    return remoteDataSource.closeJob(id);
+  }
+
+  @override
+  Future<JobEntity> archiveJob(String id) {
+    return remoteDataSource.archiveJob(id);
+  }
+
+  @override
   Future<bool> hasApplied(String jobId) {
     return remoteDataSource.hasApplied(jobId);
   }
@@ -93,6 +133,11 @@ class JobRepositoryImpl implements JobRepository {
       limit: limit,
       offset: offset,
     );
+  }
+
+  @override
+  Future<JobApplicationEntity?> getApplicationById(String applicationId) {
+    return remoteDataSource.getApplicationById(applicationId);
   }
 
   @override

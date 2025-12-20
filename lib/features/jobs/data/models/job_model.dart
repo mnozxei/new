@@ -10,7 +10,11 @@ class JobModel extends JobEntity {
     super.requirements,
     super.responsibilities,
     required super.jobType,
+    super.status,
+    super.experienceLevel,
+    super.locationType,
     super.location,
+    super.city,
     super.isRemote,
     super.salaryMin,
     super.salaryMax,
@@ -21,6 +25,7 @@ class JobModel extends JobEntity {
     super.educationLevel,
     super.skillsRequired,
     super.benefits,
+    super.tags,
     required super.vacancyCount,
     super.acceptedCount,
     super.applicationDeadline,
@@ -28,9 +33,12 @@ class JobModel extends JobEntity {
     super.isFeatured,
     super.viewCount,
     super.applicationCount,
+    super.publishedAt,
+    super.closedAt,
     required super.createdAt,
     required super.updatedAt,
     super.company,
+    super.isSaved,
   });
 
   factory JobModel.fromJson(Map<String, dynamic> json) {
@@ -54,7 +62,17 @@ class JobModel extends JobEntity {
       requirements: json['requirements'] as String?,
       responsibilities: json['responsibilities'] as String?,
       jobType: JobType.fromString(json['job_type'] as String),
+      status: json['status'] != null
+          ? JobStatus.fromString(json['status'] as String)
+          : JobStatus.published,
+      experienceLevel: json['experience_level'] != null
+          ? ExperienceLevel.fromString(json['experience_level'] as String)
+          : ExperienceLevel.mid,
+      locationType: json['location_type'] != null
+          ? LocationType.fromString(json['location_type'] as String)
+          : LocationType.onsite,
       location: json['location'] as String?,
+      city: json['city'] as String?,
       isRemote: json['is_remote'] as bool? ?? false,
       salaryMin: (json['salary_min'] as num?)?.toDouble(),
       salaryMax: (json['salary_max'] as num?)?.toDouble(),
@@ -71,6 +89,10 @@ class JobModel extends JobEntity {
               ?.map((e) => e as String)
               .toList() ??
           [],
+      tags: (json['tags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
       vacancyCount: json['vacancy_count'] as int? ?? 1,
       acceptedCount: json['accepted_count'] as int? ?? 0,
       applicationDeadline: json['application_deadline'] != null
@@ -80,9 +102,16 @@ class JobModel extends JobEntity {
       isFeatured: json['is_featured'] as bool? ?? false,
       viewCount: json['view_count'] as int? ?? 0,
       applicationCount: json['application_count'] as int? ?? 0,
+      publishedAt: json['published_at'] != null
+          ? DateTime.parse(json['published_at'] as String)
+          : null,
+      closedAt: json['closed_at'] != null
+          ? DateTime.parse(json['closed_at'] as String)
+          : null,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       company: company,
+      isSaved: json['is_saved'] as bool? ?? false,
     );
   }
 
@@ -96,7 +125,11 @@ class JobModel extends JobEntity {
       'requirements': requirements,
       'responsibilities': responsibilities,
       'job_type': jobType.value,
+      'status': status.value,
+      'experience_level': experienceLevel.value,
+      'location_type': locationType.value,
       'location': location,
+      'city': city,
       'is_remote': isRemote,
       'salary_min': salaryMin,
       'salary_max': salaryMax,
@@ -107,6 +140,7 @@ class JobModel extends JobEntity {
       'education_level': educationLevel,
       'skills_required': skillsRequired,
       'benefits': benefits,
+      'tags': tags,
       'vacancy_count': vacancyCount,
       'accepted_count': acceptedCount,
       'application_deadline': applicationDeadline?.toIso8601String(),
@@ -114,6 +148,8 @@ class JobModel extends JobEntity {
       'is_featured': isFeatured,
       'view_count': viewCount,
       'application_count': applicationCount,
+      'published_at': publishedAt?.toIso8601String(),
+      'closed_at': closedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };

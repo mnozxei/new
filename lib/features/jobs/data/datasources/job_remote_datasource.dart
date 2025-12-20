@@ -10,11 +10,22 @@ abstract class JobRemoteDataSource {
   Future<List<JobModel>> getJobs({
     String? companyId,
     JobType? jobType,
+    JobStatus? status,
+    ExperienceLevel? experienceLevel,
+    LocationType? locationType,
+    String? city,
     String? location,
     bool? isRemote,
     int? minExperience,
     int? maxExperience,
     String? searchQuery,
+    List<String>? tags,
+    int limit = 20,
+    int offset = 0,
+  });
+  Future<List<JobModel>> getCompanyJobs({
+    required String companyId,
+    JobStatus? status,
     int limit = 20,
     int offset = 0,
   });
@@ -24,6 +35,9 @@ abstract class JobRemoteDataSource {
   Future<JobModel> updateJob(String id, UpdateJobParams params);
   Future<void> deleteJob(String id);
   Future<JobModel> toggleJobActive(String id);
+  Future<JobModel> publishJob(String id);
+  Future<JobModel> closeJob(String id);
+  Future<JobModel> archiveJob(String id);
   Future<bool> hasApplied(String jobId);
   Future<JobApplicationModel?> getMyApplication(String jobId);
   Future<JobApplicationModel> applyToJob(ApplyToJobParams params);
@@ -33,6 +47,7 @@ abstract class JobRemoteDataSource {
     int limit = 20,
     int offset = 0,
   });
+  Future<JobApplicationModel?> getApplicationById(String applicationId);
   Future<List<JobApplicationModel>> getJobApplications(
     String jobId, {
     ApplicationStatus? status,
@@ -64,6 +79,13 @@ abstract class JobRemoteDataSource {
   Future<bool> isJobSaved(String jobId);
   Future<List<JobModel>> getSavedJobs();
   Future<void> incrementViewCount(String jobId);
+  Future<void> addApplicationNote({
+    required String applicationId,
+    required String content,
+    bool isPrivate = true,
+  });
+  Future<List<ApplicationNoteModel>> getApplicationNotes(String applicationId);
+  Future<List<ApplicationStatusHistoryModel>> getApplicationStatusHistory(String applicationId);
 }
 
 class JobRemoteDataSourceImpl implements JobRemoteDataSource {
@@ -71,7 +93,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
 
   final SupabaseClient supabase;
 
-  String get _userId => supabase.auth.currentUser!.id;
+  String? get _userId => supabase.auth.currentUser?.id;
 
   static const String _jobsSelect = '''
     *,
@@ -107,18 +129,28 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   Future<List<JobModel>> getJobs({
     String? companyId,
     JobType? jobType,
+    JobStatus? status,
+    ExperienceLevel? experienceLevel,
+    LocationType? locationType,
+    String? city,
     String? location,
     bool? isRemote,
     int? minExperience,
     int? maxExperience,
     String? searchQuery,
+    List<String>? tags,
     int limit = 20,
     int offset = 0,
   }) async {
-    var query = supabase
-        .from('jobs')
-        .select(_jobsSelect)
-        .eq('is_active', true);
+    var query = supabase.from('jobs').select(_jobsSelect);
+
+    // Default: only show published jobs unless specified
+    if (status != null) {
+      query = query.eq('status', status.value);
+    } else {
+      // Show published or active (for backward compatibility)
+      query = query.or('status.eq.published,is_active.eq.true');
+    }
 
     if (companyId != null) {
       query = query.eq('company_id', companyId);
@@ -126,7 +158,16 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     if (jobType != null) {
       query = query.eq('job_type', jobType.value);
     }
-    if (location != null) {
+    if (experienceLevel != null) {
+      query = query.eq('experience_level', experienceLevel.value);
+    }
+    if (locationType != null) {
+      query = query.eq('location_type', locationType.value);
+    }
+    if (city != null && city.isNotEmpty) {
+      query = query.ilike('city', '%$city%');
+    }
+    if (location != null && location.isNotEmpty) {
       query = query.ilike('location', '%$location%');
     }
     if (isRemote != null) {
@@ -134,6 +175,9 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     }
     if (minExperience != null) {
       query = query.gte('experience_years_min', minExperience);
+    }
+    if (tags != null && tags.isNotEmpty) {
+      query = query.overlaps('tags', tags);
     }
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.or('title.ilike.%$searchQuery%,description.ilike.%$searchQuery%');
@@ -148,11 +192,34 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   }
 
   @override
+  Future<List<JobModel>> getCompanyJobs({
+    required String companyId,
+    JobStatus? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    var query = supabase
+        .from('jobs')
+        .select(_jobsSelect)
+        .eq('company_id', companyId);
+
+    if (status != null) {
+      query = query.eq('status', status.value);
+    }
+
+    final response = await query
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+
+    return (response as List).map((json) => JobModel.fromJson(json)).toList();
+  }
+
+  @override
   Future<List<JobModel>> getFeaturedJobs({int limit = 10}) async {
     final response = await supabase
         .from('jobs')
         .select(_jobsSelect)
-        .eq('is_active', true)
+        .or('status.eq.published,is_active.eq.true')
         .eq('is_featured', true)
         .order('created_at', ascending: false)
         .limit(limit);
@@ -177,6 +244,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     final data = {
       ...params.toJson(),
       'posted_by': _userId,
+      'status': params.isDraft ? 'draft' : 'published',
+      if (!params.isDraft) 'published_at': DateTime.now().toIso8601String(),
     };
 
     final response = await supabase
@@ -221,12 +290,61 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
   }
 
   @override
+  Future<JobModel> publishJob(String id) async {
+    final response = await supabase
+        .from('jobs')
+        .update({
+          'status': 'published',
+          'is_active': true,
+          'published_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', id)
+        .select(_jobsSelect)
+        .single();
+
+    return JobModel.fromJson(response);
+  }
+
+  @override
+  Future<JobModel> closeJob(String id) async {
+    final response = await supabase
+        .from('jobs')
+        .update({
+          'status': 'closed',
+          'is_active': false,
+          'closed_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', id)
+        .select(_jobsSelect)
+        .single();
+
+    return JobModel.fromJson(response);
+  }
+
+  @override
+  Future<JobModel> archiveJob(String id) async {
+    final response = await supabase
+        .from('jobs')
+        .update({
+          'status': 'archived',
+          'is_active': false,
+        })
+        .eq('id', id)
+        .select(_jobsSelect)
+        .single();
+
+    return JobModel.fromJson(response);
+  }
+
+  @override
   Future<bool> hasApplied(String jobId) async {
+    if (_userId == null) return false;
+
     final response = await supabase
         .from('job_applications')
         .select('id')
         .eq('job_id', jobId)
-        .eq('user_id', _userId)
+        .eq('user_id', _userId!)
         .maybeSingle();
 
     return response != null;
@@ -234,11 +352,25 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
 
   @override
   Future<JobApplicationModel?> getMyApplication(String jobId) async {
+    if (_userId == null) return null;
+
     final response = await supabase
         .from('job_applications')
         .select(_applicationSelect)
         .eq('job_id', jobId)
-        .eq('user_id', _userId)
+        .eq('user_id', _userId!)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return JobApplicationModel.fromJson(response);
+  }
+
+  @override
+  Future<JobApplicationModel?> getApplicationById(String applicationId) async {
+    final response = await supabase
+        .from('job_applications')
+        .select(_applicationSelect)
+        .eq('id', applicationId)
         .maybeSingle();
 
     if (response == null) return null;
@@ -247,6 +379,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
 
   @override
   Future<JobApplicationModel> applyToJob(ApplyToJobParams params) async {
+    if (_userId == null) throw Exception('User not authenticated');
+
     String? resumeUrl;
     if (params.resumeFile != null) {
       final fileName = 'resumes/$_userId/${params.jobId}_${DateTime.now().millisecondsSinceEpoch}.${params.resumeFile!.path.split('.').last}';
@@ -303,10 +437,12 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
     int limit = 20,
     int offset = 0,
   }) async {
+    if (_userId == null) return [];
+
     var query = supabase
         .from('job_applications')
         .select(_applicationSelect)
-        .eq('user_id', _userId);
+        .eq('user_id', _userId!);
 
     if (status != null) {
       query = query.eq('status', status.value);
@@ -431,6 +567,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
 
   @override
   Future<void> saveJob(String jobId) async {
+    if (_userId == null) throw Exception('User not authenticated');
+
     await supabase.from('saved_jobs').insert({
       'job_id': jobId,
       'user_id': _userId,
@@ -439,20 +577,24 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
 
   @override
   Future<void> unsaveJob(String jobId) async {
+    if (_userId == null) return;
+
     await supabase
         .from('saved_jobs')
         .delete()
         .eq('job_id', jobId)
-        .eq('user_id', _userId);
+        .eq('user_id', _userId!);
   }
 
   @override
   Future<bool> isJobSaved(String jobId) async {
+    if (_userId == null) return false;
+
     final response = await supabase
         .from('saved_jobs')
         .select('id')
         .eq('job_id', jobId)
-        .eq('user_id', _userId)
+        .eq('user_id', _userId!)
         .maybeSingle();
 
     return response != null;
@@ -460,6 +602,8 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
 
   @override
   Future<List<JobModel>> getSavedJobs() async {
+    if (_userId == null) return [];
+
     final response = await supabase
         .from('saved_jobs')
         .select('''
@@ -468,7 +612,7 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
             $_jobsSelect
           )
         ''')
-        .eq('user_id', _userId)
+        .eq('user_id', _userId!)
         .order('created_at', ascending: false);
 
     return (response as List)
@@ -483,5 +627,154 @@ class JobRemoteDataSourceImpl implements JobRemoteDataSource {
       'row_id': jobId,
       'column_name': 'view_count',
     });
+  }
+
+  @override
+  Future<void> addApplicationNote({
+    required String applicationId,
+    required String content,
+    bool isPrivate = true,
+  }) async {
+    if (_userId == null) throw Exception('User not authenticated');
+
+    await supabase.from('job_application_notes').insert({
+      'application_id': applicationId,
+      'author_id': _userId,
+      'content': content,
+      'is_private': isPrivate,
+    });
+  }
+
+  @override
+  Future<List<ApplicationNoteModel>> getApplicationNotes(String applicationId) async {
+    final response = await supabase
+        .from('job_application_notes')
+        .select('''
+          *,
+          profiles:author_id (
+            id,
+            full_name,
+            avatar_url
+          )
+        ''')
+        .eq('application_id', applicationId)
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => ApplicationNoteModel.fromJson(json))
+        .toList();
+  }
+
+  @override
+  Future<List<ApplicationStatusHistoryModel>> getApplicationStatusHistory(String applicationId) async {
+    final response = await supabase
+        .from('job_application_status_history')
+        .select('''
+          *,
+          profiles:changed_by (
+            id,
+            full_name,
+            avatar_url
+          )
+        ''')
+        .eq('application_id', applicationId)
+        .order('created_at', ascending: false);
+
+    return (response as List)
+        .map((json) => ApplicationStatusHistoryModel.fromJson(json))
+        .toList();
+  }
+}
+
+/// Application note model
+class ApplicationNoteModel {
+  const ApplicationNoteModel({
+    required this.id,
+    required this.applicationId,
+    required this.authorId,
+    required this.content,
+    required this.isPrivate,
+    required this.createdAt,
+    this.authorName,
+    this.authorAvatar,
+  });
+
+  final String id;
+  final String applicationId;
+  final String authorId;
+  final String content;
+  final bool isPrivate;
+  final DateTime createdAt;
+  final String? authorName;
+  final String? authorAvatar;
+
+  factory ApplicationNoteModel.fromJson(Map<String, dynamic> json) {
+    String? authorName;
+    String? authorAvatar;
+    if (json['profiles'] != null) {
+      final p = json['profiles'] as Map<String, dynamic>;
+      authorName = p['full_name'] as String?;
+      authorAvatar = p['avatar_url'] as String?;
+    }
+
+    return ApplicationNoteModel(
+      id: json['id'] as String,
+      applicationId: json['application_id'] as String,
+      authorId: json['author_id'] as String,
+      content: json['content'] as String,
+      isPrivate: json['is_private'] as bool? ?? true,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      authorName: authorName,
+      authorAvatar: authorAvatar,
+    );
+  }
+}
+
+/// Application status history model
+class ApplicationStatusHistoryModel {
+  const ApplicationStatusHistoryModel({
+    required this.id,
+    required this.applicationId,
+    this.fromStatus,
+    required this.toStatus,
+    this.changedBy,
+    this.notes,
+    required this.createdAt,
+    this.changedByName,
+    this.changedByAvatar,
+  });
+
+  final String id;
+  final String applicationId;
+  final ApplicationStatus? fromStatus;
+  final ApplicationStatus toStatus;
+  final String? changedBy;
+  final String? notes;
+  final DateTime createdAt;
+  final String? changedByName;
+  final String? changedByAvatar;
+
+  factory ApplicationStatusHistoryModel.fromJson(Map<String, dynamic> json) {
+    String? changedByName;
+    String? changedByAvatar;
+    if (json['profiles'] != null) {
+      final p = json['profiles'] as Map<String, dynamic>;
+      changedByName = p['full_name'] as String?;
+      changedByAvatar = p['avatar_url'] as String?;
+    }
+
+    return ApplicationStatusHistoryModel(
+      id: json['id'] as String,
+      applicationId: json['application_id'] as String,
+      fromStatus: json['from_status'] != null
+          ? ApplicationStatus.fromString(json['from_status'] as String)
+          : null,
+      toStatus: ApplicationStatus.fromString(json['to_status'] as String),
+      changedBy: json['changed_by'] as String?,
+      notes: json['notes'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      changedByName: changedByName,
+      changedByAvatar: changedByAvatar,
+    );
   }
 }

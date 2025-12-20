@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../../config/injection/injection.dart';
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -13,8 +16,10 @@ import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/verified_badge.dart';
+import '../../domain/entities/job_entity.dart';
+import '../bloc/job_bloc.dart';
 
-class JobDetailsPage extends StatefulWidget {
+class JobDetailsPage extends StatelessWidget {
   const JobDetailsPage({
     required this.jobId,
     super.key,
@@ -23,12 +28,25 @@ class JobDetailsPage extends StatefulWidget {
   final String jobId;
 
   @override
-  State<JobDetailsPage> createState() => _JobDetailsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<JobBloc>()..add(LoadJobDetails(jobId: jobId)),
+      child: _JobDetailsContent(jobId: jobId),
+    );
+  }
 }
 
-class _JobDetailsPageState extends State<JobDetailsPage> {
+class _JobDetailsContent extends StatefulWidget {
+  const _JobDetailsContent({required this.jobId});
+
+  final String jobId;
+
+  @override
+  State<_JobDetailsContent> createState() => _JobDetailsContentState();
+}
+
+class _JobDetailsContentState extends State<_JobDetailsContent> {
   final ImpressionsService _impressionsService = ImpressionsService();
-  bool _isSaved = false;
 
   @override
   void initState() {
@@ -47,55 +65,252 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
   void _handleSave(BuildContext context) {
     if (_isAuthenticated) {
-      setState(() => _isSaved = !_isSaved);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(_isSaved ? 'تم حفظ الوظيفة' : 'تم إزالة الحفظ'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
+      context.read<JobBloc>().add(ToggleSaveJob(jobId: widget.jobId));
     } else {
       LoginRequiredDialog.showForAction(context, 'save');
     }
   }
 
-  void _handleShare() {
+  void _handleShare(JobEntity job) {
     Share.share(
-      'تقدم لهذه الوظيفة على تماد هب\nhttps://tamadhub.com/jobs/${widget.jobId}',
+      'تقدم لوظيفة ${job.title} في ${job.company?.name ?? 'شركة'}\nhttps://tamadhub.com/jobs/${widget.jobId}',
       subject: 'فرصة عمل على تماد هب',
     );
   }
 
-  void _handleApply(BuildContext context) {
-    if (_isAuthenticated) {
-      context.pushNamed(RouteNames.jobApply, pathParameters: {'id': widget.jobId});
-    } else {
+  void _handleApply(BuildContext context, JobDetailsLoaded state) {
+    if (!_isAuthenticated) {
       LoginRequiredDialog.showForAction(context, 'apply');
+      return;
     }
+
+    if (state.hasApplied) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لقد تقدمت لهذه الوظيفة مسبقاً')),
+      );
+      return;
+    }
+
+    if (!state.job.canApply) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            state.job.isExpired
+                ? 'انتهى موعد التقديم'
+                : 'لا تتوفر شواغر حالياً',
+          ),
+        ),
+      );
+      return;
+    }
+
+    context.pushNamed(RouteNames.jobApply, pathParameters: {'id': widget.jobId});
   }
 
-  void _handleViewCompany(BuildContext context) {
-    context.push('/companies/company-${widget.jobId}');
+  void _handleViewCompany(BuildContext context, String companyId) {
+    context.push('/companies/$companyId');
   }
 
   @override
   Widget build(BuildContext context) {
-    return ResponsiveLayout(
-      mobile: _MobileJobDetails(
-        jobId: widget.jobId,
-        isSaved: _isSaved,
-        onSave: () => _handleSave(context),
-        onShare: _handleShare,
-        onApply: () => _handleApply(context),
-        onViewCompany: () => _handleViewCompany(context),
+    return BlocConsumer<JobBloc, JobState>(
+      listener: (context, state) {
+        if (state is JobSaveToggled) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.isSaved ? 'تم حفظ الوظيفة' : 'تم إزالة الحفظ'),
+              duration: const Duration(seconds: 1),
+            ),
+          );
+          // Reload job details to update saved state
+          context.read<JobBloc>().add(LoadJobDetails(jobId: widget.jobId));
+        }
+      },
+      builder: (context, state) {
+        if (state is JobLoading) {
+          return _buildLoadingState(context);
+        }
+
+        if (state is JobError) {
+          return _buildErrorState(context, state.message);
+        }
+
+        if (state is JobDetailsLoaded) {
+          return ResponsiveLayout(
+            mobile: _MobileJobDetails(
+              job: state.job,
+              hasApplied: state.hasApplied,
+              isSaved: state.isSaved,
+              myApplication: state.myApplication,
+              onSave: () => _handleSave(context),
+              onShare: () => _handleShare(state.job),
+              onApply: () => _handleApply(context, state),
+              onViewCompany: () => _handleViewCompany(context, state.job.companyId),
+            ),
+            desktop: _DesktopJobDetails(
+              job: state.job,
+              hasApplied: state.hasApplied,
+              isSaved: state.isSaved,
+              myApplication: state.myApplication,
+              onSave: () => _handleSave(context),
+              onShare: () => _handleShare(state.job),
+              onApply: () => _handleApply(context, state),
+              onViewCompany: () => _handleViewCompany(context, state.job.companyId),
+            ),
+          );
+        }
+
+        return _buildLoadingState(context);
+      },
+    );
+  }
+
+  Widget _buildLoadingState(BuildContext context) {
+    return Scaffold(
+      appBar: GlassAppBar(
+        leading: IconButton(
+          icon: const Icon(Iconsax.arrow_right_1),
+          onPressed: () => context.pop(),
+        ),
       ),
-      desktop: _DesktopJobDetails(
-        jobId: widget.jobId,
-        isSaved: _isSaved,
-        onSave: () => _handleSave(context),
-        onShare: _handleShare,
-        onApply: () => _handleApply(context),
-        onViewCompany: () => _handleViewCompany(context),
+      body: Shimmer.fromColors(
+        baseColor: Colors.grey[300]!,
+        highlightColor: Colors.grey[100]!,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppConstants.spacingMedium),
+          child: Column(
+            children: [
+              _buildSkeletonHeader(),
+              const SizedBox(height: AppConstants.spacingMedium),
+              _buildSkeletonSection(),
+              const SizedBox(height: AppConstants.spacingMedium),
+              _buildSkeletonSection(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonHeader() {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.spacingMedium),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                ),
+              ),
+              const SizedBox(width: AppConstants.spacingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(width: 100, height: 14, color: Colors.white),
+                    const SizedBox(height: 8),
+                    Container(width: 180, height: 22, color: Colors.white),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spacingMedium),
+          Row(
+            children: List.generate(
+              3,
+              (index) => Padding(
+                padding: const EdgeInsets.only(right: AppConstants.spacingSmall),
+                child: Container(
+                  width: 80,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonSection() {
+    return Container(
+      padding: const EdgeInsets.all(AppConstants.spacingMedium),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(width: 120, height: 18, color: Colors.white),
+          const SizedBox(height: AppConstants.spacingMedium),
+          Container(width: double.infinity, height: 14, color: Colors.white),
+          const SizedBox(height: 8),
+          Container(width: double.infinity, height: 14, color: Colors.white),
+          const SizedBox(height: 8),
+          Container(width: 200, height: 14, color: Colors.white),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, String message) {
+    return Scaffold(
+      appBar: GlassAppBar(
+        leading: IconButton(
+          icon: const Icon(Iconsax.arrow_right_1),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.spacingLarge),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Iconsax.warning_2,
+                size: 64,
+                color: AppColors.error.withOpacity(0.5),
+              ),
+              const SizedBox(height: AppConstants.spacingMedium),
+              Text(
+                'حدث خطأ',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppConstants.spacingSmall),
+              Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondaryLight,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: AppConstants.spacingLarge),
+              ElevatedButton.icon(
+                onPressed: () {
+                  context.read<JobBloc>().add(LoadJobDetails(jobId: widget.jobId));
+                },
+                icon: const Icon(Iconsax.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -103,16 +318,20 @@ class _JobDetailsPageState extends State<JobDetailsPage> {
 
 class _MobileJobDetails extends StatelessWidget {
   const _MobileJobDetails({
-    required this.jobId,
+    required this.job,
+    required this.hasApplied,
     required this.isSaved,
+    this.myApplication,
     required this.onSave,
     required this.onShare,
     required this.onApply,
     required this.onViewCompany,
   });
 
-  final String jobId;
+  final JobEntity job;
+  final bool hasApplied;
   final bool isSaved;
+  final JobApplicationEntity? myApplication;
   final VoidCallback onSave;
   final VoidCallback onShare;
   final VoidCallback onApply;
@@ -141,19 +360,37 @@ class _MobileJobDetails extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const _JobHeader(),
+            _JobHeader(job: job),
             Padding(
               padding: const EdgeInsets.all(AppConstants.spacingMedium),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _JobInfoSection(),
+                  if (hasApplied && myApplication != null) ...[
+                    _ApplicationStatusCard(application: myApplication!),
+                    const SizedBox(height: AppConstants.spacingMedium),
+                  ],
+                  _JobInfoSection(job: job),
                   const SizedBox(height: AppConstants.spacingMedium),
-                  const _JobDescriptionSection(),
+                  _JobDescriptionSection(job: job),
+                  if (job.requirements != null && job.requirements!.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingMedium),
+                    _JobRequirementsSection(requirements: job.requirements!),
+                  ],
+                  if (job.responsibilities != null && job.responsibilities!.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingMedium),
+                    _JobResponsibilitiesSection(responsibilities: job.responsibilities!),
+                  ],
+                  if (job.benefits.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingMedium),
+                    _JobBenefitsSection(benefits: job.benefits),
+                  ],
+                  if (job.skillsRequired.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingMedium),
+                    _JobSkillsSection(skills: job.skillsRequired),
+                  ],
                   const SizedBox(height: AppConstants.spacingMedium),
-                  const _JobRequirementsSection(),
-                  const SizedBox(height: AppConstants.spacingMedium),
-                  _CompanySection(onViewCompany: onViewCompany),
+                  _CompanySection(job: job, onViewCompany: onViewCompany),
                   const SizedBox(height: 100),
                 ],
               ),
@@ -161,23 +398,31 @@ class _MobileJobDetails extends StatelessWidget {
           ],
         ),
       ),
-      bottomSheet: _ApplyBottomSheet(onApply: onApply),
+      bottomSheet: _ApplyBottomSheet(
+        job: job,
+        hasApplied: hasApplied,
+        onApply: onApply,
+      ),
     );
   }
 }
 
 class _DesktopJobDetails extends StatelessWidget {
   const _DesktopJobDetails({
-    required this.jobId,
+    required this.job,
+    required this.hasApplied,
     required this.isSaved,
+    this.myApplication,
     required this.onSave,
     required this.onShare,
     required this.onApply,
     required this.onViewCompany,
   });
 
-  final String jobId;
+  final JobEntity job;
+  final bool hasApplied;
   final bool isSaved;
+  final JobApplicationEntity? myApplication;
   final VoidCallback onSave;
   final VoidCallback onShare;
   final VoidCallback onApply;
@@ -216,11 +461,25 @@ class _DesktopJobDetails extends StatelessWidget {
                   flex: 2,
                   child: Column(
                     children: [
-                      const _JobHeader(),
+                      _JobHeader(job: job),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      const _JobDescriptionSection(),
-                      const SizedBox(height: AppConstants.spacingMedium),
-                      const _JobRequirementsSection(),
+                      _JobDescriptionSection(job: job),
+                      if (job.requirements != null && job.requirements!.isNotEmpty) ...[
+                        const SizedBox(height: AppConstants.spacingMedium),
+                        _JobRequirementsSection(requirements: job.requirements!),
+                      ],
+                      if (job.responsibilities != null && job.responsibilities!.isNotEmpty) ...[
+                        const SizedBox(height: AppConstants.spacingMedium),
+                        _JobResponsibilitiesSection(responsibilities: job.responsibilities!),
+                      ],
+                      if (job.benefits.isNotEmpty) ...[
+                        const SizedBox(height: AppConstants.spacingMedium),
+                        _JobBenefitsSection(benefits: job.benefits),
+                      ],
+                      if (job.skillsRequired.isNotEmpty) ...[
+                        const SizedBox(height: AppConstants.spacingMedium),
+                        _JobSkillsSection(skills: job.skillsRequired),
+                      ],
                     ],
                   ),
                 ),
@@ -229,11 +488,21 @@ class _DesktopJobDetails extends StatelessWidget {
                   width: 350,
                   child: Column(
                     children: [
-                      _ApplyCard(onApply: onApply, onSave: onSave, isSaved: isSaved),
+                      if (hasApplied && myApplication != null) ...[
+                        _ApplicationStatusCard(application: myApplication!),
+                        const SizedBox(height: AppConstants.spacingMedium),
+                      ],
+                      _ApplyCard(
+                        job: job,
+                        hasApplied: hasApplied,
+                        onApply: onApply,
+                        onSave: onSave,
+                        isSaved: isSaved,
+                      ),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      const _JobInfoSection(),
+                      _JobInfoSection(job: job),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      _CompanySection(onViewCompany: onViewCompany),
+                      _CompanySection(job: job, onViewCompany: onViewCompany),
                     ],
                   ),
                 ),
@@ -246,8 +515,132 @@ class _DesktopJobDetails extends StatelessWidget {
   }
 }
 
+class _ApplicationStatusCard extends StatelessWidget {
+  const _ApplicationStatusCard({required this.application});
+
+  final JobApplicationEntity application;
+
+  Color _getStatusColor() {
+    switch (application.status) {
+      case ApplicationStatus.pending:
+        return AppColors.warning;
+      case ApplicationStatus.reviewing:
+        return AppColors.info;
+      case ApplicationStatus.shortlisted:
+        return AppColors.primary;
+      case ApplicationStatus.interview:
+        return AppColors.secondary;
+      case ApplicationStatus.offered:
+        return AppColors.success;
+      case ApplicationStatus.accepted:
+        return AppColors.success;
+      case ApplicationStatus.rejected:
+        return AppColors.error;
+      case ApplicationStatus.withdrawn:
+        return AppColors.textTertiaryLight;
+    }
+  }
+
+  IconData _getStatusIcon() {
+    switch (application.status) {
+      case ApplicationStatus.pending:
+        return Iconsax.clock;
+      case ApplicationStatus.reviewing:
+        return Iconsax.document;
+      case ApplicationStatus.shortlisted:
+        return Iconsax.star;
+      case ApplicationStatus.interview:
+        return Iconsax.calendar;
+      case ApplicationStatus.offered:
+        return Iconsax.gift;
+      case ApplicationStatus.accepted:
+        return Iconsax.tick_circle;
+      case ApplicationStatus.rejected:
+        return Iconsax.close_circle;
+      case ApplicationStatus.withdrawn:
+        return Iconsax.logout;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final statusColor = _getStatusColor();
+
+    return GlassCard(
+      intensity: GlassIntensity.light,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(AppConstants.spacingSmall),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+                ),
+                child: Icon(_getStatusIcon(), color: statusColor, size: 20),
+              ),
+              const SizedBox(width: AppConstants.spacingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'حالة طلبك',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondaryLight,
+                      ),
+                    ),
+                    Text(
+                      application.status.label,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (application.interviewDate != null) ...[
+            const SizedBox(height: AppConstants.spacingMedium),
+            Container(
+              padding: const EdgeInsets.all(AppConstants.spacingSmall),
+              decoration: BoxDecoration(
+                color: AppColors.info.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Iconsax.calendar, color: AppColors.info, size: 16),
+                  const SizedBox(width: AppConstants.spacingSmall),
+                  Text(
+                    'موعد المقابلة: ${_formatDate(application.interviewDate!)}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: AppColors.info,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
 class _JobHeader extends StatelessWidget {
-  const _JobHeader();
+  const _JobHeader({required this.job});
+
+  final JobEntity job;
 
   @override
   Widget build(BuildContext context) {
@@ -265,17 +658,27 @@ class _JobHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.primaryLighter,
                   borderRadius: BorderRadius.circular(AppConstants.borderRadiusMedium),
+                  image: job.company?.logoUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(job.company!.logoUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                child: const Center(
-                  child: Text(
-                    'C',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 28,
-                    ),
-                  ),
-                ),
+                child: job.company?.logoUrl == null
+                    ? Center(
+                        child: Text(
+                          job.company?.name.isNotEmpty == true
+                              ? job.company!.name[0].toUpperCase()
+                              : 'C',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: AppConstants.spacingMedium),
               Expanded(
@@ -284,22 +687,27 @@ class _JobHeader extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          'اسم الشركة',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: AppColors.textSecondaryLight,
+                        Flexible(
+                          child: Text(
+                            job.company?.name ?? 'شركة',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: AppColors.textSecondaryLight,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: AppConstants.spacingExtraSmall),
-                        const CompanyVerifiedBadge(
-                          isVerified: true,
-                          size: VerifiedBadgeSize.small,
-                        ),
+                        if (job.company?.isVerified == true) ...[
+                          const SizedBox(width: AppConstants.spacingExtraSmall),
+                          const CompanyVerifiedBadge(
+                            isVerified: true,
+                            size: VerifiedBadgeSize.small,
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: AppConstants.spacingExtraSmall),
                     Text(
-                      'مهندس برمجيات أول',
+                      job.title,
                       style: theme.textTheme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -313,11 +721,17 @@ class _JobHeader extends StatelessWidget {
           Wrap(
             spacing: AppConstants.spacingSmall,
             runSpacing: AppConstants.spacingSmall,
-            children: const [
-              _Tag(icon: Iconsax.location, label: 'الرياض، السعودية'),
-              _Tag(icon: Iconsax.briefcase, label: 'دوام كامل'),
-              _Tag(icon: Iconsax.money, label: '20-35 ألف ريال'),
-              _Tag(icon: Iconsax.chart, label: 'مستوى كبير'),
+            children: [
+              if (job.city != null || job.location != null)
+                _Tag(
+                  icon: Iconsax.location,
+                  label: job.city ?? job.location ?? '',
+                ),
+              _Tag(icon: Iconsax.briefcase, label: job.jobType.label),
+              if (job.showSalary && (job.salaryMin != null || job.salaryMax != null))
+                _Tag(icon: Iconsax.money, label: job.salaryRange),
+              _Tag(icon: Iconsax.chart, label: job.experienceLevel.label),
+              _Tag(icon: Iconsax.building, label: job.locationType.label),
             ],
           ),
         ],
@@ -327,20 +741,70 @@ class _JobHeader extends StatelessWidget {
 }
 
 class _JobInfoSection extends StatelessWidget {
-  const _JobInfoSection();
+  const _JobInfoSection({required this.job});
+
+  final JobEntity job;
+
+  String _getTimeAgo(DateTime dateTime) {
+    final difference = DateTime.now().difference(dateTime);
+    if (difference.inDays > 30) {
+      return 'منذ ${difference.inDays ~/ 30} شهر';
+    } else if (difference.inDays > 0) {
+      return 'منذ ${difference.inDays} يوم';
+    } else if (difference.inHours > 0) {
+      return 'منذ ${difference.inHours} ساعة';
+    } else {
+      return 'الآن';
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
     return GlassPanel(
       title: 'معلومات الوظيفة',
       intensity: GlassIntensity.light,
-      child: const Column(
+      child: Column(
         children: [
-          _InfoRow(label: 'تاريخ النشر', value: 'منذ يومين'),
-          _InfoRow(label: 'عدد المتقدمين', value: '45 متقدم'),
-          _InfoRow(label: 'الشواغر', value: '3 مناصب'),
-          _InfoRow(label: 'الحالة', value: 'مفتوح', isHighlighted: true),
-          _InfoRow(label: 'آخر موعد', value: '15 يناير 2026'),
+          _InfoRow(
+            label: 'تاريخ النشر',
+            value: _getTimeAgo(job.publishedAt ?? job.createdAt),
+          ),
+          _InfoRow(
+            label: 'عدد المتقدمين',
+            value: '${job.applicationCount} متقدم',
+          ),
+          _InfoRow(
+            label: 'الشواغر',
+            value: '${job.remainingVacancies} من ${job.vacancyCount}',
+          ),
+          _InfoRow(
+            label: 'عدد المشاهدات',
+            value: '${job.viewCount} مشاهدة',
+          ),
+          _InfoRow(
+            label: 'الحالة',
+            value: job.canApply ? 'مفتوح' : (job.isExpired ? 'منتهي' : 'مغلق'),
+            isHighlighted: job.canApply,
+            isError: !job.canApply,
+          ),
+          if (job.applicationDeadline != null)
+            _InfoRow(
+              label: 'آخر موعد',
+              value: _formatDate(job.applicationDeadline!),
+            ),
+          _InfoRow(
+            label: 'سنوات الخبرة',
+            value: job.experienceRange,
+          ),
+          if (job.educationLevel != null)
+            _InfoRow(
+              label: 'المستوى التعليمي',
+              value: job.educationLevel!,
+            ),
         ],
       ),
     );
@@ -348,7 +812,9 @@ class _JobInfoSection extends StatelessWidget {
 }
 
 class _JobDescriptionSection extends StatelessWidget {
-  const _JobDescriptionSection();
+  const _JobDescriptionSection({required this.job});
+
+  final JobEntity job;
 
   @override
   Widget build(BuildContext context) {
@@ -358,11 +824,7 @@ class _JobDescriptionSection extends StatelessWidget {
       title: 'وصف الوظيفة',
       intensity: GlassIntensity.light,
       child: Text(
-        '''نبحث عن مهندس برمجيات أول موهوب للانضمام إلى فريقنا المتنامي. في هذا الدور، ستكون مسؤولاً عن تصميم وتطوير وصيانة حلول برمجية عالية الجودة.
-
-ستعمل بشكل وثيق مع فرق متعددة الوظائف لتقديم منتجات مبتكرة تلبي احتياجات عملائنا. المرشح المثالي لديه خلفية قوية في تطوير البرمجيات، ومهارات ممتازة في حل المشكلات، وشغف بتعلم تقنيات جديدة.
-
-هذه فرصة مثيرة لإحداث تأثير كبير في بيئة سريعة وديناميكية.''',
+        job.description,
         style: theme.textTheme.bodyLarge?.copyWith(height: 1.6),
       ),
     );
@@ -370,31 +832,97 @@ class _JobDescriptionSection extends StatelessWidget {
 }
 
 class _JobRequirementsSection extends StatelessWidget {
-  const _JobRequirementsSection();
+  const _JobRequirementsSection({required this.requirements});
+
+  final String requirements;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = requirements.split('\n').where((l) => l.trim().isNotEmpty).toList();
+
+    return GlassPanel(
+      title: 'المتطلبات',
+      intensity: GlassIntensity.light,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: lines.map((line) => _RequirementItem(line.trim())).toList(),
+      ),
+    );
+  }
+}
+
+class _JobResponsibilitiesSection extends StatelessWidget {
+  const _JobResponsibilitiesSection({required this.responsibilities});
+
+  final String responsibilities;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = responsibilities.split('\n').where((l) => l.trim().isNotEmpty).toList();
+
+    return GlassPanel(
+      title: 'المسؤوليات',
+      intensity: GlassIntensity.light,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: lines.map((line) => _RequirementItem(line.trim())).toList(),
+      ),
+    );
+  }
+}
+
+class _JobBenefitsSection extends StatelessWidget {
+  const _JobBenefitsSection({required this.benefits});
+
+  final List<String> benefits;
 
   @override
   Widget build(BuildContext context) {
     return GlassPanel(
-      title: 'المتطلبات',
+      title: 'المزايا',
       intensity: GlassIntensity.light,
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _RequirementItem('5+ سنوات خبرة في تطوير البرمجيات'),
-          _RequirementItem('إتقان Flutter و Dart'),
-          _RequirementItem('خبرة في RESTful APIs والخدمات المصغرة'),
-          _RequirementItem('مهارات تواصل ممتازة بالعربية والإنجليزية'),
-          _RequirementItem('بكالوريوس في علوم الحاسب أو مجال ذي صلة'),
-          _RequirementItem('خبرة في منهجيات التطوير الرشيقة'),
-        ],
+      child: Wrap(
+        spacing: AppConstants.spacingSmall,
+        runSpacing: AppConstants.spacingSmall,
+        children: benefits
+            .map((benefit) => Chip(
+                  avatar: const Icon(Iconsax.tick_circle, size: 16, color: AppColors.success),
+                  label: Text(benefit),
+                ))
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _JobSkillsSection extends StatelessWidget {
+  const _JobSkillsSection({required this.skills});
+
+  final List<String> skills;
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPanel(
+      title: 'المهارات المطلوبة',
+      intensity: GlassIntensity.light,
+      child: Wrap(
+        spacing: AppConstants.spacingSmall,
+        runSpacing: AppConstants.spacingSmall,
+        children: skills
+            .map((skill) => Chip(
+                  label: Text(skill),
+                  backgroundColor: AppColors.primaryExtraLight,
+                ))
+            .toList(),
       ),
     );
   }
 }
 
 class _CompanySection extends StatelessWidget {
-  const _CompanySection({required this.onViewCompany});
+  const _CompanySection({required this.job, required this.onViewCompany});
 
+  final JobEntity job;
   final VoidCallback onViewCompany;
 
   @override
@@ -414,17 +942,27 @@ class _CompanySection extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.primaryLighter,
                   borderRadius: BorderRadius.circular(AppConstants.borderRadiusSmall),
+                  image: job.company?.logoUrl != null
+                      ? DecorationImage(
+                          image: NetworkImage(job.company!.logoUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                child: const Center(
-                  child: Text(
-                    'C',
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                ),
+                child: job.company?.logoUrl == null
+                    ? Center(
+                        child: Text(
+                          job.company?.name.isNotEmpty == true
+                              ? job.company!.name[0].toUpperCase()
+                              : 'C',
+                          style: const TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: AppConstants.spacingMedium),
               Expanded(
@@ -433,36 +971,28 @@ class _CompanySection extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          'اسم الشركة',
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            job.company?.name ?? 'شركة',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: AppConstants.spacingExtraSmall),
-                        const CompanyVerifiedBadge(
-                          isVerified: true,
-                          size: VerifiedBadgeSize.small,
-                        ),
+                        if (job.company?.isVerified == true) ...[
+                          const SizedBox(width: AppConstants.spacingExtraSmall),
+                          const CompanyVerifiedBadge(
+                            isVerified: true,
+                            size: VerifiedBadgeSize.small,
+                          ),
+                        ],
                       ],
-                    ),
-                    Text(
-                      'شركة تقنية',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondaryLight,
-                      ),
                     ),
                   ],
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: AppConstants.spacingMedium),
-          Text(
-            'شركة تقنية رائدة متخصصة في حلول برمجية مبتكرة للشركات حول العالم.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondaryLight,
-            ),
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           OutlinedButton(
@@ -476,8 +1006,14 @@ class _CompanySection extends StatelessWidget {
 }
 
 class _ApplyBottomSheet extends StatelessWidget {
-  const _ApplyBottomSheet({required this.onApply});
+  const _ApplyBottomSheet({
+    required this.job,
+    required this.hasApplied,
+    required this.onApply,
+  });
 
+  final JobEntity job;
+  final bool hasApplied;
   final VoidCallback onApply;
 
   @override
@@ -499,8 +1035,12 @@ class _ApplyBottomSheet extends StatelessWidget {
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: onApply,
-            child: const Text('تقدم الآن'),
+            onPressed: hasApplied || !job.canApply ? null : onApply,
+            child: Text(
+              hasApplied
+                  ? 'تم التقديم'
+                  : (job.canApply ? 'تقدم الآن' : 'التقديم مغلق'),
+            ),
           ),
         ),
       ),
@@ -510,11 +1050,15 @@ class _ApplyBottomSheet extends StatelessWidget {
 
 class _ApplyCard extends StatelessWidget {
   const _ApplyCard({
+    required this.job,
+    required this.hasApplied,
     required this.onApply,
     required this.onSave,
     required this.isSaved,
   });
 
+  final JobEntity job;
+  final bool hasApplied;
   final VoidCallback onApply;
   final VoidCallback onSave;
   final bool isSaved;
@@ -529,8 +1073,12 @@ class _ApplyCard extends StatelessWidget {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: onApply,
-              child: const Text('تقدم الآن'),
+              onPressed: hasApplied || !job.canApply ? null : onApply,
+              child: Text(
+                hasApplied
+                    ? 'تم التقديم'
+                    : (job.canApply ? 'تقدم الآن' : 'التقديم مغلق'),
+              ),
             ),
           ),
           const SizedBox(height: AppConstants.spacingMedium),
@@ -592,11 +1140,13 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.isHighlighted = false,
+    this.isError = false,
   });
 
   final String label;
   final String value;
   final bool isHighlighted;
+  final bool isError;
 
   @override
   Widget build(BuildContext context) {
@@ -617,7 +1167,9 @@ class _InfoRow extends StatelessWidget {
             value,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
-              color: isHighlighted ? AppColors.success : null,
+              color: isError
+                  ? AppColors.error
+                  : (isHighlighted ? AppColors.success : null),
             ),
           ),
         ],
@@ -634,6 +1186,8 @@ class _RequirementItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Remove bullet point prefix if exists
+    final cleanText = text.replaceFirst(RegExp(r'^[•\-*]\s*'), '');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacingSmall),
@@ -651,7 +1205,7 @@ class _RequirementItem extends StatelessWidget {
           ),
           const SizedBox(width: AppConstants.spacingSmall),
           Expanded(
-            child: Text(text, style: theme.textTheme.bodyLarge),
+            child: Text(cleanText, style: theme.textTheme.bodyLarge),
           ),
         ],
       ),

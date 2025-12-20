@@ -16,6 +16,9 @@ class JobBloc extends Bloc<JobEvent, JobState> {
     on<UpdateJob>(_onUpdateJob);
     on<DeleteJob>(_onDeleteJob);
     on<ToggleJobActive>(_onToggleJobActive);
+    on<PublishJob>(_onPublishJob);
+    on<CloseJob>(_onCloseJob);
+    on<ArchiveJob>(_onArchiveJob);
     on<ApplyToJob>(_onApplyToJob);
     on<WithdrawApplication>(_onWithdrawApplication);
     on<LoadMyApplications>(_onLoadMyApplications);
@@ -27,6 +30,8 @@ class JobBloc extends Bloc<JobEvent, JobState> {
     on<ToggleSaveJob>(_onToggleSaveJob);
     on<LoadSavedJobs>(_onLoadSavedJobs);
     on<SearchJobs>(_onSearchJobs);
+    on<LoadCompanyJobs>(_onLoadCompanyJobs);
+    on<LoadApplicationDetails>(_onLoadApplicationDetails);
   }
 
   final JobRepository repository;
@@ -336,6 +341,84 @@ class JobBloc extends Bloc<JobEvent, JobState> {
         query: event.query,
         hasMore: jobs.length >= event.limit,
       ));
+    } catch (e) {
+      emit(JobError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onPublishJob(
+    PublishJob event,
+    Emitter<JobState> emit,
+  ) async {
+    emit(const JobLoading());
+    try {
+      final job = await repository.publishJob(event.jobId);
+      emit(JobPublished(job: job));
+    } catch (e) {
+      emit(JobError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onCloseJob(
+    CloseJob event,
+    Emitter<JobState> emit,
+  ) async {
+    emit(const JobLoading());
+    try {
+      final job = await repository.closeJob(event.jobId);
+      emit(JobClosed(job: job));
+    } catch (e) {
+      emit(JobError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onArchiveJob(
+    ArchiveJob event,
+    Emitter<JobState> emit,
+  ) async {
+    emit(const JobLoading());
+    try {
+      final job = await repository.archiveJob(event.jobId);
+      emit(JobArchived(job: job));
+    } catch (e) {
+      emit(JobError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadCompanyJobs(
+    LoadCompanyJobs event,
+    Emitter<JobState> emit,
+  ) async {
+    emit(const JobLoading());
+    try {
+      final jobs = await repository.getCompanyJobs(
+        companyId: event.companyId,
+        status: event.status,
+        limit: event.limit,
+        offset: event.offset,
+      );
+      emit(CompanyJobsLoaded(
+        companyId: event.companyId,
+        jobs: jobs,
+        hasMore: jobs.length >= event.limit,
+      ));
+    } catch (e) {
+      emit(JobError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onLoadApplicationDetails(
+    LoadApplicationDetails event,
+    Emitter<JobState> emit,
+  ) async {
+    emit(const JobLoading());
+    try {
+      final application = await repository.getApplicationById(event.applicationId);
+      if (application == null) {
+        emit(const JobError(message: 'الطلب غير موجود'));
+        return;
+      }
+      emit(ApplicationDetailsLoaded(application: application));
     } catch (e) {
       emit(JobError(message: e.toString()));
     }

@@ -50,6 +50,7 @@ import '../../features/jobs/presentation/pages/job_details_page.dart';
 import '../../features/jobs/presentation/pages/jobs_page.dart';
 import '../../features/jobs/presentation/pages/manage_job_page.dart';
 import '../../features/jobs/presentation/pages/my_applications_page.dart';
+import '../../features/jobs/presentation/pages/application_details_page.dart';
 import '../../features/jobs/presentation/pages/post_job_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/notifications/presentation/pages/notification_settings_page.dart';
@@ -176,6 +177,16 @@ abstract final class AppRouter {
             path: RouteNames.myApplications,
             name: RouteNames.myApplications,
             builder: (context, state) => const MyApplicationsPage(),
+            routes: [
+              GoRoute(
+                path: ':applicationId',
+                name: RouteNames.applicationDetails,
+                builder: (context, state) {
+                  final applicationId = state.pathParameters['applicationId']!;
+                  return ApplicationDetailsPage(applicationId: applicationId);
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: RouteNames.courses,

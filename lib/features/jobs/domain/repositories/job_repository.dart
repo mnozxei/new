@@ -7,11 +7,24 @@ abstract class JobRepository {
   Future<List<JobEntity>> getJobs({
     String? companyId,
     JobType? jobType,
+    JobStatus? status,
+    ExperienceLevel? experienceLevel,
+    LocationType? locationType,
+    String? city,
     String? location,
     bool? isRemote,
     int? minExperience,
     int? maxExperience,
     String? searchQuery,
+    List<String>? tags,
+    int limit = 20,
+    int offset = 0,
+  });
+
+  /// Get company jobs with all statuses
+  Future<List<JobEntity>> getCompanyJobs({
+    required String companyId,
+    JobStatus? status,
     int limit = 20,
     int offset = 0,
   });
@@ -34,6 +47,15 @@ abstract class JobRepository {
   /// Toggle job active status
   Future<JobEntity> toggleJobActive(String id);
 
+  /// Publish a draft job
+  Future<JobEntity> publishJob(String id);
+
+  /// Close a job
+  Future<JobEntity> closeJob(String id);
+
+  /// Archive a job
+  Future<JobEntity> archiveJob(String id);
+
   /// Check if user has applied to a job
   Future<bool> hasApplied(String jobId);
 
@@ -52,6 +74,9 @@ abstract class JobRepository {
     int limit = 20,
     int offset = 0,
   });
+
+  /// Get application by ID
+  Future<JobApplicationEntity?> getApplicationById(String applicationId);
 
   /// Get applications for a job (company side)
   Future<List<JobApplicationEntity>> getJobApplications(
@@ -114,7 +139,10 @@ class CreateJobParams {
     this.requirements,
     this.responsibilities,
     required this.jobType,
+    this.experienceLevel = ExperienceLevel.mid,
+    this.locationType = LocationType.onsite,
     this.location,
+    this.city,
     this.isRemote = false,
     this.salaryMin,
     this.salaryMax,
@@ -125,8 +153,10 @@ class CreateJobParams {
     this.educationLevel,
     this.skillsRequired = const [],
     this.benefits = const [],
+    this.tags = const [],
     required this.vacancyCount,
     this.applicationDeadline,
+    this.isDraft = false,
   });
 
   final String companyId;
@@ -135,7 +165,10 @@ class CreateJobParams {
   final String? requirements;
   final String? responsibilities;
   final JobType jobType;
+  final ExperienceLevel experienceLevel;
+  final LocationType locationType;
   final String? location;
+  final String? city;
   final bool isRemote;
   final double? salaryMin;
   final double? salaryMax;
@@ -146,8 +179,10 @@ class CreateJobParams {
   final String? educationLevel;
   final List<String> skillsRequired;
   final List<String> benefits;
+  final List<String> tags;
   final int vacancyCount;
   final DateTime? applicationDeadline;
+  final bool isDraft;
 
   Map<String, dynamic> toJson() => {
         'company_id': companyId,
@@ -156,7 +191,10 @@ class CreateJobParams {
         if (requirements != null) 'requirements': requirements,
         if (responsibilities != null) 'responsibilities': responsibilities,
         'job_type': jobType.value,
+        'experience_level': experienceLevel.value,
+        'location_type': locationType.value,
         if (location != null) 'location': location,
+        if (city != null) 'city': city,
         'is_remote': isRemote,
         if (salaryMin != null) 'salary_min': salaryMin,
         if (salaryMax != null) 'salary_max': salaryMax,
@@ -167,6 +205,7 @@ class CreateJobParams {
         if (educationLevel != null) 'education_level': educationLevel,
         'skills_required': skillsRequired,
         'benefits': benefits,
+        'tags': tags,
         'vacancy_count': vacancyCount,
         if (applicationDeadline != null)
           'application_deadline': applicationDeadline!.toIso8601String(),
@@ -180,7 +219,10 @@ class UpdateJobParams {
     this.requirements,
     this.responsibilities,
     this.jobType,
+    this.experienceLevel,
+    this.locationType,
     this.location,
+    this.city,
     this.isRemote,
     this.salaryMin,
     this.salaryMax,
@@ -191,9 +233,11 @@ class UpdateJobParams {
     this.educationLevel,
     this.skillsRequired,
     this.benefits,
+    this.tags,
     this.vacancyCount,
     this.applicationDeadline,
     this.isActive,
+    this.status,
   });
 
   final String? title;
@@ -201,7 +245,10 @@ class UpdateJobParams {
   final String? requirements;
   final String? responsibilities;
   final JobType? jobType;
+  final ExperienceLevel? experienceLevel;
+  final LocationType? locationType;
   final String? location;
+  final String? city;
   final bool? isRemote;
   final double? salaryMin;
   final double? salaryMax;
@@ -212,9 +259,11 @@ class UpdateJobParams {
   final String? educationLevel;
   final List<String>? skillsRequired;
   final List<String>? benefits;
+  final List<String>? tags;
   final int? vacancyCount;
   final DateTime? applicationDeadline;
   final bool? isActive;
+  final JobStatus? status;
 
   Map<String, dynamic> toJson() {
     final json = <String, dynamic>{};
@@ -223,7 +272,10 @@ class UpdateJobParams {
     if (requirements != null) json['requirements'] = requirements;
     if (responsibilities != null) json['responsibilities'] = responsibilities;
     if (jobType != null) json['job_type'] = jobType!.value;
+    if (experienceLevel != null) json['experience_level'] = experienceLevel!.value;
+    if (locationType != null) json['location_type'] = locationType!.value;
     if (location != null) json['location'] = location;
+    if (city != null) json['city'] = city;
     if (isRemote != null) json['is_remote'] = isRemote;
     if (salaryMin != null) json['salary_min'] = salaryMin;
     if (salaryMax != null) json['salary_max'] = salaryMax;
@@ -234,11 +286,13 @@ class UpdateJobParams {
     if (educationLevel != null) json['education_level'] = educationLevel;
     if (skillsRequired != null) json['skills_required'] = skillsRequired;
     if (benefits != null) json['benefits'] = benefits;
+    if (tags != null) json['tags'] = tags;
     if (vacancyCount != null) json['vacancy_count'] = vacancyCount;
     if (applicationDeadline != null) {
       json['application_deadline'] = applicationDeadline!.toIso8601String();
     }
     if (isActive != null) json['is_active'] = isActive;
+    if (status != null) json['status'] = status!.value;
     return json;
   }
 }

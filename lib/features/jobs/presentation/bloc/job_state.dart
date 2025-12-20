@@ -208,3 +208,54 @@ class JobSearchResults extends JobState {
   @override
   List<Object?> get props => [jobs, query, hasMore];
 }
+
+class JobPublished extends JobState {
+  const JobPublished({required this.job});
+
+  final JobEntity job;
+
+  @override
+  List<Object?> get props => [job];
+}
+
+class JobClosed extends JobState {
+  const JobClosed({required this.job});
+
+  final JobEntity job;
+
+  @override
+  List<Object?> get props => [job];
+}
+
+class JobArchived extends JobState {
+  const JobArchived({required this.job});
+
+  final JobEntity job;
+
+  @override
+  List<Object?> get props => [job];
+}
+
+class CompanyJobsLoaded extends JobState {
+  const CompanyJobsLoaded({
+    required this.companyId,
+    required this.jobs,
+    this.hasMore = false,
+  });
+
+  final String companyId;
+  final List<JobEntity> jobs;
+  final bool hasMore;
+
+  @override
+  List<Object?> get props => [companyId, jobs, hasMore];
+}
+
+class ApplicationDetailsLoaded extends JobState {
+  const ApplicationDetailsLoaded({required this.application});
+
+  final JobApplicationEntity application;
+
+  @override
+  List<Object?> get props => [application];
+}

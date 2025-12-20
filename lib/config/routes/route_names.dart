@@ -19,6 +19,7 @@ abstract final class RouteNames {
   static const String postJob = '/post-job';
   static const String editJob = '/jobs/:id/edit';
   static const String myApplications = '/my-applications';
+  static const String applicationDetails = 'applicationDetails';
 
   // ===== COURSES =====
   static const String courses = '/courses';
