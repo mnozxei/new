@@ -6,35 +6,9 @@ import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../domain/repositories/profile_repository.dart';
 
-class CertificatePreview {
-  const CertificatePreview({
-    required this.id,
-    required this.serialNumber,
-    required this.courseName,
-    required this.issuerName,
-    required this.issuedAt,
-    this.pdfUrl,
-  });
-
-  final String id;
-  final String serialNumber;
-  final String courseName;
-  final String issuerName;
-  final DateTime issuedAt;
-  final String? pdfUrl;
-
-  factory CertificatePreview.fromJson(Map<String, dynamic> json) {
-    return CertificatePreview(
-      id: json['certificate_id'] as String,
-      serialNumber: json['serial_number'] as String,
-      courseName: json['course_name'] as String,
-      issuerName: json['issuer_name'] as String? ?? 'Unknown',
-      issuedAt: DateTime.parse(json['issued_at'] as String),
-      pdfUrl: json['pdf_url'] as String?,
-    );
-  }
-}
+export '../../domain/repositories/profile_repository.dart' show CertificatePreview;
 
 class CertificatesPreviewCard extends StatelessWidget {
   const CertificatesPreviewCard({

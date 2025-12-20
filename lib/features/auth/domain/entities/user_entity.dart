@@ -22,6 +22,9 @@ class UserEntity extends Equatable {
     this.isInstructorVerified = false,
     this.createdAt,
     this.updatedAt,
+    this.followersCount = 0,
+    this.followingCount = 0,
+    this.postsCount = 0,
   });
 
   final String id;
@@ -42,6 +45,9 @@ class UserEntity extends Equatable {
   final bool isInstructorVerified;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int followersCount;
+  final int followingCount;
+  final int postsCount;
 
   /// Check role-related properties
   bool get isAdmin => role.isAdmin;
@@ -92,6 +98,9 @@ class UserEntity extends Equatable {
     bool? isInstructorVerified,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? followersCount,
+    int? followingCount,
+    int? postsCount,
   }) {
     return UserEntity(
       id: id ?? this.id,
@@ -112,6 +121,9 @@ class UserEntity extends Equatable {
       isInstructorVerified: isInstructorVerified ?? this.isInstructorVerified,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount ?? this.followingCount,
+      postsCount: postsCount ?? this.postsCount,
     );
   }
 
@@ -135,5 +147,8 @@ class UserEntity extends Equatable {
         isInstructorVerified,
         createdAt,
         updatedAt,
+        followersCount,
+        followingCount,
+        postsCount,
       ];
 }

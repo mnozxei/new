@@ -231,6 +231,7 @@ void _registerBlocs() {
     () => ProfileBloc(
       getUserProfile: getIt<GetUserProfile>(),
       updateUserProfile: getIt<UpdateUserProfile>(),
+      profileRepository: getIt<ProfileRepository>(),
     ),
   );
 

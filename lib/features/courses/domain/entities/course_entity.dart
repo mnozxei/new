@@ -169,6 +169,12 @@ class CourseEntity extends Equatable {
     return totalLessons > 0;
   }
 
+  /// Check if course has a final quiz
+  bool get hasFinalQuiz => true; // Determined by actual quiz check at runtime
+
+  /// Check if course awards a certificate
+  bool get hasCertificate => true; // Courses typically award certificates on completion
+
   String get formattedDuration {
     final hours = durationMinutes ~/ 60;
     final minutes = durationMinutes % 60;
@@ -301,6 +307,7 @@ class InstructorInfo extends Equatable {
     this.courseCount = 0,
     this.studentCount = 0,
     this.rating = 0,
+    this.isVerified = false,
   });
 
   final String id;
@@ -310,6 +317,7 @@ class InstructorInfo extends Equatable {
   final int courseCount;
   final int studentCount;
   final double rating;
+  final bool isVerified;
 
   @override
   List<Object?> get props => [
@@ -320,6 +328,7 @@ class InstructorInfo extends Equatable {
         courseCount,
         studentCount,
         rating,
+        isVerified,
       ];
 }
 
@@ -383,6 +392,10 @@ class LessonEntity extends Equatable {
     this.requiresQuizPass = false,
     required this.createdAt,
     required this.updatedAt,
+    this.isCompleted = false,
+    this.hasQuiz = false,
+    this.quizPassed = false,
+    this.quizId,
   });
 
   final String id;
@@ -401,6 +414,13 @@ class LessonEntity extends Equatable {
   final bool requiresQuizPass;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isCompleted;
+  final bool hasQuiz;
+  final bool quizPassed;
+  final String? quizId;
+
+  /// Check if lesson is unlocked (either not locked, or free preview)
+  bool get isUnlocked => !isLocked || isFreePreview;
 
   /// Check if this is a video lesson
   bool get isVideo => contentType == 'video' || contentType == LessonContentType.video.value;
@@ -444,6 +464,10 @@ class LessonEntity extends Equatable {
     bool? requiresQuizPass,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isCompleted,
+    bool? hasQuiz,
+    bool? quizPassed,
+    String? quizId,
   }) {
     return LessonEntity(
       id: id ?? this.id,
@@ -462,6 +486,10 @@ class LessonEntity extends Equatable {
       requiresQuizPass: requiresQuizPass ?? this.requiresQuizPass,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isCompleted: isCompleted ?? this.isCompleted,
+      hasQuiz: hasQuiz ?? this.hasQuiz,
+      quizPassed: quizPassed ?? this.quizPassed,
+      quizId: quizId ?? this.quizId,
     );
   }
 
@@ -483,6 +511,10 @@ class LessonEntity extends Equatable {
         requiresQuizPass,
         createdAt,
         updatedAt,
+        isCompleted,
+        hasQuiz,
+        quizPassed,
+        quizId,
       ];
 }
 

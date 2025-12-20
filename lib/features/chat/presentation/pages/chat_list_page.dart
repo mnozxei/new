@@ -344,12 +344,12 @@ class _ChatItem extends StatelessWidget {
                 CircleAvatar(
                   radius: 28,
                   backgroundColor: AppColors.primaryLighter,
-                  backgroundImage: conversation.avatarUrl != null
-                      ? NetworkImage(conversation.avatarUrl!)
+                  backgroundImage: conversation.displayAvatar != null
+                      ? NetworkImage(conversation.displayAvatar!)
                       : null,
-                  child: conversation.avatarUrl == null
+                  child: conversation.displayAvatar == null
                       ? Text(
-                          _getInitials(conversation.name),
+                          _getInitials(conversation.displayName),
                           style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
                         )
                       : null,
@@ -379,7 +379,7 @@ class _ChatItem extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          conversation.name,
+                          conversation.displayName,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
                           ),

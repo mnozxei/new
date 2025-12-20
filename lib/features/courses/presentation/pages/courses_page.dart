@@ -18,8 +18,6 @@ import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/verified_badge.dart';
 import '../../domain/entities/course_entity.dart';
 import '../bloc/course_bloc.dart';
-import '../bloc/course_event.dart';
-import '../bloc/course_state.dart';
 
 class CoursesPage extends StatefulWidget {
   const CoursesPage({super.key});

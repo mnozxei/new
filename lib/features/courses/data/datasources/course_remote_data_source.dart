@@ -63,6 +63,7 @@ abstract class CourseRemoteDataSource {
   Future<List<QuizEntity>> getCourseQuizzes(String courseId);
   Future<QuizEntity?> getQuizById(String quizId);
   Future<QuizEntity?> getLessonQuiz(String lessonId);
+  Future<QuizEntity?> getFinalQuiz(String courseId);
   Future<QuizEntity> createQuiz(CreateQuizParams params);
   Future<QuizEntity> updateQuiz(String quizId, UpdateQuizParams params);
   Future<void> deleteQuiz(String quizId);
@@ -1106,6 +1107,25 @@ class CourseRemoteDataSourceImpl implements CourseRemoteDataSource {
           )
         ''')
         .eq('lesson_id', lessonId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return _mapQuizFromJson(response);
+  }
+
+  @override
+  Future<QuizEntity?> getFinalQuiz(String courseId) async {
+    final response = await _supabase
+        .from('quizzes')
+        .select('''
+          *,
+          questions:quiz_questions(
+            *,
+            answers:quiz_answers(*)
+          )
+        ''')
+        .eq('course_id', courseId)
+        .eq('is_final_quiz', true)
         .maybeSingle();
 
     if (response == null) return null;

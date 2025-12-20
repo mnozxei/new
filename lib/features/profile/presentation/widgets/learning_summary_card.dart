@@ -6,29 +6,9 @@ import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../domain/repositories/profile_repository.dart';
 
-class LearningStats {
-  const LearningStats({
-    this.enrolledCount = 0,
-    this.inProgressCount = 0,
-    this.completedCount = 0,
-    this.certificatesCount = 0,
-  });
-
-  final int enrolledCount;
-  final int inProgressCount;
-  final int completedCount;
-  final int certificatesCount;
-
-  factory LearningStats.fromJson(Map<String, dynamic> json) {
-    return LearningStats(
-      enrolledCount: json['enrolled_count'] as int? ?? 0,
-      inProgressCount: json['in_progress_count'] as int? ?? 0,
-      completedCount: json['completed_count'] as int? ?? 0,
-      certificatesCount: json['certificates_count'] as int? ?? 0,
-    );
-  }
-}
+export '../../domain/repositories/profile_repository.dart' show LearningStats;
 
 class LearningSummaryCard extends StatelessWidget {
   const LearningSummaryCard({

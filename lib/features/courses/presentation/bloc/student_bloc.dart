@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/certificate_entity.dart';
 import '../../domain/entities/course_entity.dart';
 import '../../domain/entities/quiz_entity.dart';
 import '../../domain/repositories/course_repository.dart';

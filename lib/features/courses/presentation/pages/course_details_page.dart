@@ -17,8 +17,6 @@ import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/verified_badge.dart';
 import '../../domain/entities/course_entity.dart';
 import '../bloc/course_bloc.dart';
-import '../bloc/course_event.dart';
-import '../bloc/course_state.dart';
 
 class CourseDetailsPage extends StatefulWidget {
   const CourseDetailsPage({

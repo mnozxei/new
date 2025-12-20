@@ -6,6 +6,9 @@ import 'package:shimmer/shimmer.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_constants.dart';
 
+/// Alias for [GlassLoadingIndicator] for backward compatibility
+typedef GlassLoading = GlassLoadingIndicator;
+
 class GlassLoadingIndicator extends StatelessWidget {
   const GlassLoadingIndicator({
     super.key,

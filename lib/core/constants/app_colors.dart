@@ -53,6 +53,11 @@ abstract final class AppColors {
   static const Color cardLight = Color(0xFFFFFFFF);
   static const Color cardDark = Color(0xFF2D2839);
 
+  static const Color backgroundSecondaryLight = Color(0xFFF5F3F8);
+  static const Color backgroundSecondaryDark = Color(0xFF252131);
+  static const Color backgroundTertiaryLight = Color(0xFFEDE9F2);
+  static const Color backgroundTertiaryDark = Color(0xFF2D2839);
+
   static const Color textPrimaryLight = Color(0xFF1A1720);
   static const Color textSecondaryLight = Color(0xFF5E566E);
   static const Color textTertiaryLight = Color(0xFF9B92AC);

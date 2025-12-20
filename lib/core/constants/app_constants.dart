@@ -19,6 +19,7 @@ abstract final class AppConstants {
   static const double spacingMedium = 16.0;
   static const double spacingLarge = 24.0;
   static const double spacingExtraLarge = 32.0;
+  static const double spacingXLarge = 40.0;
   static const double spacingHuge = 48.0;
 
   static const double iconSizeSmall = 16.0;

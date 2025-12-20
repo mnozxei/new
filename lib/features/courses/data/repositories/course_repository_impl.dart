@@ -240,6 +240,11 @@ class CourseRepositoryImpl implements CourseRepository {
   }
 
   @override
+  Future<QuizEntity?> getFinalQuiz(String courseId) async {
+    return _remoteDataSource.getFinalQuiz(courseId);
+  }
+
+  @override
   Future<QuizEntity> createQuiz(CreateQuizParams params) async {
     return _remoteDataSource.createQuiz(params);
   }
