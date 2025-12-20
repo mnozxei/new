@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -9,6 +10,7 @@ import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/glass_text_field.dart';
 import '../../../../core/widgets/responsive_layout.dart';
+import '../../domain/entities/chat_entity.dart';
 import '../bloc/chat_bloc.dart';
 
 class ChatRoomPage extends StatefulWidget {
@@ -369,7 +371,7 @@ class _MobileChatRoomPage extends StatelessWidget {
                 if (state is ChatLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                return _MessageList(scrollController: scrollController);
+                return _MessageList(scrollController: scrollController, chatId: chatId);
               },
             ),
           ),
@@ -530,7 +532,7 @@ class _DesktopChatRoomPage extends StatelessWidget {
                       if (state is ChatLoading) {
                         return const Center(child: CircularProgressIndicator());
                       }
-                      return _MessageList(scrollController: scrollController);
+                      return _MessageList(scrollController: scrollController, chatId: chatId);
                     },
                   ),
                 ),
@@ -605,32 +607,77 @@ class _MiniChatItem extends StatelessWidget {
 }
 
 class _MessageList extends StatelessWidget {
-  const _MessageList({required this.scrollController});
+  const _MessageList({required this.scrollController, required this.chatId});
 
   final ScrollController scrollController;
+  final String chatId;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      controller: scrollController,
-      padding: const EdgeInsets.all(AppConstants.spacingMedium),
-      itemCount: 20,
-      itemBuilder: (context, index) => _MessageBubble(
-        index: index,
-        isMe: index % 3 != 0,
-      ),
+    return BlocBuilder<ChatBloc, ChatState>(
+      builder: (context, state) {
+        if (state is MessagesLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state is ChatError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.spacingLarge),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Iconsax.warning_2, size: 48, color: AppColors.error),
+                  const SizedBox(height: 16),
+                  Text(state.message, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => context.read<ChatBloc>().add(LoadMessages(conversationId: chatId)),
+                    child: const Text('إعادة المحاولة'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (state is MessagesLoaded) {
+          if (state.messages.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Iconsax.message, size: 48, color: AppColors.textTertiaryLight),
+                  SizedBox(height: 16),
+                  Text('ابدأ المحادثة الآن!'),
+                ],
+              ),
+            );
+          }
+
+          return ListView.builder(
+            controller: scrollController,
+            padding: const EdgeInsets.all(AppConstants.spacingMedium),
+            itemCount: state.messages.length,
+            itemBuilder: (context, index) => _MessageBubble(message: state.messages[index]),
+          );
+        }
+
+        return const Center(child: CircularProgressIndicator());
+      },
     );
   }
 }
 
 class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({
-    required this.index,
-    required this.isMe,
-  });
+  const _MessageBubble({required this.message});
 
-  final int index;
-  final bool isMe;
+  final MessageEntity message;
+
+  bool get isMe {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    return message.senderId == currentUserId;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -661,7 +708,7 @@ class _MessageBubble extends StatelessWidget {
                 ),
               ),
               child: Text(
-                _getMessage(index),
+                message.displayContent,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: isMe ? AppColors.white : AppColors.textPrimaryLight,
                 ),
@@ -672,7 +719,7 @@ class _MessageBubble extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  _getTime(index),
+                  message.formattedTime,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: AppColors.textTertiaryLight,
                     fontSize: 10,
@@ -681,9 +728,9 @@ class _MessageBubble extends StatelessWidget {
                 if (isMe) ...[
                   const SizedBox(width: AppConstants.spacingExtraSmall),
                   Icon(
-                    index % 2 == 0 ? Iconsax.tick_circle : Iconsax.tick_square,
+                    message.isRead ? Iconsax.tick_circle : Iconsax.tick_square,
                     size: 12,
-                    color: index % 2 == 0 ? AppColors.primary : AppColors.textTertiaryLight,
+                    color: message.isRead ? AppColors.primary : AppColors.textTertiaryLight,
                   ),
                 ],
               ],
@@ -692,25 +739,6 @@ class _MessageBubble extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _getMessage(int index) {
-    final messages = [
-      'مرحباً، كيف يمكنني مساعدتك؟',
-      'أهلاً وسهلاً! أريد الاستفسار عن الوظيفة المعلنة',
-      'بالتأكيد، ما هي استفساراتك؟',
-      'هل الوظيفة متاحة للعمل عن بعد؟',
-      'نعم، نوفر خيار العمل عن بعد بشكل جزئي',
-      'رائع! متى يمكنني بدء المقابلة؟',
-      'يمكننا تحديد موعد الأسبوع القادم',
-      'شكراً جزيلاً لك على المعلومات',
-    ];
-    return messages[index % messages.length];
-  }
-
-  String _getTime(int index) {
-    final times = ['10:30 ص', '10:32 ص', '10:35 ص', '10:40 ص', '11:00 ص'];
-    return times[index % times.length];
   }
 }
 

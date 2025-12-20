@@ -1,4 +1,4 @@
-export 'data/datasources/job_remote_data_source.dart';
+export 'data/datasources/job_remote_datasource.dart';
 export 'data/repositories/job_repository_impl.dart';
 export 'domain/entities/job_entity.dart';
 export 'domain/repositories/job_repository.dart';

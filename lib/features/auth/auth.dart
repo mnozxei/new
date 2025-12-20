@@ -1,4 +1,4 @@
-export 'data/datasources/auth_remote_data_source.dart';
+export 'data/datasources/auth_remote_datasource.dart';
 export 'data/repositories/auth_repository_impl.dart';
 export 'domain/entities/user_entity.dart';
 export 'domain/repositories/auth_repository.dart';

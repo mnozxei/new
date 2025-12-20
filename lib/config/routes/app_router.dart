@@ -9,6 +9,7 @@ import '../../features/courses/presentation/bloc/student_bloc.dart' as student;
 import '../../features/search/presentation/bloc/search_bloc.dart';
 import '../../features/chat/presentation/bloc/chat_bloc.dart';
 import '../../features/notifications/presentation/bloc/notification_bloc.dart';
+import '../../features/posts/presentation/bloc/post_bloc.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -314,14 +315,20 @@ abstract final class AppRouter {
           GoRoute(
             path: RouteNames.posts,
             name: RouteNames.posts,
-            builder: (context, state) => const PostsPage(),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<PostBloc>()..add(const LoadFeed()),
+              child: const PostsPage(),
+            ),
             routes: [
               GoRoute(
                 path: ':postId',
                 name: RouteNames.postDetails,
                 builder: (context, state) {
                   final postId = state.pathParameters['postId']!;
-                  return PostDetailsPage(postId: postId);
+                  return BlocProvider(
+                    create: (context) => getIt<PostBloc>()..add(LoadPostDetails(postId: postId)),
+                    child: PostDetailsPage(postId: postId),
+                  );
                 },
               ),
             ],
@@ -329,7 +336,10 @@ abstract final class AppRouter {
           GoRoute(
             path: RouteNames.createPost,
             name: RouteNames.createPost,
-            builder: (context, state) => const CreatePostPage(),
+            builder: (context, state) => BlocProvider(
+              create: (context) => getIt<PostBloc>(),
+              child: const CreatePostPage(),
+            ),
           ),
           GoRoute(
             path: RouteNames.chat,

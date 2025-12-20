@@ -12,9 +12,9 @@ export 'domain/entities/certificate_entity.dart';
 export 'domain/repositories/course_repository.dart';
 
 // Presentation layer - BLoCs
+// Note: instructor_bloc and student_bloc have overlapping event names with course_bloc
+// Import them directly when needed to avoid ambiguous exports
 export 'presentation/bloc/course_bloc.dart';
-export 'presentation/bloc/instructor_bloc.dart';
-export 'presentation/bloc/student_bloc.dart';
 
 // Presentation layer - Pages
 export 'presentation/pages/course_details_page.dart';
