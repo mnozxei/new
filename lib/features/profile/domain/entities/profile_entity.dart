@@ -14,7 +14,10 @@ class ProfileEntity extends Equatable {
     this.phone,
     this.bio,
     this.jobTitle,
+    this.headline,
     this.location,
+    this.city,
+    this.industry,
     this.website,
     this.linkedinUrl,
     this.twitterUrl,
@@ -27,12 +30,14 @@ class ProfileEntity extends Equatable {
     this.isEmailVerified = false,
     this.isProfileComplete = false,
     this.isAvailableForHire = true,
+    this.profileVisibility = 'public',
     this.followersCount = 0,
     this.followingCount = 0,
     this.postsCount = 0,
     this.coursesEnrolledCount = 0,
     this.coursesCompletedCount = 0,
     this.coursesCreatedCount = 0,
+    this.certificatesCount = 0,
     this.companiesOwned = const [],
     this.createdAt,
     this.updatedAt,
@@ -47,7 +52,10 @@ class ProfileEntity extends Equatable {
   final String? phone;
   final String? bio;
   final String? jobTitle;
+  final String? headline;
   final String? location;
+  final String? city;
+  final String? industry;
   final String? website;
   final String? linkedinUrl;
   final String? twitterUrl;
@@ -60,12 +68,14 @@ class ProfileEntity extends Equatable {
   final bool isEmailVerified;
   final bool isProfileComplete;
   final bool isAvailableForHire;
+  final String profileVisibility;
   final int followersCount;
   final int followingCount;
   final int postsCount;
   final int coursesEnrolledCount;
   final int coursesCompletedCount;
   final int coursesCreatedCount;
+  final int certificatesCount;
   final List<String> companiesOwned;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -102,7 +112,10 @@ class ProfileEntity extends Equatable {
     String? phone,
     String? bio,
     String? jobTitle,
+    String? headline,
     String? location,
+    String? city,
+    String? industry,
     String? website,
     String? linkedinUrl,
     String? twitterUrl,
@@ -115,12 +128,14 @@ class ProfileEntity extends Equatable {
     bool? isEmailVerified,
     bool? isProfileComplete,
     bool? isAvailableForHire,
+    String? profileVisibility,
     int? followersCount,
     int? followingCount,
     int? postsCount,
     int? coursesEnrolledCount,
     int? coursesCompletedCount,
     int? coursesCreatedCount,
+    int? certificatesCount,
     List<String>? companiesOwned,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -135,7 +150,10 @@ class ProfileEntity extends Equatable {
       phone: phone ?? this.phone,
       bio: bio ?? this.bio,
       jobTitle: jobTitle ?? this.jobTitle,
+      headline: headline ?? this.headline,
       location: location ?? this.location,
+      city: city ?? this.city,
+      industry: industry ?? this.industry,
       website: website ?? this.website,
       linkedinUrl: linkedinUrl ?? this.linkedinUrl,
       twitterUrl: twitterUrl ?? this.twitterUrl,
@@ -148,12 +166,14 @@ class ProfileEntity extends Equatable {
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       isProfileComplete: isProfileComplete ?? this.isProfileComplete,
       isAvailableForHire: isAvailableForHire ?? this.isAvailableForHire,
+      profileVisibility: profileVisibility ?? this.profileVisibility,
       followersCount: followersCount ?? this.followersCount,
       followingCount: followingCount ?? this.followingCount,
       postsCount: postsCount ?? this.postsCount,
       coursesEnrolledCount: coursesEnrolledCount ?? this.coursesEnrolledCount,
       coursesCompletedCount: coursesCompletedCount ?? this.coursesCompletedCount,
       coursesCreatedCount: coursesCreatedCount ?? this.coursesCreatedCount,
+      certificatesCount: certificatesCount ?? this.certificatesCount,
       companiesOwned: companiesOwned ?? this.companiesOwned,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -171,7 +191,10 @@ class ProfileEntity extends Equatable {
         phone,
         bio,
         jobTitle,
+        headline,
         location,
+        city,
+        industry,
         website,
         linkedinUrl,
         twitterUrl,
@@ -184,12 +207,14 @@ class ProfileEntity extends Equatable {
         isEmailVerified,
         isProfileComplete,
         isAvailableForHire,
+        profileVisibility,
         followersCount,
         followingCount,
         postsCount,
         coursesEnrolledCount,
         coursesCompletedCount,
         coursesCreatedCount,
+        certificatesCount,
         companiesOwned,
         createdAt,
         updatedAt,

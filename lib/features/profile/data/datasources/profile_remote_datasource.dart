@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/entities/profile_entity.dart';
+import '../../domain/repositories/profile_repository.dart';
 import '../models/profile_model.dart';
 
 abstract class ProfileRemoteDataSource {
@@ -38,6 +40,22 @@ abstract class ProfileRemoteDataSource {
     int limit = 20,
     int offset = 0,
   });
+
+  // Experience CRUD
+  Future<List<ExperienceEntity>> getExperiences(String userId);
+
+  Future<ExperienceEntity> addExperience(String userId, ExperienceEntity experience);
+
+  Future<ExperienceEntity> updateExperience(String userId, ExperienceEntity experience);
+
+  Future<void> deleteExperience(String userId, String experienceId);
+
+  // Learning stats and certificates
+  Future<LearningStats> getLearningStats(String userId);
+
+  Future<List<CertificatePreview>> getCertificates(String userId, {int limit, int offset});
+
+  Future<List<CompletedCourse>> getCompletedCourses(String userId, {int limit, int offset});
 }
 
 class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
@@ -224,5 +242,166 @@ class ProfileRemoteDataSourceImpl implements ProfileRemoteDataSource {
     return (response as List<dynamic>)
         .map((e) => ProfileModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<List<ExperienceEntity>> getExperiences(String userId) async {
+    final response = await _client
+        .from('profile_experiences')
+        .select()
+        .eq('user_id', userId)
+        .eq('is_visible', true)
+        .order('is_current', ascending: false)
+        .order('start_date', ascending: false);
+
+    return (response as List<dynamic>).map((e) {
+      final json = e as Map<String, dynamic>;
+      return ExperienceModel.fromJson({
+        'id': json['id'],
+        'title': json['title'],
+        'company': json['company_name'],
+        'location': json['city'] != null
+            ? '${json['city']}, ${json['country'] ?? 'SA'}'
+            : json['country'],
+        'description': json['description'],
+        'start_date': json['start_date'],
+        'end_date': json['end_date'],
+        'is_current': json['is_current'] ?? false,
+      });
+    }).toList();
+  }
+
+  @override
+  Future<ExperienceEntity> addExperience(
+    String userId,
+    ExperienceEntity experience,
+  ) async {
+    final response = await _client.from('profile_experiences').insert({
+      'user_id': userId,
+      'title': experience.title,
+      'company_name': experience.company,
+      'city': experience.location,
+      'start_date': experience.startDate?.toIso8601String().split('T').first,
+      'end_date': experience.endDate?.toIso8601String().split('T').first,
+      'is_current': experience.isCurrent,
+      'description': experience.description,
+    }).select().single();
+
+    return ExperienceModel.fromJson({
+      'id': response['id'],
+      'title': response['title'],
+      'company': response['company_name'],
+      'location': response['city'],
+      'description': response['description'],
+      'start_date': response['start_date'],
+      'end_date': response['end_date'],
+      'is_current': response['is_current'] ?? false,
+    });
+  }
+
+  @override
+  Future<ExperienceEntity> updateExperience(
+    String userId,
+    ExperienceEntity experience,
+  ) async {
+    final response = await _client
+        .from('profile_experiences')
+        .update({
+          'title': experience.title,
+          'company_name': experience.company,
+          'city': experience.location,
+          'start_date': experience.startDate?.toIso8601String().split('T').first,
+          'end_date': experience.endDate?.toIso8601String().split('T').first,
+          'is_current': experience.isCurrent,
+          'description': experience.description,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', experience.id)
+        .eq('user_id', userId)
+        .select()
+        .single();
+
+    return ExperienceModel.fromJson({
+      'id': response['id'],
+      'title': response['title'],
+      'company': response['company_name'],
+      'location': response['city'],
+      'description': response['description'],
+      'start_date': response['start_date'],
+      'end_date': response['end_date'],
+      'is_current': response['is_current'] ?? false,
+    });
+  }
+
+  @override
+  Future<void> deleteExperience(String userId, String experienceId) async {
+    await _client
+        .from('profile_experiences')
+        .delete()
+        .eq('id', experienceId)
+        .eq('user_id', userId);
+  }
+
+  @override
+  Future<LearningStats> getLearningStats(String userId) async {
+    try {
+      final response = await _client.rpc(
+        'get_user_learning_stats',
+        params: {'p_user_id': userId},
+      ).single();
+
+      return LearningStats.fromJson(response);
+    } catch (e) {
+      // Fallback: count from enrollments directly
+      return const LearningStats();
+    }
+  }
+
+  @override
+  Future<List<CertificatePreview>> getCertificates(
+    String userId, {
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _client.rpc(
+        'get_user_certificates',
+        params: {
+          'p_user_id': userId,
+          'p_limit': limit,
+          'p_offset': offset,
+        },
+      );
+
+      return (response as List<dynamic>)
+          .map((e) => CertificatePreview.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  @override
+  Future<List<CompletedCourse>> getCompletedCourses(
+    String userId, {
+    int limit = 10,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await _client.rpc(
+        'get_user_completed_courses',
+        params: {
+          'p_user_id': userId,
+          'p_limit': limit,
+          'p_offset': offset,
+        },
+      );
+
+      return (response as List<dynamic>)
+          .map((e) => CompletedCourse.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 }

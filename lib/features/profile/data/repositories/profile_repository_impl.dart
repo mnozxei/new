@@ -79,4 +79,47 @@ class ProfileRepositoryImpl implements ProfileRepository {
   }) {
     return _remoteDataSource.searchProfiles(query, limit: limit, offset: offset);
   }
+
+  @override
+  Future<List<ExperienceEntity>> getExperiences(String userId) {
+    return _remoteDataSource.getExperiences(userId);
+  }
+
+  @override
+  Future<ExperienceEntity> addExperience(String userId, ExperienceEntity experience) {
+    return _remoteDataSource.addExperience(userId, experience);
+  }
+
+  @override
+  Future<ExperienceEntity> updateExperience(String userId, ExperienceEntity experience) {
+    return _remoteDataSource.updateExperience(userId, experience);
+  }
+
+  @override
+  Future<void> deleteExperience(String userId, String experienceId) {
+    return _remoteDataSource.deleteExperience(userId, experienceId);
+  }
+
+  @override
+  Future<LearningStats> getLearningStats(String userId) {
+    return _remoteDataSource.getLearningStats(userId);
+  }
+
+  @override
+  Future<List<CertificatePreview>> getCertificates(
+    String userId, {
+    int limit = 10,
+    int offset = 0,
+  }) {
+    return _remoteDataSource.getCertificates(userId, limit: limit, offset: offset);
+  }
+
+  @override
+  Future<List<CompletedCourse>> getCompletedCourses(
+    String userId, {
+    int limit = 10,
+    int offset = 0,
+  }) {
+    return _remoteDataSource.getCompletedCourses(userId, limit: limit, offset: offset);
+  }
 }

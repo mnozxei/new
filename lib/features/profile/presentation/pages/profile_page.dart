@@ -12,6 +12,14 @@ import '../../../../core/widgets/glass_loading.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/widgets/verified_badge.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../domain/entities/profile_entity.dart';
+import '../../domain/repositories/profile_repository.dart';
+import '../../domain/services/profile_completion_service.dart';
+import '../bloc/profile_bloc.dart';
+import '../widgets/certificates_preview_card.dart' as cert_widget;
+import '../widgets/learning_summary_card.dart' as learning_widget;
+import '../widgets/profile_completion_card.dart';
+import '../widgets/work_history_preview_card.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -21,9 +29,71 @@ class ProfilePage extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is AuthAuthenticated) {
-          return ResponsiveLayout(
-            mobile: _MobileProfilePage(user: state.user),
-            desktop: _DesktopProfilePage(user: state.user),
+          return BlocBuilder<ProfileBloc, ProfileState>(
+            builder: (context, profileState) {
+              if (profileState is ProfileLoaded) {
+                return ResponsiveLayout(
+                  mobile: _MobileProfilePage(
+                    profile: profileState.profile,
+                    experiences: profileState.experiences,
+                    learningStats: profileState.learningStats,
+                    certificates: profileState.certificates,
+                    completionResult: profileState.completionResult,
+                  ),
+                  desktop: _DesktopProfilePage(
+                    profile: profileState.profile,
+                    experiences: profileState.experiences,
+                    learningStats: profileState.learningStats,
+                    certificates: profileState.certificates,
+                    completionResult: profileState.completionResult,
+                  ),
+                );
+              }
+
+              // Fallback to auth user data while loading
+              return ResponsiveLayout(
+                mobile: _MobileProfilePage(
+                  profile: ProfileEntity(
+                    id: state.user.id,
+                    email: state.user.email,
+                    role: state.user.role,
+                    fullName: state.user.fullName,
+                    avatarUrl: state.user.avatarUrl,
+                    jobTitle: state.user.jobTitle,
+                    location: state.user.location,
+                    bio: state.user.bio,
+                    isEmailVerified: state.user.isEmailVerified,
+                    followersCount: state.user.followersCount,
+                    followingCount: state.user.followingCount,
+                    postsCount: state.user.postsCount,
+                  ),
+                  experiences: const [],
+                  learningStats: const LearningStats(),
+                  certificates: const [],
+                  completionResult: null,
+                ),
+                desktop: _DesktopProfilePage(
+                  profile: ProfileEntity(
+                    id: state.user.id,
+                    email: state.user.email,
+                    role: state.user.role,
+                    fullName: state.user.fullName,
+                    avatarUrl: state.user.avatarUrl,
+                    jobTitle: state.user.jobTitle,
+                    location: state.user.location,
+                    bio: state.user.bio,
+                    isEmailVerified: state.user.isEmailVerified,
+                    followersCount: state.user.followersCount,
+                    followingCount: state.user.followingCount,
+                    postsCount: state.user.postsCount,
+                  ),
+                  experiences: const [],
+                  learningStats: const LearningStats(),
+                  certificates: const [],
+                  completionResult: null,
+                ),
+              );
+            },
           );
         }
 
@@ -38,9 +108,19 @@ class ProfilePage extends StatelessWidget {
 }
 
 class _MobileProfilePage extends StatelessWidget {
-  const _MobileProfilePage({required this.user});
+  const _MobileProfilePage({
+    required this.profile,
+    required this.experiences,
+    required this.learningStats,
+    required this.certificates,
+    this.completionResult,
+  });
 
-  final dynamic user;
+  final ProfileEntity profile;
+  final List<ExperienceEntity> experiences;
+  final LearningStats learningStats;
+  final List<CertificatePreview> certificates;
+  final ProfileCompletionResult? completionResult;
 
   @override
   Widget build(BuildContext context) {
@@ -58,11 +138,17 @@ class _MobileProfilePage extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.primaryGradient,
+                  if (profile.coverImageUrl != null)
+                    Image.network(
+                      profile.coverImageUrl!,
+                      fit: BoxFit.cover,
+                    )
+                  else
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                      ),
                     ),
-                  ),
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -90,7 +176,7 @@ class _MobileProfilePage extends StatelessWidget {
             actions: [
               IconButton(
                 icon: const Icon(Iconsax.setting_2, color: AppColors.white),
-                onPressed: () => context.push('${RouteNames.profile}/settings'),
+                onPressed: () => context.push(RouteNames.settings),
               ),
             ],
           ),
@@ -107,7 +193,63 @@ class _MobileProfilePage extends StatelessWidget {
                   const SizedBox(height: AppConstants.spacingLarge),
                   _buildActions(context),
                   const SizedBox(height: AppConstants.spacingLarge),
+                  // Profile Completion Card
+                  if (completionResult != null && completionResult!.percent < 100)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.spacingLarge,
+                      ),
+                      child: ProfileCompletionCard(
+                        completionResult: completionResult!,
+                      ),
+                    ),
+                  const SizedBox(height: AppConstants.spacingMedium),
+                  // Learning Summary Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacingLarge,
+                    ),
+                    child: learning_widget.LearningSummaryCard(
+                      stats: learning_widget.LearningStats(
+                        enrolledCount: learningStats.enrolledCount,
+                        inProgressCount: learningStats.inProgressCount,
+                        completedCount: learningStats.completedCount,
+                        certificatesCount: learningStats.certificatesCount,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingMedium),
+                  // Certificates Preview Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacingLarge,
+                    ),
+                    child: cert_widget.CertificatesPreviewCard(
+                      certificates: certificates.map((c) => cert_widget.CertificatePreview(
+                        id: c.id,
+                        serialNumber: c.serialNumber,
+                        courseName: c.courseName,
+                        issuerName: c.issuerName,
+                        issuedAt: c.issuedAt,
+                        pdfUrl: c.pdfUrl,
+                      )).toList(),
+                      totalCount: learningStats.certificatesCount,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingMedium),
+                  // Work History Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacingLarge,
+                    ),
+                    child: WorkHistoryPreviewCard(
+                      experiences: experiences,
+                      isOwner: true,
+                    ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingLarge),
                   _buildMenuItems(context),
+                  const SizedBox(height: AppConstants.spacingExtraLarge),
                 ],
               ),
             ),
@@ -133,10 +275,10 @@ class _MobileProfilePage extends StatelessWidget {
         radius: 56,
         backgroundColor: AppColors.primaryLighter,
         backgroundImage:
-            user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
-        child: user.avatarUrl == null
+            profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+        child: profile.avatarUrl == null
             ? Text(
-                user.initials ?? 'U',
+                profile.initials ?? 'U',
                 style: const TextStyle(
                   fontSize: 40,
                   fontWeight: FontWeight.bold,
@@ -157,27 +299,27 @@ class _MobileProfilePage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              user.displayName,
+              profile.displayName,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            if (user.isEmailVerified) ...[
+            if (profile.isEmailVerified) ...[
               const SizedBox(width: AppConstants.spacingSmall),
               const VerifiedBadge(size: VerifiedBadgeSize.medium),
             ],
           ],
         ),
-        if (user.jobTitle != null) ...[
+        if (profile.headline != null || profile.jobTitle != null) ...[
           const SizedBox(height: AppConstants.spacingExtraSmall),
           Text(
-            user.jobTitle!,
+            profile.headline ?? profile.jobTitle!,
             style: theme.textTheme.bodyLarge?.copyWith(
               color: AppColors.textSecondaryLight,
             ),
           ),
         ],
-        if (user.location != null) ...[
+        if (profile.city != null || profile.location != null) ...[
           const SizedBox(height: AppConstants.spacingExtraSmall),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -189,12 +331,29 @@ class _MobileProfilePage extends StatelessWidget {
               ),
               const SizedBox(width: AppConstants.spacingExtraSmall),
               Text(
-                user.location!,
+                profile.city ?? profile.location!,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: AppColors.textTertiaryLight,
                 ),
               ),
             ],
+          ),
+        ],
+        if (profile.industry != null) ...[
+          const SizedBox(height: AppConstants.spacingExtraSmall),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Text(
+              profile.industry!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
         ],
       ],
@@ -211,13 +370,32 @@ class _MobileProfilePage extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            _StatItem(label: 'المتابعون', value: '0'),
-            _StatItem(label: 'المتابَعون', value: '0'),
-            _StatItem(label: 'المنشورات', value: '0'),
+            _StatItem(
+              label: 'المتابعون',
+              value: _formatCount(profile.followersCount),
+            ),
+            _StatItem(
+              label: 'المتابَعون',
+              value: _formatCount(profile.followingCount),
+            ),
+            _StatItem(
+              label: 'المنشورات',
+              value: _formatCount(profile.postsCount),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatCount(int count) {
+    if (count >= 1000000) {
+      return '${(count / 1000000).toStringAsFixed(1)}M';
+    }
+    if (count >= 1000) {
+      return '${(count / 1000).toStringAsFixed(1)}K';
+    }
+    return count.toString();
   }
 
   Widget _buildActions(BuildContext context) {
@@ -229,7 +407,7 @@ class _MobileProfilePage extends StatelessWidget {
         children: [
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () => context.push('${RouteNames.profile}/edit'),
+              onPressed: () => context.push(RouteNames.editProfile),
               icon: const Icon(Iconsax.edit),
               label: const Text('تعديل الملف الشخصي'),
             ),
@@ -273,8 +451,8 @@ class _MobileProfilePage extends StatelessWidget {
             const Divider(height: 1),
             _MenuItem(
               icon: Iconsax.book,
-              label: 'دوراتي',
-              onTap: () => context.push(RouteNames.courses),
+              label: 'تعلمي',
+              onTap: () => context.push(RouteNames.myLearning),
             ),
             const Divider(height: 1),
             _MenuItem(
@@ -305,22 +483,29 @@ class _MobileProfilePage extends StatelessWidget {
 }
 
 class _DesktopProfilePage extends StatelessWidget {
-  const _DesktopProfilePage({required this.user});
+  const _DesktopProfilePage({
+    required this.profile,
+    required this.experiences,
+    required this.learningStats,
+    required this.certificates,
+    this.completionResult,
+  });
 
-  final dynamic user;
+  final ProfileEntity profile;
+  final List<ExperienceEntity> experiences;
+  final LearningStats learningStats;
+  final List<CertificatePreview> certificates;
+  final ProfileCompletionResult? completionResult;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
       appBar: GlassAppBar(
         title: 'الملف الشخصي',
         actions: [
           IconButton(
             icon: const Icon(Iconsax.setting_2),
-            onPressed: () => context.push('${RouteNames.profile}/settings'),
+            onPressed: () => context.push(RouteNames.settings),
           ),
         ],
       ),
@@ -328,7 +513,7 @@ class _DesktopProfilePage extends StatelessWidget {
         padding: const EdgeInsets.all(AppConstants.spacingLarge),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1000),
+            constraints: const BoxConstraints(maxWidth: 1200),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -337,6 +522,12 @@ class _DesktopProfilePage extends StatelessWidget {
                   child: Column(
                     children: [
                       _buildProfileCard(context),
+                      const SizedBox(height: AppConstants.spacingMedium),
+                      if (completionResult != null && completionResult!.percent < 100)
+                        ProfileCompletionCard(
+                          completionResult: completionResult!,
+                          showDetails: false,
+                        ),
                       const SizedBox(height: AppConstants.spacingMedium),
                       _buildQuickActions(context),
                     ],
@@ -348,7 +539,31 @@ class _DesktopProfilePage extends StatelessWidget {
                     children: [
                       _buildAboutSection(context),
                       const SizedBox(height: AppConstants.spacingMedium),
-                      _buildActivitySection(context),
+                      learning_widget.LearningSummaryCard(
+                        stats: learning_widget.LearningStats(
+                          enrolledCount: learningStats.enrolledCount,
+                          inProgressCount: learningStats.inProgressCount,
+                          completedCount: learningStats.completedCount,
+                          certificatesCount: learningStats.certificatesCount,
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.spacingMedium),
+                      cert_widget.CertificatesPreviewCard(
+                        certificates: certificates.map((c) => cert_widget.CertificatePreview(
+                          id: c.id,
+                          serialNumber: c.serialNumber,
+                          courseName: c.courseName,
+                          issuerName: c.issuerName,
+                          issuedAt: c.issuedAt,
+                          pdfUrl: c.pdfUrl,
+                        )).toList(),
+                        totalCount: learningStats.certificatesCount,
+                      ),
+                      const SizedBox(height: AppConstants.spacingMedium),
+                      WorkHistoryPreviewCard(
+                        experiences: experiences,
+                        isOwner: true,
+                      ),
                     ],
                   ),
                 ),
@@ -382,10 +597,10 @@ class _DesktopProfilePage extends StatelessWidget {
               radius: 46,
               backgroundColor: AppColors.primaryLighter,
               backgroundImage:
-                  user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
-              child: user.avatarUrl == null
+                  profile.avatarUrl != null ? NetworkImage(profile.avatarUrl!) : null,
+              child: profile.avatarUrl == null
                   ? Text(
-                      user.initials ?? 'U',
+                      profile.initials ?? 'U',
                       style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
@@ -400,21 +615,21 @@ class _DesktopProfilePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                user.displayName,
+                profile.displayName,
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (user.isEmailVerified) ...[
+              if (profile.isEmailVerified) ...[
                 const SizedBox(width: AppConstants.spacingSmall),
                 const VerifiedBadge(size: VerifiedBadgeSize.small),
               ],
             ],
           ),
-          if (user.jobTitle != null) ...[
+          if (profile.headline != null || profile.jobTitle != null) ...[
             const SizedBox(height: AppConstants.spacingExtraSmall),
             Text(
-              user.jobTitle!,
+              profile.headline ?? profile.jobTitle!,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: isDark
                     ? AppColors.textSecondaryDark
@@ -422,20 +637,49 @@ class _DesktopProfilePage extends StatelessWidget {
               ),
             ),
           ],
+          if (profile.industry != null) ...[
+            const SizedBox(height: AppConstants.spacingSmall),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                profile.industry!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: AppConstants.spacingMedium),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatItem(label: 'المتابعون', value: '0', compact: true),
-              _StatItem(label: 'المتابَعون', value: '0', compact: true),
-              _StatItem(label: 'المنشورات', value: '0', compact: true),
+              _StatItem(
+                label: 'المتابعون',
+                value: profile.followersCount.toString(),
+                compact: true,
+              ),
+              _StatItem(
+                label: 'المتابَعون',
+                value: profile.followingCount.toString(),
+                compact: true,
+              ),
+              _StatItem(
+                label: 'المنشورات',
+                value: profile.postsCount.toString(),
+                compact: true,
+              ),
             ],
           ),
           const SizedBox(height: AppConstants.spacingMedium),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.push('${RouteNames.profile}/edit'),
+              onPressed: () => context.push(RouteNames.editProfile),
               icon: const Icon(Iconsax.edit, size: 18),
               label: const Text('تعديل الملف الشخصي'),
             ),
@@ -463,8 +707,8 @@ class _DesktopProfilePage extends StatelessWidget {
           ),
           _MenuItem(
             icon: Iconsax.book,
-            label: 'دوراتي',
-            onTap: () => context.push(RouteNames.courses),
+            label: 'تعلمي',
+            onTap: () => context.push(RouteNames.myLearning),
           ),
           _MenuItem(
             icon: Iconsax.logout,
@@ -489,50 +733,52 @@ class _DesktopProfilePage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            user.bio ?? 'لم يتم إضافة نبذة بعد.',
+            profile.bio ?? 'لم يتم إضافة نبذة بعد.',
             style: theme.textTheme.bodyLarge?.copyWith(
-              color: user.bio == null ? AppColors.textTertiaryLight : null,
+              color: profile.bio == null ? AppColors.textTertiaryLight : null,
             ),
           ),
+          if (profile.skills.isNotEmpty) ...[
+            const SizedBox(height: AppConstants.spacingMedium),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: profile.skills.map((skill) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.backgroundSecondaryLight,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    skill,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
           const SizedBox(height: AppConstants.spacingMedium),
-          if (user.location != null)
-            _InfoRow(icon: Iconsax.location, label: user.location!),
-          if (user.website != null)
-            _InfoRow(icon: Iconsax.global, label: user.website!),
-          _InfoRow(icon: Iconsax.calendar, label: 'انضم في ديسمبر 2025'),
+          if (profile.city != null || profile.location != null)
+            _InfoRow(icon: Iconsax.location, label: profile.city ?? profile.location!),
+          if (profile.website != null)
+            _InfoRow(icon: Iconsax.global, label: profile.website!),
+          if (profile.createdAt != null)
+            _InfoRow(
+              icon: Iconsax.calendar,
+              label: 'انضم في ${_formatDate(profile.createdAt!)}',
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildActivitySection(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return GlassPanel(
-      title: 'النشاط الأخير',
-      intensity: GlassIntensity.light,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.spacingLarge),
-          child: Column(
-            children: [
-              Icon(
-                Iconsax.activity,
-                size: 48,
-                color: AppColors.textTertiaryLight,
-              ),
-              const SizedBox(height: AppConstants.spacingMedium),
-              Text(
-                'لا يوجد نشاط حديث',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textTertiaryLight,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  String _formatDate(DateTime date) {
+    final months = [
+      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
+      'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+    ];
+    return '${months[date.month - 1]} ${date.year}';
   }
 }
 
