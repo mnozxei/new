@@ -8,9 +8,15 @@ import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/services/impressions_service.dart';
+import '../../../../core/widgets/glass_app_bar.dart';
 import '../../../../core/widgets/glass_container.dart';
+import '../../../../core/widgets/glass_loading.dart';
 import '../../../../core/widgets/login_required_dialog.dart';
 import '../../../../core/widgets/verified_badge.dart';
+import '../../domain/entities/profile_entity.dart';
+import '../widgets/certificates_preview_card.dart';
+import '../widgets/learning_summary_card.dart';
+import '../widgets/work_history_preview_card.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({
@@ -27,11 +33,75 @@ class UserProfilePage extends StatefulWidget {
 class _UserProfilePageState extends State<UserProfilePage> {
   final ImpressionsService _impressionsService = ImpressionsService();
   bool _isFollowing = false;
+  bool _isLoading = true;
+  String? _error;
+
+  Map<String, dynamic>? _profileData;
+  List<ExperienceEntity> _experiences = [];
+  LearningStats _learningStats = const LearningStats();
+  List<CertificatePreview> _certificates = [];
 
   @override
   void initState() {
     super.initState();
+    _loadUserProfile();
     _recordImpression();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final supabase = Supabase.instance.client;
+
+      // Fetch profile data
+      final profileResponse = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', widget.userId)
+          .single();
+
+      // Fetch experiences
+      final experiencesResponse = await supabase
+          .from('profile_experiences')
+          .select()
+          .eq('user_id', widget.userId)
+          .order('is_current', ascending: false)
+          .order('start_date', ascending: false);
+
+      // Fetch learning stats
+      final statsResponse = await supabase
+          .rpc('get_user_learning_stats', params: {'p_user_id': widget.userId});
+
+      // Fetch certificates
+      final certificatesResponse = await supabase
+          .rpc('get_user_certificates', params: {
+        'p_user_id': widget.userId,
+        'p_limit': 3,
+      });
+
+      setState(() {
+        _profileData = profileResponse;
+        _experiences = (experiencesResponse as List)
+            .map((e) => ExperienceEntity.fromJson(e))
+            .toList();
+        if (statsResponse != null && (statsResponse as List).isNotEmpty) {
+          _learningStats = LearningStats.fromJson(statsResponse[0]);
+        }
+        _certificates = (certificatesResponse as List)
+            .map((e) => CertificatePreview.fromJson(e))
+            .toList();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   void _recordImpression() {
@@ -41,7 +111,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  bool get _isAuthenticated => Supabase.instance.client.auth.currentUser != null;
+  bool get _isAuthenticated =>
+      Supabase.instance.client.auth.currentUser != null;
 
   void _handleFollow() {
     if (_isAuthenticated) {
@@ -103,32 +174,28 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Iconsax.slash),
-              title: const Text('حظر المستخدم'),
-              onTap: () {
-                Navigator.pop(context);
-                if (_isAuthenticated) {
+            if (_isAuthenticated) ...[
+              ListTile(
+                leading: const Icon(Iconsax.slash),
+                title: const Text('حظر المستخدم'),
+                onTap: () {
+                  Navigator.pop(context);
                   _showBlockConfirmation();
-                } else {
-                  LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول لحظر المستخدم');
-                }
-              },
-            ),
-            ListTile(
-              leading: Icon(Iconsax.flag, color: AppColors.error),
-              title: Text('الإبلاغ عن المستخدم', style: TextStyle(color: AppColors.error)),
-              onTap: () {
-                Navigator.pop(context);
-                if (_isAuthenticated) {
+                },
+              ),
+              ListTile(
+                leading: Icon(Iconsax.flag, color: AppColors.error),
+                title: Text('الإبلاغ عن المستخدم',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('شكراً لإبلاغك. سنراجع هذا الحساب.')),
+                    const SnackBar(
+                        content: Text('شكراً لإبلاغك. سنراجع هذا الحساب.')),
                   );
-                } else {
-                  LoginRequiredDialog.show(context, message: 'يجب تسجيل الدخول للإبلاغ');
-                }
-              },
-            ),
+                },
+              ),
+            ],
             const SizedBox(height: 16),
           ],
         ),
@@ -141,7 +208,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('حظر المستخدم'),
-        content: const Text('هل أنت متأكد من حظر هذا المستخدم؟ لن يتمكن من رؤية ملفك الشخصي أو التواصل معك.'),
+        content: const Text(
+            'هل أنت متأكد من حظر هذا المستخدم؟ لن يتمكن من رؤية ملفك الشخصي أو التواصل معك.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -166,6 +234,59 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+
+    if (_isLoading) {
+      return Scaffold(
+        appBar: const GlassAppBar(title: 'الملف الشخصي'),
+        body: const Center(child: GlassLoadingIndicator()),
+      );
+    }
+
+    if (_error != null || _profileData == null) {
+      return Scaffold(
+        appBar: const GlassAppBar(title: 'الملف الشخصي'),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Iconsax.user_remove,
+                size: 64,
+                color: isDark
+                    ? AppColors.textTertiaryDark
+                    : AppColors.textTertiaryLight,
+              ),
+              const SizedBox(height: AppConstants.spacingMedium),
+              Text(
+                'تعذر تحميل الملف الشخصي',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppConstants.spacingSmall),
+              TextButton.icon(
+                onPressed: _loadUserProfile,
+                icon: const Icon(Iconsax.refresh),
+                label: const Text('إعادة المحاولة'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final profile = _profileData!;
+    final fullName = profile['full_name'] as String? ?? 'مستخدم';
+    final headline = profile['headline'] as String? ??
+        profile['job_title'] as String? ??
+        '';
+    final bio = profile['bio'] as String?;
+    final avatarUrl = profile['avatar_url'] as String?;
+    final location = profile['location'] as String? ?? profile['city'] as String?;
+    final skills = (profile['skills'] as List<dynamic>?)?.cast<String>() ?? [];
+    final industry = profile['industry'] as String?;
+    final isVerified = profile['is_verified'] as bool? ?? false;
+    final followersCount = profile['followers_count'] as int? ?? 0;
+    final followingCount = profile['following_count'] as int? ?? 0;
+    final postsCount = profile['posts_count'] as int? ?? 0;
 
     return Scaffold(
       body: CustomScrollView(
@@ -243,6 +364,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                     const EdgeInsets.symmetric(horizontal: AppConstants.spacingLarge),
                 child: Column(
                   children: [
+                    // Profile Avatar
                     Container(
                       width: 120,
                       height: 120,
@@ -256,50 +378,96 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         ),
                         boxShadow: AppColors.elevatedShadowLight,
                       ),
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 56,
                         backgroundColor: AppColors.primaryLighter,
-                        child: Icon(
-                          Iconsax.user,
-                          size: 48,
-                          color: AppColors.white,
-                        ),
+                        backgroundImage:
+                            avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                        child: avatarUrl == null
+                            ? const Icon(
+                                Iconsax.user,
+                                size: 48,
+                                color: AppColors.white,
+                              )
+                            : null,
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingMedium),
+                    // Name and Verification
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'اسم المستخدم',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            fullName,
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                        const SizedBox(width: AppConstants.spacingSmall),
-                        const VerifiedBadge(size: VerifiedBadgeSize.medium),
+                        if (isVerified) ...[
+                          const SizedBox(width: AppConstants.spacingSmall),
+                          const VerifiedBadge(size: VerifiedBadgeSize.medium),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: AppConstants.spacingExtraSmall),
-                    Text(
-                      'مهندس برمجيات',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondaryLight,
+                    if (headline.isNotEmpty) ...[
+                      const SizedBox(height: AppConstants.spacingExtraSmall),
+                      Text(
+                        headline,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: isDark
+                              ? AppColors.textSecondaryDark
+                              : AppColors.textSecondaryLight,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
+                    ],
+                    if (industry != null) ...[
+                      const SizedBox(height: AppConstants.spacingExtraSmall),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          industry,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: AppConstants.spacingLarge),
+                    // Stats Card
                     GlassCard(
                       intensity: GlassIntensity.light,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          _StatItem(label: 'متابع', value: '1.2K'),
-                          _StatItem(label: 'متابَع', value: '345'),
-                          _StatItem(label: 'منشور', value: '42'),
+                          _StatItem(
+                            label: 'متابع',
+                            value: _formatNumber(followersCount),
+                          ),
+                          _StatItem(
+                            label: 'متابَع',
+                            value: _formatNumber(followingCount),
+                          ),
+                          _StatItem(
+                            label: 'منشور',
+                            value: _formatNumber(postsCount),
+                          ),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingMedium),
+                    // Action Buttons
                     Row(
                       children: [
                         Expanded(
@@ -317,62 +485,115 @@ class _UserProfilePageState extends State<UserProfilePage> {
                       ],
                     ),
                     const SizedBox(height: AppConstants.spacingLarge),
-                    GlassPanel(
-                      title: 'نبذة',
-                      intensity: GlassIntensity.light,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'مهندس برمجيات شغوف بخبرة تزيد عن 5 سنوات في تطوير تطبيقات الهاتف المحمول.',
-                            style: theme.textTheme.bodyLarge,
-                          ),
-                          const SizedBox(height: AppConstants.spacingMedium),
-                          Row(
-                            children: [
-                              const Icon(
-                                Iconsax.location,
-                                size: 16,
-                                color: AppColors.textSecondaryLight,
-                              ),
-                              const SizedBox(width: AppConstants.spacingSmall),
-                              Text(
-                                'الرياض، المملكة العربية السعودية',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: AppColors.textSecondaryLight,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.spacingLarge),
-                    GlassPanel(
-                      title: 'آخر المنشورات',
-                      intensity: GlassIntensity.light,
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppConstants.spacingLarge),
-                          child: Column(
-                            children: [
-                              const Icon(
-                                Iconsax.document_text,
-                                size: 48,
-                                color: AppColors.textTertiaryLight,
-                              ),
+                    // Bio Section
+                    if (bio != null && bio.isNotEmpty) ...[
+                      GlassPanel(
+                        title: 'نبذة',
+                        intensity: GlassIntensity.light,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              bio,
+                              style: theme.textTheme.bodyLarge,
+                            ),
+                            if (location != null) ...[
                               const SizedBox(height: AppConstants.spacingMedium),
-                              Text(
-                                'لا توجد منشورات بعد',
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  color: AppColors.textTertiaryLight,
-                                ),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Iconsax.location,
+                                    size: 16,
+                                    color: isDark
+                                        ? AppColors.textSecondaryDark
+                                        : AppColors.textSecondaryLight,
+                                  ),
+                                  const SizedBox(width: AppConstants.spacingSmall),
+                                  Text(
+                                    location,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: isDark
+                                          ? AppColors.textSecondaryDark
+                                          : AppColors.textSecondaryLight,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
-                          ),
+                          ],
                         ),
                       ),
+                      const SizedBox(height: AppConstants.spacingMedium),
+                    ],
+                    // Skills Section
+                    if (skills.isNotEmpty) ...[
+                      GlassCard(
+                        intensity: GlassIntensity.light,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Iconsax.cpu,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: AppConstants.spacingSmall),
+                                Text(
+                                  'المهارات',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppConstants.spacingMedium),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: skills.map((skill) {
+                                return Chip(
+                                  label: Text(skill),
+                                  backgroundColor:
+                                      AppColors.primary.withValues(alpha: 0.1),
+                                  labelStyle: theme.textTheme.bodySmall?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.spacingMedium),
+                    ],
+                    // Work History Section (read-only)
+                    WorkHistoryPreviewCard(
+                      experiences: _experiences,
+                      isOwner: false,
                     ),
+                    const SizedBox(height: AppConstants.spacingMedium),
+                    // Learning Summary Section (read-only)
+                    LearningSummaryCard(
+                      stats: _learningStats,
+                    ),
+                    const SizedBox(height: AppConstants.spacingMedium),
+                    // Certificates Section (read-only)
+                    CertificatesPreviewCard(
+                      certificates: _certificates,
+                      totalCount: _certificates.length,
+                    ),
+                    const SizedBox(height: AppConstants.spacingExtraLarge),
                   ],
                 ),
               ),
@@ -381,6 +602,15 @@ class _UserProfilePageState extends State<UserProfilePage> {
         ],
       ),
     );
+  }
+
+  String _formatNumber(int number) {
+    if (number >= 1000000) {
+      return '${(number / 1000000).toStringAsFixed(1)}M';
+    } else if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
+    }
+    return number.toString();
   }
 }
 
@@ -396,6 +626,7 @@ class _StatItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       children: [
@@ -409,7 +640,9 @@ class _StatItem extends StatelessWidget {
         Text(
           label,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: AppColors.textSecondaryLight,
+            color: isDark
+                ? AppColors.textSecondaryDark
+                : AppColors.textSecondaryLight,
           ),
         ),
       ],

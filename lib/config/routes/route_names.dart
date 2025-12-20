@@ -68,6 +68,14 @@ abstract final class RouteNames {
   static const String userProfile = '/user';
   static const String publicProfile = '/user/:id';
 
+  // Profile Experiences
+  static const String experiences = '/profile/experiences';
+  static const String addExperience = '/profile/experiences/new';
+  static const String editExperience = '/profile/experiences/:id/edit';
+
+  // Profile Certificates
+  static const String certificates = '/profile/certificates';
+
   // ===== NOTIFICATIONS =====
   static const String notifications = '/notifications';
   static const String notificationSettings = '/settings/notifications';

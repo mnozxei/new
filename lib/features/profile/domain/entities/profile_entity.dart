@@ -242,6 +242,36 @@ class ExperienceEntity extends Equatable {
   final DateTime? endDate;
   final bool isCurrent;
 
+  factory ExperienceEntity.fromJson(Map<String, dynamic> json) {
+    return ExperienceEntity(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      company: json['company_name'] as String? ?? json['company'] as String,
+      location: json['location'] as String?,
+      description: json['description'] as String?,
+      startDate: json['start_date'] != null
+          ? DateTime.parse(json['start_date'] as String)
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.parse(json['end_date'] as String)
+          : null,
+      isCurrent: json['is_current'] as bool? ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'company_name': company,
+      'location': location,
+      'description': description,
+      'start_date': startDate?.toIso8601String(),
+      'end_date': endDate?.toIso8601String(),
+      'is_current': isCurrent,
+    };
+  }
+
   @override
   List<Object?> get props => [
         id,

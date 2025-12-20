@@ -55,7 +55,10 @@ import '../../features/companies/presentation/pages/company_jobs_page.dart';
 import '../../features/posts/presentation/pages/create_post_page.dart';
 import '../../features/posts/presentation/pages/post_details_page.dart';
 import '../../features/posts/presentation/pages/posts_page.dart';
+import '../../features/profile/presentation/pages/certificates_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
+import '../../features/profile/presentation/pages/experience_editor_page.dart';
+import '../../features/profile/presentation/pages/experiences_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/saved_items_page.dart';
 import '../../features/profile/presentation/pages/settings_page.dart';
@@ -370,6 +373,31 @@ abstract final class AppRouter {
                 path: 'settings',
                 name: RouteNames.settings,
                 builder: (context, state) => const SettingsPage(),
+              ),
+              GoRoute(
+                path: 'experiences',
+                name: RouteNames.experiences,
+                builder: (context, state) => const ExperiencesPage(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    name: RouteNames.addExperience,
+                    builder: (context, state) => const ExperienceEditorPage(),
+                  ),
+                  GoRoute(
+                    path: ':experienceId/edit',
+                    name: RouteNames.editExperience,
+                    builder: (context, state) {
+                      final experienceId = state.pathParameters['experienceId']!;
+                      return ExperienceEditorPage(experienceId: experienceId);
+                    },
+                  ),
+                ],
+              ),
+              GoRoute(
+                path: 'certificates',
+                name: RouteNames.certificates,
+                builder: (context, state) => const CertificatesPage(),
               ),
             ],
           ),
