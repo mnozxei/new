@@ -1,4 +1,4 @@
-export 'data/datasources/profile_remote_data_source.dart';
+export 'data/datasources/profile_remote_datasource.dart';
 export 'data/repositories/profile_repository_impl.dart';
 export 'domain/entities/profile_entity.dart';
 export 'domain/repositories/profile_repository.dart';

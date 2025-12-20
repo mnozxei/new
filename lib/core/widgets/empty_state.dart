@@ -167,7 +167,7 @@ class EmptyState extends StatelessWidget {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.spacingXLarge),
+        padding: const EdgeInsets.all(AppConstants.spacingExtraLarge),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

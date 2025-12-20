@@ -46,22 +46,25 @@ dependencies:
   flutter_animate: ^4.3.0
 
   # Forms and Validation
-  flutter_form_builder: ^10.2.0
-  form_builder_validators: ^11.2.0
+  flutter_form_builder: ^9.2.1
+  form_builder_validators: ^10.0.0
 
   # Utils
-  intl: ^0.20.2
+  intl: any
   uuid: ^4.2.2
   path_provider: ^2.1.1
+  path: ^1.9.0
   image_picker: ^1.0.5
   file_picker: ^6.1.1
   url_launcher: ^6.2.2
+  share_plus: ^7.2.1
 
   # Realtime
   web_socket_channel: ^2.4.0
 
   # Icons
   iconsax: ^0.0.8
+  cupertino_icons: ^1.0.6
 
   # Responsive
   responsive_framework: ^1.1.1
@@ -91,28 +94,3 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - assets/fonts/
-
-  fonts:
-    - family: Cairo
-      fonts:
-        - asset: assets/fonts/Cairo-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Cairo-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Cairo-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Cairo-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/Cairo-Bold.ttf
-          weight: 700
-    - family: Tajawal
-      fonts:
-        - asset: assets/fonts/Tajawal-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Tajawal-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Tajawal-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/Tajawal-Bold.ttf
-          weight: 700

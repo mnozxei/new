@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../config/routes/route_names.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/widgets/glass_container.dart';
 import '../../../../core/widgets/glass_text_field.dart';
+import '../../../search/data/datasources/search_remote_data_source.dart';
+import '../../../search/domain/entities/search_entity.dart';
 import '../bloc/chat_bloc.dart';
 
 class NewConversationPage extends StatefulWidget {
@@ -19,8 +21,17 @@ class NewConversationPage extends StatefulWidget {
 
 class _NewConversationPageState extends State<NewConversationPage> {
   final TextEditingController _searchController = TextEditingController();
-  List<_UserSearchResult> _searchResults = [];
+  List<UserSearchResult> _searchResults = [];
   bool _isSearching = false;
+  String? _errorMessage;
+
+  late final SearchRemoteDataSource _searchDataSource;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchDataSource = GetIt.instance<SearchRemoteDataSource>();
+  }
 
   @override
   void dispose() {
@@ -28,35 +39,57 @@ class _NewConversationPageState extends State<NewConversationPage> {
     super.dispose();
   }
 
-  void _onSearchChanged(String query) {
+  Future<void> _onSearchChanged(String query) async {
     if (query.length < 2) {
       setState(() {
         _searchResults = [];
         _isSearching = false;
+        _errorMessage = null;
       });
       return;
     }
 
-    setState(() => _isSearching = true);
+    setState(() {
+      _isSearching = true;
+      _errorMessage = null;
+    });
 
-    // Simulated search - in production this would call the repository
-    Future.delayed(const Duration(milliseconds: 300), () {
+    try {
+      final results = await _searchDataSource.searchUsers(
+        query,
+        limit: 20,
+        offset: 0,
+      );
+
       if (mounted) {
         setState(() {
           _isSearching = false;
-          _searchResults = _mockUsers
-              .where((u) => u.name.toLowerCase().contains(query.toLowerCase()))
-              .toList();
+          _searchResults = results;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _errorMessage = 'فشل البحث. يرجى المحاولة مرة أخرى.';
+        });
+      }
+    }
   }
 
-  void _startConversation(_UserSearchResult user) {
+  void _startConversation(UserSearchResult user) {
     context.read<ChatBloc>().add(StartConversation(participantId: user.id));
     Navigator.of(context).pop();
     // Navigate to chat room after starting conversation
     context.pushNamed(RouteNames.chatRoom, pathParameters: {'id': user.id});
+  }
+
+  String _getInitials(String name) {
+    final parts = name.split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}';
+    }
+    return name.substring(0, name.length >= 2 ? 2 : name.length);
   }
 
   @override
@@ -130,6 +163,27 @@ class _NewConversationPageState extends State<NewConversationPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Iconsax.warning_2, size: 48, color: AppColors.error),
+            const SizedBox(height: AppConstants.spacingMedium),
+            Text(
+              _errorMessage!,
+              style: theme.textTheme.bodyMedium?.copyWith(color: AppColors.error),
+            ),
+            const SizedBox(height: AppConstants.spacingMedium),
+            TextButton(
+              onPressed: () => _onSearchChanged(_searchController.text),
+              child: const Text('إعادة المحاولة'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_searchController.text.length < 2) {
       return Center(
         child: Column(
@@ -169,6 +223,7 @@ class _NewConversationPageState extends State<NewConversationPage> {
         return _UserResultItem(
           user: user,
           onTap: () => _startConversation(user),
+          getInitials: _getInitials,
         );
       },
     );
@@ -179,10 +234,12 @@ class _UserResultItem extends StatelessWidget {
   const _UserResultItem({
     required this.user,
     required this.onTap,
+    required this.getInitials,
   });
 
-  final _UserSearchResult user;
+  final UserSearchResult user;
   final VoidCallback onTap;
+  final String Function(String) getInitials;
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +260,7 @@ class _UserResultItem extends StatelessWidget {
               backgroundImage: user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
               child: user.avatarUrl == null
                   ? Text(
-                      user.initials,
+                      getInitials(user.displayName),
                       style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.bold),
                     )
                   : null,
@@ -216,7 +273,7 @@ class _UserResultItem extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        user.name,
+                        user.displayName,
                         style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
                       ),
                       if (user.isVerified) ...[
@@ -225,9 +282,9 @@ class _UserResultItem extends StatelessWidget {
                       ],
                     ],
                   ),
-                  if (user.title != null)
+                  if (user.headline != null)
                     Text(
-                      user.title!,
+                      user.headline!,
                       style: theme.textTheme.bodySmall?.copyWith(color: AppColors.textSecondaryLight),
                     ),
                 ],
@@ -240,36 +297,3 @@ class _UserResultItem extends StatelessWidget {
     );
   }
 }
-
-// Mock data - replace with actual repository call
-class _UserSearchResult {
-  const _UserSearchResult({
-    required this.id,
-    required this.name,
-    this.avatarUrl,
-    this.title,
-    this.isVerified = false,
-  });
-
-  final String id;
-  final String name;
-  final String? avatarUrl;
-  final String? title;
-  final bool isVerified;
-
-  String get initials {
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}';
-    }
-    return name.substring(0, name.length >= 2 ? 2 : name.length);
-  }
-}
-
-final List<_UserSearchResult> _mockUsers = [
-  const _UserSearchResult(id: '1', name: 'أحمد محمد', title: 'مطور تطبيقات', isVerified: true),
-  const _UserSearchResult(id: '2', name: 'سعاد الأحمدي', title: 'مصممة UI/UX'),
-  const _UserSearchResult(id: '3', name: 'خالد العتيبي', title: 'مدير مشاريع', isVerified: true),
-  const _UserSearchResult(id: '4', name: 'فاطمة السعيد', title: 'محللة بيانات'),
-  const _UserSearchResult(id: '5', name: 'نورة المالكي', title: 'مطورة ويب'),
-];
